@@ -1,0 +1,41 @@
+replicaCount: 2
+
+image:
+  repository: hei-boot-admin
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  host: hei.example.com
+  tlsSecretName: hei-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "25m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  SA_TOKEN_IS_READ_COOKIE: "true"
+  SA_TOKEN_COOKIE_SECURE: "true"
+  HEI_SECURITY_HSTS_MAX_AGE: "31536000"
+  HEI_OBSERVABILITY_TRACING_ENABLED: "false"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# External dependencies — point to managed Postgres/Redis/RabbitMQ.
+secrets:
+  create: false
+  name: hei-boot-secrets

@@ -1,0 +1,59 @@
+# hei-boot 本地基础设施。
+# 启动顺序：本 compose → app/xxl-job（本地 Admin）→ app/admin（内嵌执行器）。
+# 生产：勿运行 app/xxl-job；将 XXL_JOB_ADMIN_ADDRESSES 指向外部 Admin。
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hei-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: hei_boot
+      POSTGRES_USER: hei
+      POSTGRES_PASSWORD: hei
+    volumes:
+      - hei-postgres-data:/var/lib/postgresql/data
+      # XXL-JOB Admin 表（与业务共用 PostgreSQL / hei_boot）
+      - ../../app/xxl-job/src/main/resources/db/tables_xxl_job.sql:/docker-entrypoint-initdb.d/01_xxl_job_schema.sql:ro
+      - ../sql/postgres/xxl_job_hei_seed.sql:/docker-entrypoint-initdb.d/02_xxl_job_hei_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hei -d hei_boot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: hei-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - hei-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: hei-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - hei-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  hei-postgres-data:
+  hei-redis-data:
+  hei-rabbitmq-data:

@@ -1,0 +1,140 @@
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:info}
+    github.jiangbyte.io: ${LOGGING_LEVEL_HEI:warn}
+    org.springframework.web: ${LOGGING_LEVEL_SPRING_WEB:warn}
+
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      stat-view-servlet:
+        enabled: false
+        url-pattern: /druid/*
+        login-username: ${DRUID_STAT_USER:druid}
+        login-password: ${DRUID_STAT_PASSWORD:druid}
+      web-stat-filter:
+        enabled: true
+    dynamic:
+      primary: master
+      strict: true
+      druid:
+        initial-size: ${DB_POOL_INITIAL_SIZE:5}
+        min-idle: ${DB_POOL_MIN_IDLE:5}
+        max-active: ${DB_POOL_MAX_ACTIVE:50}
+        max-wait: ${DB_POOL_MAX_WAIT:60000}
+        validation-query: select 1
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        filters: stat,wall,slf4j
+        connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=2000
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driver-class-name: org.postgresql.Driver
+          url: ${DB_WRITE_URL:${DB_URL}}
+          username: ${DB_WRITE_USERNAME:${DB_USERNAME}}
+          password: ${DB_WRITE_PASSWORD:${DB_PASSWORD}}
+        slave:
+          type: ${spring.datasource.type}
+          driver-class-name: org.postgresql.Driver
+          url: ${DB_READ_URL:${DB_WRITE_URL:${DB_URL}}}
+          username: ${DB_READ_USERNAME:${DB_WRITE_USERNAME:${DB_USERNAME}}}
+          password: ${DB_READ_PASSWORD:${DB_WRITE_PASSWORD:${DB_PASSWORD}}}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2.0
+          max-interval: 10000
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+knife4j:
+  enable: false
+  production: true
+
+sa-token:
+  # 同域 SPA + nginx：由 Sa-Token 管理 httpOnly Authorization Cookie
+  is-read-cookie: ${SA_TOKEN_IS_READ_COOKIE:true}
+  cookie:
+    secure: ${SA_TOKEN_COOKIE_SECURE:true}
+    sameSite: ${SA_TOKEN_COOKIE_SAME_SITE:Lax}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+# 生产：勿部署 app/xxl-job。执行器指向外部 XXL-JOB Admin
+hei:
+  logging:
+    json: ${LOG_JSON:true}
+  security:
+    expose-docs: false
+    expose-actuator: false
+    expose-druid: false
+    # 仅在可信反向代理会改写 X-Forwarded-For / X-Real-IP 时开启
+    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:true}
+    # 边缘终止 TLS 时设置（如 31536000）。若 API 仅在内部网格走 HTTP，保持 0
+    hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
+    hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
+    hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
+  rate-limit:
+    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:true}
+  xxl-job:
+    enabled: ${XXL_JOB_ENABLED:true}
+    access-token: ${XXL_JOB_ACCESS_TOKEN}
+    admin:
+      addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://xxl-job-admin.example.com/xxl-job-admin}
+    executor:
+      appname: ${XXL_JOB_EXECUTOR_APPNAME:hei-boot-admin}
+      port: ${XXL_JOB_EXECUTOR_PORT:9999}
+      logpath: ${XXL_JOB_EXECUTOR_LOGPATH:./logs/xxl-job}
+      logretentiondays: ${XXL_JOB_LOG_RETENTION_DAYS:30}
+  mq:
+    audit:
+      consume-enabled: ${HEI_MQ_AUDIT_CONSUME_ENABLED:true}
+  observability:
+    tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
+    metrics-otlp-enabled: ${HEI_OBSERVABILITY_METRICS_OTLP_ENABLED:false}
+    otlp-endpoint: ${HEI_OBSERVABILITY_OTLP_ENDPOINT:}
+    otlp-metrics-endpoint: ${HEI_OBSERVABILITY_OTLP_METRICS_ENDPOINT:}
+  vault:
+    enabled: ${HEI_VAULT_ENABLED:false}
+    uri: ${VAULT_ADDR:}
+    token: ${VAULT_TOKEN:}
+    role-id: ${VAULT_ROLE_ID:}
+    secret-id: ${VAULT_SECRET_ID:}
+    kv-mount: ${HEI_VAULT_KV_MOUNT:secret}
+    kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
+    namespace: ${VAULT_NAMESPACE:}

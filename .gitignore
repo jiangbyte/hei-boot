@@ -1,0 +1,12 @@
+target/
+.flattened-pom.xml
+logs/
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+# 本地 OSS 上传目录（hei.storage.local.base-path 默认 ./storage）
+/storage/
+*.jar
+*.war

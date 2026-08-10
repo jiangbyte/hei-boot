@@ -1,0 +1,109 @@
+package github.jiangbyte.io.auth.modules.login.controller;
+
+import github.jiangbyte.io.auth.modules.login.service.AuthService;
+import github.jiangbyte.io.auth.modules.login.param.CancelAccountParam;
+import github.jiangbyte.io.auth.modules.login.result.AuthOptionsResult;
+import github.jiangbyte.io.auth.modules.login.result.CaptchaResult;
+import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordParam;
+import github.jiangbyte.io.auth.modules.login.param.LoginParam;
+import github.jiangbyte.io.auth.modules.login.result.LoginResult;
+import github.jiangbyte.io.auth.modules.login.result.PasswordKeyResult;
+import github.jiangbyte.io.auth.modules.login.param.ResetPasswordParam;
+import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
+import github.jiangbyte.io.common.core.domain.ApiResponse;
+import github.jiangbyte.io.common.core.enums.AccountType;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 管理端认证 API：登录选项、验证码、登录/登出、刷新会话、找回密码与注销账号。
+ *
+ * Author: Charlie
+ */
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class AdminAuthController {
+
+    private final AuthService authService;
+
+    /** 获取管理端登录页公开配置。 */
+    @GetMapping("/v1/admin/public/auth-options")
+    public ApiResponse<AuthOptionsResult> authOptions() {
+        return ApiResponse.ok(authService.authOptions(AccountType.ADMIN));
+    }
+
+    /** 获取图形验证码。 */
+    @GetMapping("/v1/admin/captcha")
+    public ApiResponse<CaptchaResult> captcha(@RequestParam(value = "format", defaultValue = "svg") String format) {
+        return ApiResponse.ok(authService.captcha(format));
+    }
+
+    /** 获取密码传输 RSA 公钥。 */
+    @GetMapping("/v1/admin/password-key")
+    public ApiResponse<PasswordKeyResult> passwordKey() {
+        return ApiResponse.ok(authService.passwordKey());
+    }
+
+    /** 发送管理端登录 OTP。 */
+    @PostMapping("/v1/admin/send-login-code")
+    @OperationAudit(resourceType = "auth", action = "send_login_code")
+    public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
+        authService.sendLoginCode(request, AccountType.ADMIN);
+        return ApiResponse.ok();
+    }
+
+    /** 管理端登录。 */
+    @PostMapping("/v1/admin/login")
+    @OperationAudit(resourceType = "auth", action = "login")
+    public ApiResponse<LoginResult> login(@Valid @RequestBody LoginParam request) {
+        request.setAccountType(AccountType.ADMIN);
+        return ApiResponse.ok(authService.login(request));
+    }
+
+    /** 刷新管理端会话 Token。 */
+    @PostMapping("/v1/admin/auth/refresh")
+    @OperationAudit(resourceType = "auth", action = "refresh")
+    public ApiResponse<LoginResult> refresh() {
+        return ApiResponse.ok(authService.refreshSession());
+    }
+
+    /** 管理端登出。 */
+    @PostMapping("/v1/admin/logout")
+    @OperationAudit(resourceType = "auth", action = "logout")
+    public ApiResponse<Void> logout() {
+        authService.logout();
+        return ApiResponse.ok();
+    }
+
+    /** 管理端忘记密码（发重置邮件）。 */
+    @PostMapping("/v1/admin/forgot-password")
+    @OperationAudit(resourceType = "auth", action = "forgot_password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordParam request) {
+        authService.forgotPassword(request, AccountType.ADMIN);
+        return ApiResponse.ok();
+    }
+
+    /** 管理端通过令牌重置密码。 */
+    @PostMapping("/v1/admin/reset-password")
+    @OperationAudit(resourceType = "auth", action = "reset_password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordParam request) {
+        authService.resetPassword(request, AccountType.ADMIN);
+        return ApiResponse.ok();
+    }
+
+    /** 注销当前管理端账号。 */
+    @PostMapping("/v1/admin/cancel")
+    @OperationAudit(resourceType = "auth", action = "cancel")
+    public ApiResponse<Void> cancel(@RequestBody(required = false) CancelAccountParam request) {
+        authService.cancelAccount(request == null ? new CancelAccountParam() : request);
+        return ApiResponse.ok();
+    }
+}

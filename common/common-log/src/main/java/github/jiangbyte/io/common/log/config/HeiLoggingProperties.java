@@ -1,0 +1,26 @@
+package github.jiangbyte.io.common.log.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+/**
+ * 结构化日志配置属性：JSON/键值格式开关、service 与 service_version。
+ *
+ * Author: Charlie
+ */
+@Data
+@ConfigurationProperties(prefix = "hei.logging")
+public class HeiLoggingProperties {
+
+    /**
+     * true：控制台/文件使用 Logstash JSON；false：键值结构化格式。
+     * 绑定自 {@code hei.logging.json} / 环境变量 {@code LOG_JSON}。
+     */
+    private boolean json = true;
+
+    /** service 字段（为空时默认 spring.application.name）。 */
+    private String service = "";
+
+    /** service_version 字段。 */
+    private String serviceVersion = "0.1.0-SNAPSHOT";
+}

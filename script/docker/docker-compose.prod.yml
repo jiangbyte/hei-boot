@@ -1,0 +1,28 @@
+# 偏生产的 compose 示意：基础设施 + 前置 TLS 边缘（nginx）代理 SPA/API。
+# 不替代云负载均衡；可作为本地 HSTS/HTTPS 终止参考。
+#
+# 前置：将 TLS 证书放到 script/docker/tls/
+#   tls/fullchain.pem
+#   tls/privkey.pem
+#
+# 启动：
+#   docker compose -f script/docker/docker-compose.yml -f script/docker/docker-compose.prod.yml up -d
+#
+# 前端容器建议设置：
+#   HSTS_HEADER="max-age=31536000; includeSubDomains"
+# 后端（prod profile）在客户端经 HTTPS 访问 API 时可设 HEI_SECURITY_HSTS_MAX_AGE=31536000。
+
+services:
+  edge-tls:
+    image: nginx:1.27-alpine
+    container_name: hei-edge-tls
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./tls/nginx-edge.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - ./tls/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles: ["tls"]

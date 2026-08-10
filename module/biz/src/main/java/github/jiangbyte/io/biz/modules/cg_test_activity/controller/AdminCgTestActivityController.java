@@ -1,0 +1,75 @@
+package github.jiangbyte.io.biz.modules.cg_test_activity.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import github.jiangbyte.io.common.core.domain.ApiResponse;
+import github.jiangbyte.io.common.core.param.IdParam;
+import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.satoken.StpKit;
+import github.jiangbyte.io.biz.modules.cg_test_activity.entity.CgTestActivity;
+import github.jiangbyte.io.biz.modules.cg_test_activity.param.CgTestActivityAddParam;
+import github.jiangbyte.io.biz.modules.cg_test_activity.param.CgTestActivityEditParam;
+import github.jiangbyte.io.biz.modules.cg_test_activity.param.CgTestActivityPageParam;
+import github.jiangbyte.io.biz.modules.cg_test_activity.service.CgTestActivityService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 管理端测试活动 API：活动的创建、更新、删除、详情与分页查询。
+ *
+ * Author: Charlie
+ */
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class AdminCgTestActivityController {
+
+    private final CgTestActivityService cgTestActivityService;
+
+    /** 创建测试活动。 */
+    @PostMapping("/v1/admin/biz/cg-test-activity/create")
+    @SaCheckPermission(value = "biz:cgtestactivity:create", type = StpKit.TYPE_ADMIN)
+    public ApiResponse<Void> create(@Valid @RequestBody CgTestActivityAddParam param) {
+        cgTestActivityService.create(param);
+        return ApiResponse.ok();
+    }
+
+    /** 更新测试活动。 */
+    @PostMapping("/v1/admin/biz/cg-test-activity/update")
+    @SaCheckPermission(value = "biz:cgtestactivity:update", type = StpKit.TYPE_ADMIN)
+    public ApiResponse<Void> update(@Valid @RequestBody CgTestActivityEditParam param) {
+        cgTestActivityService.update(param);
+        return ApiResponse.ok();
+    }
+
+    /** 批量删除测试活动。 */
+    @PostMapping("/v1/admin/biz/cg-test-activity/delete")
+    @SaCheckPermission(value = "biz:cgtestactivity:delete", type = StpKit.TYPE_ADMIN)
+    public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
+        cgTestActivityService.delete(param);
+        return ApiResponse.ok();
+    }
+
+    /** 查询测试活动详情。 */
+    @GetMapping("/v1/admin/biz/cg-test-activity/detail")
+    @SaCheckPermission(value = "biz:cgtestactivity:detail", type = StpKit.TYPE_ADMIN)
+    public ApiResponse<CgTestActivity> detail(@Valid @ModelAttribute IdParam param) {
+        return ApiResponse.ok(cgTestActivityService.detail(param.getId()));
+    }
+
+    /** 分页查询测试活动。 */
+    @GetMapping("/v1/admin/biz/cg-test-activity/page")
+    @SaCheckPermission(value = "biz:cgtestactivity:page", type = StpKit.TYPE_ADMIN)
+    public ApiResponse<Page<CgTestActivity>> page(@Valid @ModelAttribute CgTestActivityPageParam param) {
+        return ApiResponse.ok(cgTestActivityService.page(param));
+    }
+}
