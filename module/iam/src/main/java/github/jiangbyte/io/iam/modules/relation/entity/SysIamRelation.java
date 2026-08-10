@@ -2,8 +2,8 @@ package github.jiangbyte.io.iam.modules.relation.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,7 +21,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_iam_relation", autoResultMap = true)
-public class SysIamRelation extends CommonEntity {
+public class SysIamRelation extends BaseEntity {
     private String subjectType;
     private String subjectId;
     private String accountType;

@@ -2,8 +2,8 @@ package github.jiangbyte.io.iam.modules.client.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_client_resource", autoResultMap = true)
-public class SysClientResource extends CommonEntity {
+public class SysClientResource extends BaseEntity {
     @Trans(
             type = TransType.SIMPLE,
             target = SysClientResource.class,

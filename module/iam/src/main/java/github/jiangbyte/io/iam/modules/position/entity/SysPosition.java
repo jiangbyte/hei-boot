@@ -2,8 +2,8 @@ package github.jiangbyte.io.iam.modules.position.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import github.jiangbyte.io.iam.modules.dept.entity.SysDept;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,7 +20,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_position", autoResultMap = true)
-public class SysPosition extends CommonEntity {
+public class SysPosition extends BaseEntity {
     private String name;
     private String category;
     @Trans(

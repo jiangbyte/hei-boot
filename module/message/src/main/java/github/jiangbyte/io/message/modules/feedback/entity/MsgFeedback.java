@@ -3,7 +3,7 @@ package github.jiangbyte.io.message.modules.feedback.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.message.modules.feedback.result.MsgFeedbackAttachmentResult;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,7 +20,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "msg_feedback", autoResultMap = true)
-public class MsgFeedback extends CommonEntity {
+public class MsgFeedback extends BaseEntity {
     private String title;
     private String content;
     private String category;

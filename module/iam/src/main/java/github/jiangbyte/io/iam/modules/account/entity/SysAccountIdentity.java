@@ -1,7 +1,7 @@
 package github.jiangbyte.io.iam.modules.account.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_account_identity")
-public class SysAccountIdentity extends CommonEntity {
+public class SysAccountIdentity extends BaseEntity {
     private String accountId;
     private String identityType;
     private String identifier;

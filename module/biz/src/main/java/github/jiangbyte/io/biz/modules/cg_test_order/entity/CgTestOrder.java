@@ -3,12 +3,11 @@ package github.jiangbyte.io.biz.modules.cg_test_order.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Map;
 
 /**
  * 测试订单实体，对应表 {@code cg_test_order}；含订单号、客户、类型状态与金额等。
@@ -18,7 +17,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "cg_test_order", autoResultMap = true)
-public class CgTestOrder extends CommonEntity {
+public class CgTestOrder extends BaseEntity {
     private String orderNo;
     private String name;
     private String customerName;

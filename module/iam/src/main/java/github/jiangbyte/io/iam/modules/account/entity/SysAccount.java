@@ -1,7 +1,7 @@
 package github.jiangbyte.io.iam.modules.account.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_account")
-public class SysAccount extends CommonEntity {
+public class SysAccount extends BaseEntity {
     private String passwordHash;
     private String accountType;
     private String accountStatus;

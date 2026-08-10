@@ -2,11 +2,11 @@ package github.jiangbyte.io.biz.modules.cg_test_catalog.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.util.Map;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "cg_test_catalog", autoResultMap = true)
-public class CgTestCatalog extends CommonEntity {
+public class CgTestCatalog extends BaseEntity {
     private String parentId;
     private String code;
     private String name;

@@ -2,8 +2,8 @@ package github.jiangbyte.io.sys.modules.config.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_config", autoResultMap = true)
-public class SysConfig extends CommonEntity {
+public class SysConfig extends BaseEntity {
     private String configKey;
     private String configValue;
     private String category;

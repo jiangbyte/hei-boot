@@ -2,7 +2,7 @@ package github.jiangbyte.io.sys.modules.dict.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
@@ -19,7 +19,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_dict")
-public class SysDict extends CommonEntity {
+public class SysDict extends BaseEntity {
     private String code;
     private String label;
     private String value;

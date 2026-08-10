@@ -2,8 +2,8 @@ package github.jiangbyte.io.sys.modules.banner.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_banner", autoResultMap = true)
-public class SysBanner extends CommonEntity {
+public class SysBanner extends BaseEntity {
     private String title;
     private String image;
 

@@ -1,7 +1,7 @@
 package github.jiangbyte.io.sys.modules.audit.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
  *
  * Author: Charlie
  */
-public class SysOperationAuditOutbox extends CommonEntity {
+public class SysOperationAuditOutbox extends BaseEntity {
     private String payload;
     private String status;
     private Integer attempts;

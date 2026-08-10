@@ -2,9 +2,9 @@ package github.jiangbyte.io.iam.modules.resource.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
@@ -22,7 +22,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_resource", autoResultMap = true)
-public class SysResource extends CommonEntity {
+public class SysResource extends BaseEntity {
     @Trans(
             type = TransType.SIMPLE,
             target = SysResource.class,

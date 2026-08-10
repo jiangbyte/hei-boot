@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
  * Author: Charlie
  */
 @Data
-public abstract class CommonEntity implements TransPojo {
+public abstract class BaseEntity implements TransPojo {
 
     @TableId(type = IdType.ASSIGN_ID)
     private String id;

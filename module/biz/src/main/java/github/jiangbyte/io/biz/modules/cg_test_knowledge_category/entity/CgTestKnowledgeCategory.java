@@ -3,10 +3,10 @@ package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import java.util.Map;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "cg_test_knowledge_category", autoResultMap = true)
-public class CgTestKnowledgeCategory extends CommonEntity {
+public class CgTestKnowledgeCategory extends BaseEntity {
     private String parentId;
     private String code;
     private String name;

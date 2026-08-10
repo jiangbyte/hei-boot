@@ -1,7 +1,7 @@
 package github.jiangbyte.io.sys.modules.codegen.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_codegen_field")
-public class SysCodegenField extends CommonEntity {
+public class SysCodegenField extends BaseEntity {
     private String planId;
     private String tableRole;
     private String columnName;

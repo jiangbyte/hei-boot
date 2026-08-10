@@ -3,7 +3,7 @@ package github.jiangbyte.io.iam.modules.role.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.iam.modules.dept.entity.SysDept;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,7 +20,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "sys_role", autoResultMap = true)
-public class SysRole extends CommonEntity {
+public class SysRole extends BaseEntity {
     private String code;
     private String name;
     private String category;

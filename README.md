@@ -263,9 +263,9 @@ hei-boot
 
 ### 实体继承（单继承）
 
-| 基类             | 用途                                           |
-|----------------|----------------------------------------------|
-| `CommonEntity` | 业务表基类：`id` + `createdAt/By` + `updatedAt/By` |
+| 基类           | 用途                                           |
+|--------------|----------------------------------------------|
+| `BaseEntity` | 业务表基类：`id` + `createdAt/By` + `updatedAt/By` |
 
 表无完整审计列时，在 `@TableName(excludeProperty = {...})` 中排除多余字段（如 `MsgNoticeRead`、审计日志/outbox）。
 

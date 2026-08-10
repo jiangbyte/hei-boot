@@ -2,8 +2,8 @@ package github.jiangbyte.io.message.modules.notice.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +19,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "msg_notice", autoResultMap = true)
-public class MsgNotice extends CommonEntity {
+public class MsgNotice extends BaseEntity {
     private String kind;
     private String title;
     private String content;

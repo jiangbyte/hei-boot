@@ -1,7 +1,7 @@
 package github.jiangbyte.io.message.modules.notice.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
  *
  * Author: Charlie
  */
-public class MsgNoticeRead extends CommonEntity {
+public class MsgNoticeRead extends BaseEntity {
     private String noticeId;
     private String accountType;
     private String accountId;

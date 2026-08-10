@@ -3,7 +3,7 @@ package github.jiangbyte.io.sys.modules.audit.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import github.jiangbyte.io.common.core.domain.CommonEntity;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,7 +21,7 @@ import java.util.Map;
  *
  * Author: Charlie
  */
-public class SysOperationAuditLog extends CommonEntity {
+public class SysOperationAuditLog extends BaseEntity {
     private String module;
     private String resourceType;
     private String resourceId;
