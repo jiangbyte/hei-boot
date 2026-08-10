@@ -11,7 +11,7 @@
 
 HEI Boot 是 HEI 项目的 Spring Boot 后端模板，使用 JDK 21、Spring Boot 4、Maven 多模块和
 PostgreSQL 构建。采用常见的 Java 多模块分层与 Sa-Token / MyBatis-Plus 生态组件，目标是为中后台、
-门户和通用业务系统提供一套模块化的单体后端骨架。
+门户和通用业务系统提供一套**开源可改的一体化脚手架**（非黑盒平台）：源码全在仓库内，一般挂业务、改配置即可跑；复杂场景可直接改 `common/*`。
 
 当前仓库包含后端与前端（`web/admin` / `web/portal` / `web/admin-uniapp`）。
 Java 字段保持驼峰命名，对外 JSON 字段统一 `snake_case`。
@@ -127,12 +127,35 @@ export XXL_JOB_ACCESS_TOKEN=your_token
 
 常用管理端子路径示例：`/api/v1/admin/login`、`/captcha`、`/iam/**`、`/sys/**`、`/user-center/**`、`/message/**`。
 
-## 模块插件方式
+## 二次开发（社区）
 
-1. 在 `module/`（及必要时 `module-api/`）下新增业务模块（含 AutoConfiguration + `AutoConfiguration.imports`）。
-2. 在 `module/pom.xml`（及 `module-api/pom.xml`）登记 reactor 子模块。
+本仓库是一体化脚手架：业务在 `module/*`，框架在 `common/*`，可运行壳在 `app/admin`。
+
+### 一般情况：挂业务、改配置
+
+按下列 checklist 即可（可参考现成样板 [`module/biz`](module/biz)）：
+
+1. 在 `module/` 下新增业务模块：提供 `@AutoConfiguration` + `@ComponentScan`，并注册
+   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`。
+   跨模块契约时再在 `module-api/` 增加窄接口。
+2. 在 `module/pom.xml`（及必要时 `module-api/pom.xml`）登记 reactor 子模块。
 3. 在根 `pom.xml` 的 `dependencyManagement` 增加该模块版本条目（`${revision}`）。
 4. 在 `app/admin/pom.xml` **显式增加**对该业务模块的依赖。
+5. **库表 / 菜单权限种子**：只在 `app/admin/src/main/resources/db/migration/` **追加**
+   `V{n}__*.sql`（建议业务用较高序号，如 `V100__biz_xxx.sql`）。**勿改**已发布的 `V1` / `V2`。
+6. **配置**：改 `app/admin/src/main/resources/application-*.yml` 或环境变量即可
+  （例如 `hei.security.ignore-urls` 放行匿名路径）。
+
+### 复杂场景：改框架
+
+会话（Sa-Token）、过滤器、安全装配、MyBatis 等均在 `common/*`，**允许且欢迎直接改源码**，不是锁死黑盒。
+业务侧尽量只动自己的 `module`；改过 `common` 后跟上游合并时冲突需自行解决。
+
+### 跟上游升级
+
+1. 先合入上游对 `common/`、`app/admin` 壳与共享低序号 migration 的变更。
+2. 再合入自己的业务模块与高序号 `V{n}` 脚本。
+3. 跑 Flyway / 本地冒烟，确认权限注解与菜单种子仍匹配。
 
 ## XXL-JOB 任务注册
 
@@ -219,7 +242,7 @@ hei-boot
 │   └── xxl-job                # 本地-only XXL-JOB Admin
 ├── common                     # 通用能力（mq / job / satoken / observability …）
 ├── module-api                 # 跨模块窄接口
-├── module                     # auth / iam / sys / user / message / dashboard
+├── module                     # auth / iam / sys / user / message / dashboard / biz（样板）
 ├── web                        # admin / portal / admin-uniapp（各自独立，无 packages 层）
 ├── docs                       # 文档索引
 ├── deploy/helm                # K8s 参考 Chart
@@ -259,7 +282,7 @@ hei-boot
 - API 文档：Knife4j，`http://127.0.0.1:8080/doc.html`。
 - 关联 id 回显优先 Dromara easy-trans（`@Trans` / `TransPojo`）。
 - Mapper Join 优先 `BaseJoinMapper<T>`；读写分离 `@ReadDataSource` / `@WriteDataSource`。
-- 新增业务模块：登记 reactor → 根 `dependencyManagement` → **`app/admin/pom.xml` 显式依赖**。
+- 新增业务模块：见上文「二次开发（社区）」checklist（reactor → `dependencyManagement` → **`app/admin` 显式依赖** → 追加 Flyway）。
 
 ## 代码贡献
 
