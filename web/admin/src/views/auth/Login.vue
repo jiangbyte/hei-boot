@@ -241,6 +241,15 @@ async function handleOauthLogin(provider: string) {
   }
 }
 
+function providerInitial(provider: string, label: string) {
+  const key = provider.toUpperCase()
+  if (key === 'GITHUB') return 'GH'
+  if (key === 'GITEE') return 'GE'
+  if (key === 'QQ') return 'QQ'
+  if (key.startsWith('WECHAT')) return '微'
+  return (label || provider).slice(0, 1).toUpperCase()
+}
+
 async function handleSubmit() {
   const credentialItem = loginMode.value === 'PASSWORD' ? passwordItemRef.value : otpItemRef.value
   const ok = await validateFields([identityItemRef.value, credentialItem, captchaItemRef.value])
@@ -415,16 +424,18 @@ async function handleSubmit() {
           <span>其他登录方式</span>
         </div>
         <div class="auth-oauth__row">
-          <n-button
+          <button
             v-for="item in oauthProviders"
             :key="item.provider"
-            size="medium"
-            :loading="oauthLoading === item.provider"
+            type="button"
+            class="auth-oauth__icon"
+            :title="item.label"
+            :aria-label="item.label"
             :disabled="Boolean(oauthLoading)"
             @click="handleOauthLogin(item.provider)"
           >
-            {{ item.label }}
-          </n-button>
+            {{ providerInitial(item.provider, item.label) }}
+          </button>
         </div>
         <p class="auth-oauth__hint">
           管理端需先用密码登录并在用户中心绑定三方账号
@@ -437,134 +448,3 @@ async function handleSubmit() {
     </form>
   </AuthLayout>
 </template>
-
-<style scoped>
-.auth-login-tabs {
-  margin-bottom: 16px;
-}
-
-.auth-login-tabs :deep(.n-tabs-nav) {
-  margin-bottom: 0;
-  width: 100%;
-}
-
-.auth-login-tabs :deep(.n-tabs-nav-scroll-content),
-.auth-login-tabs :deep(.n-tabs-wrapper) {
-  display: flex;
-  width: 100%;
-}
-
-.auth-login-tabs :deep(.n-tabs-tab-wrapper) {
-  flex: 1;
-}
-
-.auth-login-tabs :deep(.n-tabs-tab) {
-  width: 100%;
-  justify-content: center;
-}
-
-/* 仅作身份切换：隐藏空 pane，避免多出占位高度 */
-.auth-login-tabs :deep(.n-tabs-pane-wrapper),
-.auth-login-tabs :deep(.n-tab-pane) {
-  display: none !important;
-  height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-}
-
-.auth-otp-row {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  width: 100%;
-}
-
-.auth-otp-row__input {
-  flex: 1;
-  min-width: 0;
-}
-
-.auth-form-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
-}
-
-.auth-form-row__links {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.auth-form-row__sep {
-  color: var(--n-text-color-3, #9ca3af);
-  line-height: 1;
-}
-
-.auth-mode-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  color: var(--n-text-color-3, #9ca3af);
-  line-height: inherit;
-}
-
-.auth-mode-link:hover {
-  color: var(--n-primary-color, #1677ff);
-}
-
-.auth-form-row a {
-  color: var(--n-primary-color, #1677ff);
-  text-decoration: none;
-}
-
-@media (max-width: 420px) {
-  .auth-form-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
-.auth-oauth {
-  margin-top: 18px;
-}
-
-.auth-oauth__divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  color: var(--n-text-color-3, #9ca3af);
-  font-size: 12px;
-}
-
-.auth-oauth__divider::before,
-.auth-oauth__divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--n-border-color, #e5e7eb);
-}
-
-.auth-oauth__row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-
-.auth-oauth__hint {
-  margin: 10px 0 0;
-  text-align: center;
-  color: var(--n-text-color-3, #9ca3af);
-  font-size: 12px;
-  line-height: 1.5;
-}
-</style>

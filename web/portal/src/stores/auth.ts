@@ -204,7 +204,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ userInfo: null, sessionChecked: true })
   },
 
-  logout: async (redirect) => {
+  logout: async (redirectTo) => {
     set({ loggingOut: true })
     try {
       await authApi.logout()
@@ -215,9 +215,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loggingOut: false })
     }
 
-    const { useAuthModalStore } = await import('@/stores/authModal')
-    useAuthModalStore
-      .getState()
-      .open('login', redirect && !redirect.startsWith('/auth') ? redirect : undefined)
+    const query =
+      redirectTo && !redirectTo.startsWith('/auth')
+        ? `?redirect=${encodeURIComponent(redirectTo)}`
+        : ''
+    window.location.assign(`/auth/login${query}`)
   },
 }))

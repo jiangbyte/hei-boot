@@ -123,7 +123,6 @@ async function resetPassword() {
 
 <template>
   <AuthLayout
-    variant="center"
     :title="isResetMode ? '重置密码' : '找回密码'"
     :description="
       isResetMode
@@ -131,6 +130,15 @@ async function resetPassword() {
         : '请输入已启用管理端登录的邮箱，系统将发送密码重置链接。'
     "
   >
+    <template #headerExtra>
+      <RouterLink
+        class="linkish"
+        to="/auth/login"
+      >
+        返回登录
+      </RouterLink>
+    </template>
+
     <form
       class="auth-form"
       @submit.prevent="isResetMode ? resetPassword() : sendLink()"
@@ -202,14 +210,12 @@ async function resetPassword() {
         {{ isResetMode ? '重置密码' : '发送重置链接' }}
       </n-button>
 
-      <div class="auth-center__links">
-        <RouterLink to="/auth/login">
-          返回登录
-        </RouterLink>
-        <RouterLink
-          v-if="isResetMode"
-          to="/auth/forgot-password"
-        >
+      <div
+        v-if="isResetMode"
+        class="auth-form-row"
+        style="margin-top: 12px"
+      >
+        <RouterLink to="/auth/forgot-password">
           重新申请链接
         </RouterLink>
       </div>

@@ -94,6 +94,7 @@ async function handleCallback() {
 
 <template>
   <AuthLayout
+    variant="center"
     title="三方登录"
     copyright=""
   >
@@ -115,17 +116,3 @@ async function handleCallback() {
     </div>
   </AuthLayout>
 </template>
-
-<style scoped>
-.oauth-callback {
-  min-height: 180px;
-  display: grid;
-  place-items: center;
-}
-
-.oauth-callback__tip {
-  padding: 24px 8px;
-  color: var(--n-text-color-3, #6b7280);
-  font-size: 14px;
-}
-</style>

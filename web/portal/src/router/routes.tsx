@@ -55,26 +55,26 @@ export const routes: RouteObject[] = [
         loader: requireAuth,
         element: <FeedbackDetailPage />,
       },
-      {
-        path: 'auth/login',
-        loader: guestOnly,
-        element: <LoginPage />,
-      },
-      {
-        path: 'auth/register',
-        loader: guestOnly,
-        element: <RegisterPage />,
-      },
-      {
-        path: 'auth/forgot-password',
-        loader: guestOnly,
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: 'auth/oauth/callback',
-        element: <OAuthCallbackPage />,
-      },
     ],
+  },
+  {
+    path: '/auth/login',
+    loader: guestOnly,
+    element: <LoginPage />,
+  },
+  {
+    path: '/auth/register',
+    loader: guestOnly,
+    element: <RegisterPage />,
+  },
+  {
+    path: '/auth/forgot-password',
+    loader: guestOnly,
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/auth/oauth/callback',
+    element: <OAuthCallbackPage />,
   },
   { path: '/404', element: <NotFoundPage /> },
   { path: '*', element: <Navigate to="/404" replace /> },

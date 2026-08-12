@@ -9,6 +9,7 @@ import { clearAuthStorage } from '@/utils/storage'
 import { getSafeRedirect } from '@/utils/validate'
 import { wireBool } from '@/utils/wire'
 import { refreshDict, syncDictTree } from '@/utils/dict'
+import { PortalAuthShell } from './PortalAuthShell'
 
 /**
  * OAuth 前端回调页：接收后端 302 的 query，写 token 并完成会话。
@@ -88,21 +89,18 @@ export function OAuthCallbackPage() {
     return () => {
       cancelled = true
     }
-    // 仅首轮处理 query
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (error) {
-    return (
-      <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center', padding: 24 }}>
-        <Result status="error" title="三方登录失败" subTitle={error} />
-      </div>
-    )
-  }
-
   return (
-    <div style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}>
-      <Spin size="large" tip="正在完成登录…" />
-    </div>
+    <PortalAuthShell variant="center" title="三方登录" description={error || '正在完成登录…'}>
+      {error ? (
+        <Result status="error" title="三方登录失败" subTitle={error} />
+      ) : (
+        <div style={{ display: 'grid', placeItems: 'center', minHeight: 120 }}>
+          <Spin size="large" tip="正在完成登录…" />
+        </div>
+      )}
+    </PortalAuthShell>
   )
 }
