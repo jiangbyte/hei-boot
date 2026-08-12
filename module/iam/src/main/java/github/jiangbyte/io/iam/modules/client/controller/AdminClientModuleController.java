@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.iam.modules.client.entity.SysClientModule;
 import github.jiangbyte.io.iam.modules.client.param.SysClientModuleAddParam;
@@ -38,6 +39,7 @@ public class AdminClientModuleController {
     /** 创建客户端模块。 */
     @PostMapping("/v1/admin/sys/client-modules/create")
     @SaCheckPermission(value = "iam:clientmodule:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientmodule", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysClientModuleAddParam param) {
         clientModuleService.create(param);
         return ApiResponse.ok();
@@ -46,6 +48,7 @@ public class AdminClientModuleController {
     /** 更新客户端模块。 */
     @PostMapping("/v1/admin/sys/client-modules/update")
     @SaCheckPermission(value = "iam:clientmodule:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientmodule", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysClientModuleEditParam param) {
         clientModuleService.update(param);
         return ApiResponse.ok();
@@ -54,6 +57,7 @@ public class AdminClientModuleController {
     /** 批量删除客户端模块。 */
     @PostMapping("/v1/admin/sys/client-modules/delete")
     @SaCheckPermission(value = "iam:clientmodule:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientmodule", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         clientModuleService.delete(param);
         return ApiResponse.ok();

@@ -1,4 +1,4 @@
-package github.jiangbyte.io.sys.modules.audit.controller.admin;
+package github.jiangbyte.io.sys.modules.audit.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

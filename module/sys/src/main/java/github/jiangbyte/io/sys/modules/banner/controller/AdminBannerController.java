@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.sys.modules.banner.entity.SysBanner;
 import github.jiangbyte.io.sys.modules.banner.param.SysBannerAddParam;
@@ -47,6 +48,7 @@ public class AdminBannerController {
     /** 创建。 */
     @PostMapping("/v1/admin/sys/banners/create")
     @SaCheckPermission(value = "sys:banner:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_banner", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysBannerAddParam param) {
         bannerService.create(param);
         return ApiResponse.ok();
@@ -55,6 +57,7 @@ public class AdminBannerController {
     /** 更新。 */
     @PostMapping("/v1/admin/sys/banners/update")
     @SaCheckPermission(value = "sys:banner:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_banner", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysBannerEditParam param) {
         bannerService.update(param);
         return ApiResponse.ok();
@@ -63,6 +66,7 @@ public class AdminBannerController {
     /** 批量删除。 */
     @PostMapping("/v1/admin/sys/banners/delete")
     @SaCheckPermission(value = "sys:banner:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_banner", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         bannerService.delete(param);
         return ApiResponse.ok();

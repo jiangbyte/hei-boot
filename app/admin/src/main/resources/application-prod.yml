@@ -48,26 +48,6 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: ${REDIS_DATABASE:0}
-  rabbitmq:
-    host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME}
-    password: ${RABBITMQ_PASSWORD}
-    virtual-host: ${RABBITMQ_VHOST:/}
-    publisher-confirm-type: correlated
-    publisher-returns: true
-    template:
-      mandatory: true
-    listener:
-      simple:
-        acknowledge-mode: auto
-        default-requeue-rejected: false
-        retry:
-          enabled: true
-          max-attempts: 3
-          initial-interval: 1000
-          multiplier: 2.0
-          max-interval: 10000
 
 springdoc:
   api-docs:
@@ -109,8 +89,9 @@ hei:
     hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
     hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
     hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
-  rate-limit:
-    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:true}
+  log:
+    audit:
+      consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
   xxl-job:
     enabled: ${XXL_JOB_ENABLED:true}
     access-token: ${XXL_JOB_ACCESS_TOKEN}
@@ -121,9 +102,6 @@ hei:
       port: ${XXL_JOB_EXECUTOR_PORT:9999}
       logpath: ${XXL_JOB_EXECUTOR_LOGPATH:./logs/xxl-job}
       logretentiondays: ${XXL_JOB_LOG_RETENTION_DAYS:30}
-  mq:
-    audit:
-      consume-enabled: ${HEI_MQ_AUDIT_CONSUME_ENABLED:true}
   observability:
     tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
     metrics-otlp-enabled: ${HEI_OBSERVABILITY_METRICS_OTLP_ENABLED:false}
@@ -138,3 +116,4 @@ hei:
     kv-mount: ${HEI_VAULT_KV_MOUNT:secret}
     kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
     namespace: ${VAULT_NAMESPACE:}
+    fail-fast: ${HEI_VAULT_FAIL_FAST:true}

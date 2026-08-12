@@ -2,6 +2,7 @@ package github.jiangbyte.io.user.modules.admin.profile.controller;
 
 import github.jiangbyte.io.auth.login.AuthApi;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.user.modules.admin.profile.param.EmailUpdateParam;
 import github.jiangbyte.io.user.modules.admin.profile.param.PasswordUpdateParam;
 import github.jiangbyte.io.user.modules.admin.profile.param.PhoneUpdateParam;
@@ -41,6 +42,7 @@ public class AdminUserCenterController {
 
     /** 更新当前用户个人资料（姓名、昵称、签名等）。 */
     @PostMapping("/v1/admin/user-center/profile/update")
+    @OperationAudit(resourceType = "user_center", action = "update_profile")
     public ApiResponse<Void> updateProfile(@Valid @RequestBody ProfileUpdateParam request) {
         adminUserProfileService.updateProfile(request);
         return ApiResponse.ok();
@@ -48,12 +50,14 @@ public class AdminUserCenterController {
 
     /** 上传并替换当前用户头像。 */
     @PostMapping("/v1/admin/user-center/avatar/upload")
+    @OperationAudit(resourceType = "user_center", action = "upload_avatar")
     public ApiResponse<AvatarUpdateResult> uploadAvatar(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(adminUserProfileService.uploadAvatar(file));
     }
 
     /** 按系统配置向绑定邮箱/手机发送改密验证码。 */
     @PostMapping("/v1/admin/user-center/password/send-code")
+    @OperationAudit(resourceType = "user_center", action = "send_password_code")
     public ApiResponse<Void> sendPasswordCode() {
         authApi.sendChangePasswordCode();
         return ApiResponse.ok();
@@ -61,6 +65,7 @@ public class AdminUserCenterController {
 
     /** 修改当前用户登录密码（旧密码或 OTP 校验）。 */
     @PostMapping("/v1/admin/user-center/password/update")
+    @OperationAudit(resourceType = "user_center", action = "update_password")
     public ApiResponse<Void> updatePassword(@Valid @RequestBody PasswordUpdateParam request) {
         authApi.updateCurrentPassword(
                 request.getPasswordKeyId(),
@@ -72,6 +77,7 @@ public class AdminUserCenterController {
 
     /** 更新当前用户手机号及是否允许手机登录。 */
     @PostMapping("/v1/admin/user-center/phone/update")
+    @OperationAudit(resourceType = "user_center", action = "update_phone")
     public ApiResponse<Void> updatePhone(@Valid @RequestBody PhoneUpdateParam request) {
         authApi.updateCurrentPhone(
                 request.getPasswordKeyId(),
@@ -83,6 +89,7 @@ public class AdminUserCenterController {
 
     /** 更新当前用户邮箱及是否允许邮箱登录。 */
     @PostMapping("/v1/admin/user-center/email/update")
+    @OperationAudit(resourceType = "user_center", action = "update_email")
     public ApiResponse<Void> updateEmail(@Valid @RequestBody EmailUpdateParam request) {
         authApi.updateCurrentEmail(
                 request.getPasswordKeyId(),

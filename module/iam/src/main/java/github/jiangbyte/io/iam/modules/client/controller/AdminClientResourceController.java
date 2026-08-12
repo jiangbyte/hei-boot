@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.iam.modules.client.entity.SysClientResource;
 import github.jiangbyte.io.iam.modules.client.param.SysClientResourceAddParam;
@@ -40,6 +41,7 @@ public class AdminClientResourceController {
     /** 创建客户端资源。 */
     @PostMapping("/v1/admin/sys/client-resources/create")
     @SaCheckPermission(value = "iam:clientresource:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientresource", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysClientResourceAddParam param) {
         clientResourceService.create(param);
         return ApiResponse.ok();
@@ -48,6 +50,7 @@ public class AdminClientResourceController {
     /** 更新客户端资源。 */
     @PostMapping("/v1/admin/sys/client-resources/update")
     @SaCheckPermission(value = "iam:clientresource:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientresource", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysClientResourceEditParam param) {
         clientResourceService.update(param);
         return ApiResponse.ok();
@@ -56,6 +59,7 @@ public class AdminClientResourceController {
     /** 批量删除客户端资源。 */
     @PostMapping("/v1/admin/sys/client-resources/delete")
     @SaCheckPermission(value = "iam:clientresource:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientresource", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         clientResourceService.delete(param);
         return ApiResponse.ok();
@@ -85,6 +89,7 @@ public class AdminClientResourceController {
     /** 绑定客户端资源权限。 */
     @PostMapping("/v1/admin/client-resource-permissions")
     @SaCheckPermission(value = "iam:clientresource:grant", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_clientresource", action = "grant")
     public ApiResponse<Void> bindPermission(@Valid @RequestBody SysClientResourcePermissionBindParam param) {
         clientResourceService.bindPermission(param);
         return ApiResponse.ok();

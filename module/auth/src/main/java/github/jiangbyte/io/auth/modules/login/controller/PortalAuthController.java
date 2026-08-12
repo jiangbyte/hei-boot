@@ -15,6 +15,7 @@ import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import github.jiangbyte.io.common.security.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +57,7 @@ public class PortalAuthController {
 
     /** 发送门户登录 OTP。 */
     @PostMapping("/v1/portal/send-login-code")
+    @RateLimit(key = "portal:send-login-code", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "send_login_code")
     public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
         authService.sendLoginCode(request, AccountType.PORTAL);
@@ -64,6 +66,7 @@ public class PortalAuthController {
 
     /** 门户登录。 */
     @PostMapping("/v1/portal/login")
+    @RateLimit(key = "portal:login", permits = 20, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "login")
     public ApiResponse<LoginResult> login(@Valid @RequestBody LoginParam request) {
         request.setAccountType(AccountType.PORTAL);
@@ -79,6 +82,7 @@ public class PortalAuthController {
 
     /** 门户用户注册。 */
     @PostMapping("/v1/portal/register")
+    @RateLimit(key = "portal:register", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "register")
     public ApiResponse<RegisterResult> register(@Valid @RequestBody RegisterParam request) {
         return ApiResponse.ok(authService.registerPortal(request));
@@ -94,6 +98,8 @@ public class PortalAuthController {
 
     /** 门户忘记密码（发重置邮件）。 */
     @PostMapping("/v1/portal/forgot-password")
+    @RateLimit(key = "portal:forgot-password", permits = 5, windowSeconds = 60)
+    @OperationAudit(resourceType = "auth", action = "forgot_password")
     public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordParam request) {
         authService.forgotPassword(request, AccountType.PORTAL);
         return ApiResponse.ok();
@@ -101,6 +107,8 @@ public class PortalAuthController {
 
     /** 门户通过令牌重置密码。 */
     @PostMapping("/v1/portal/reset-password")
+    @RateLimit(key = "portal:reset-password", permits = 10, windowSeconds = 60)
+    @OperationAudit(resourceType = "auth", action = "reset_password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordParam request) {
         authService.resetPassword(request, AccountType.PORTAL);
         return ApiResponse.ok();
@@ -108,6 +116,7 @@ public class PortalAuthController {
 
     /** 注销当前门户账号。 */
     @PostMapping("/v1/portal/cancel")
+    @OperationAudit(resourceType = "auth", action = "cancel")
     public ApiResponse<Void> cancel(@RequestBody(required = false) CancelAccountParam request) {
         authService.cancelAccount(request == null ? new CancelAccountParam() : request);
         return ApiResponse.ok();

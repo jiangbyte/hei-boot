@@ -39,14 +39,14 @@ HTTP JSON 线格式仅允许字符串 / 对象 / 数组：`boolean` 与数字一
 - 基于 JDK 21、Spring Boot 4.1.x、Spring Framework 7、Maven 多模块。
 - Sa-Token 双端登录（ADMIN / PORTAL），会话持久化到 Redis。
 - IAM/RBAC、用户中心、系统（字典/Banner/文件/审计）、消息（公告/通知/反馈）。
-- RabbitMQ 操作审计异步落库；可选关闭消费者 `hei.mq.audit.consume-enabled=false`。
+- Redis Stream 操作审计异步落库；可选关闭消费者 `hei.log.audit.consume-enabled=false`。
 - XXL-JOB：账号注销清理、Banner 状态同步、审计量级告警。
 - MyBatis-Plus、Druid 连接池、动态数据源、Flyway；Actuator + Micrometer/Prometheus；Knife4j（`/doc.html`）。
 
 ## 运行要求
 
 - JDK 21、Maven 3.9+
-- PostgreSQL、Redis、RabbitMQ
+- PostgreSQL、Redis
 - 本地 XXL-JOB Admin 另需 MySQL（见 docker-compose）
 
 ## 快速启动
@@ -73,10 +73,10 @@ mvn -pl app/admin -am spring-boot:run
 默认地址：
 
 ```text
-Admin API:        http://127.0.0.1:8080
+Admin API:        http://127.0.0.1:8000
 XXL-JOB Admin:    http://127.0.0.1:9004/xxl-job-admin   (admin / 123456)
-API docs (Knife4j): http://127.0.0.1:8080/doc.html
-Actuator health:    http://127.0.0.1:8080/actuator/health
+API docs (Knife4j): http://127.0.0.1:8000/doc.html
+Actuator health:    http://127.0.0.1:8000/actuator/health
 ```
 
 ### 消息模块
@@ -96,7 +96,7 @@ Actuator health:    http://127.0.0.1:8080/actuator/health
 - Cookie 开：HttpOnly `Authorization` Cookie，Path 按端隔离为 `/api/vN/{admin|portal}`；登录 JSON 仍返回 `token`。
 - Cookie 关：不写/不读 Cookie，仅认 opaque `Authorization` 头（非 Bearer）；Web 需本地存 token（fastapi admin/portal 已支持）。
 - 生产 Cookie：`SA_TOKEN_IS_READ_COOKIE=true`、`SA_TOKEN_COOKIE_SECURE=true`、`SameSite=Lax`（同源 nginx / Vite 代理）。
-- **CSRF**：默认关闭（`hei.security.cookie-csrf-enabled=false`）。若开启，变更类请求须带 `X-Requested-With` 或 `X-HEI-CSRF`。
+- **CSRF**：不自研 CSRF Filter；依赖 Sa-Token Cookie 的 `sameSite` / `httpOnly` / `secure`（或关闭 Cookie 仅用 Header）。
 - **CORS**：Sa-Token `SaStrategy.corsHandle`；默认放行本地 5173/5174/5163；`hei.security.cors-allowed-origins: ["*"]`
   时通配且关闭 credentials。
 
@@ -169,11 +169,11 @@ Executor AppName：`hei-boot-admin`（与 `hei.xxl-job.executor.appname` 一致�
 
 本地 PostgreSQL 初始化会执行 `app/xxl-job/.../tables_xxl_job.sql` 与 `script/sql/postgres/xxl_job_hei_seed.sql`（与业务共用 `hei_boot`）。也可在 XXL-JOB Admin UI 手动新增执行器与上述三个 Bean 任务，然后启动调度。
 
-## RabbitMQ 审计
+## Redis Stream 审计
 
-- 生产者：`OperationAuditAspect` → `hei.audit.exchange` / `hei.audit.queue`
-- 消费者：`AuditEventConsumer`（`hei.mq.audit.consume-enabled`，默认 true）
-- 开发配置见 `application-dev.yml`；生产通过 `RABBITMQ_*` 环境变量注入（见 `application-prod.yml`）
+- 生产者：`OperationAuditAspect` → `RedisAuditEventPublisher`（`hei.log.audit.stream-key`）
+- 消费者：`RedisAuditEventConsumer`（`hei.log.audit.consume-enabled`，默认 true）
+- 开发/生产通过 `HEI_LOG_AUDIT_*` 环境变量注入（兼容旧名 `HEI_MQ_AUDIT_CONSUME_ENABLED`）
 
 ## 配置
 
@@ -189,9 +189,10 @@ Executor AppName：`hei-boot-admin`（与 `hei.xxl-job.executor.appname` 一致�
 - `SPRING_PROFILES_ACTIVE`：激活配置，默认 `dev`
 - `DB_WRITE_*` / `DB_READ_*` / `DB_*`：数据源
 - `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`
-- `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` / `RABBITMQ_VHOST`
 - `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN`
-- `HEI_MQ_AUDIT_CONSUME_ENABLED`：是否启用审计消费者
+- `HEI_LOG_AUDIT_CONSUME_ENABLED`：是否启用审计消费者
+- `HEI_VAULT_ENABLED` / `VAULT_ADDR` / `VAULT_TOKEN`（或 AppRole）：可选密钥注入
+- `LOG_JSON`：日志 JSON/键值开关（local/dev 默认键值，prod 默认 JSON）
 
 ### 日志（SLF4J + Logback，对齐 hei-fastapi）
 
@@ -240,7 +241,7 @@ hei-boot
 ├── app
 │   ├── admin                  # 管理端 API + XXL-JOB Executor + Flyway
 │   └── xxl-job                # 本地-only XXL-JOB Admin
-├── common                     # 通用能力（mq / job / satoken / observability …）
+├── common                     # 通用能力（job / satoken / log / security …）
 ├── module-api                 # 跨模块窄接口
 ├── module                     # auth / iam / sys / user / message / dashboard / biz（样板）
 ├── web                        # admin / portal / admin-uniapp（各自独立，无 packages 层）
@@ -281,7 +282,7 @@ hei-boot
 - 权限注解使用 Sa-Token 官方 `@SaCheckPermission` / `@SaCheckLogin`（`type = StpKit.TYPE_ADMIN|PORTAL`）。
 - API 文档：Knife4j，`http://127.0.0.1:8080/doc.html`。
 - 关联 id 回显优先 Dromara easy-trans（`@Trans` / `TransPojo`）。
-- Mapper Join 优先 `BaseJoinMapper<T>`；读写分离 `@ReadDataSource` / `@WriteDataSource`。
+- Mapper Join 优先 MyBatis-Plus-Join；读库路由用 `@ReadDataSource`。
 - 新增业务模块：见上文「二次开发（社区）」checklist（reactor → `dependencyManagement` → **`app/admin` 显式依赖** → 追加 Flyway）。
 
 ## 代码贡献

@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.iam.modules.position.entity.SysPosition;
 import github.jiangbyte.io.iam.modules.position.param.SysPositionAddParam;
 import github.jiangbyte.io.iam.modules.position.param.SysPositionEditParam;
@@ -36,6 +37,7 @@ public class AdminPositionController {
     /** 创建岗位。 */
     @PostMapping("/v1/admin/sys/positions/create")
     @SaCheckPermission(value = "iam:position:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_position", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysPositionAddParam param) {
         positionService.create(param);
         return ApiResponse.ok();
@@ -44,6 +46,7 @@ public class AdminPositionController {
     /** 更新岗位。 */
     @PostMapping("/v1/admin/sys/positions/update")
     @SaCheckPermission(value = "iam:position:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_position", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysPositionEditParam param) {
         positionService.update(param);
         return ApiResponse.ok();
@@ -52,6 +55,7 @@ public class AdminPositionController {
     /** 批量删除岗位。 */
     @PostMapping("/v1/admin/sys/positions/delete")
     @SaCheckPermission(value = "iam:position:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_position", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         positionService.delete(param);
         return ApiResponse.ok();

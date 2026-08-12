@@ -1,4 +1,4 @@
-package github.jiangbyte.io.sys.modules.dict.controller.portal;
+package github.jiangbyte.io.sys.modules.dict.controller;
 
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.sys.modules.dict.service.DictService;

@@ -4,8 +4,15 @@ logging:
     github.jiangbyte.io: ${LOGGING_LEVEL_HEI:debug}
     org.apache.ibatis: ${LOGGING_LEVEL_IBATIS:debug}
     com.baomidou.mybatisplus: ${LOGGING_LEVEL_MP:debug}
+  structured:
+    format:
+      console: github.jiangbyte.io.common.log.format.HeiConsoleKeyValueStructuredLogFormatter
+      file: github.jiangbyte.io.common.log.format.HeiKeyValueStructuredLogFormatter
 
 spring:
+  output:
+    ansi:
+      enabled: always
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
@@ -49,24 +56,19 @@ spring:
       port: 6379
       database: 0
       password: ${REDIS_PASSWORD:123456}
-  rabbitmq:
-    host: 127.0.0.1
-    port: ${RABBITMQ_PORT:5673}
-    username: admin
-    password: 123456
-    virtual-host: /
 
 hei:
   logging:
-    json: ${LOG_JSON:true}
+    json: false
   # 与 hei-fastapi/.env 的 APP__CONFIG_CRYPTO_KEY 保持一致（仅本地开发）
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
   rate-limit:
     enabled: true
   xxl-job:
+    enabled: false
     admin:
       addresses: http://127.0.0.1:9004/xxl-job-admin
-  mq:
+  log:
     audit:
       consume-enabled: true

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.sys.modules.weakpassword.entity.SysWeakPassword;
 import github.jiangbyte.io.sys.modules.weakpassword.param.SysWeakPasswordAddParam;
@@ -38,6 +39,7 @@ public class AdminWeakPasswordController {
     /** 创建。 */
     @PostMapping("/v1/admin/sys/weak-password/create")
     @SaCheckPermission(value = "sys:weakpassword:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_weakpassword", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysWeakPasswordAddParam param) {
         weakPasswordService.create(param);
         return ApiResponse.ok();
@@ -46,6 +48,7 @@ public class AdminWeakPasswordController {
     /** 更新。 */
     @PostMapping("/v1/admin/sys/weak-password/update")
     @SaCheckPermission(value = "sys:weakpassword:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_weakpassword", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysWeakPasswordEditParam param) {
         weakPasswordService.update(param);
         return ApiResponse.ok();
@@ -54,6 +57,7 @@ public class AdminWeakPasswordController {
     /** 批量删除。 */
     @PostMapping("/v1/admin/sys/weak-password/delete")
     @SaCheckPermission(value = "sys:weakpassword:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_weakpassword", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         weakPasswordService.delete(param);
         return ApiResponse.ok();

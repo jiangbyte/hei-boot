@@ -112,6 +112,7 @@ public class AdminAccountController {
     /** 全量替换账号用户组授权。 */
     @PostMapping("/v1/admin/sys/accounts/grant-group")
     @SaCheckPermission(value = "iam:account:grantgroup", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_account", action = "grant_group")
     public ApiResponse<Void> grantGroup(@Valid @RequestBody SysAccountGrantGroupParam param) {
         accountService.grantGroups(param);
         return ApiResponse.ok();
@@ -127,6 +128,7 @@ public class AdminAccountController {
     /** 全量替换账号部门授权。 */
     @PostMapping("/v1/admin/sys/accounts/grant-dept")
     @SaCheckPermission(value = "iam:account:grantdept", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_account", action = "grant_dept")
     public ApiResponse<Void> grantDept(@Valid @RequestBody SysAccountGrantDeptParam param) {
         accountService.grantDepts(param);
         return ApiResponse.ok();
@@ -142,6 +144,7 @@ public class AdminAccountController {
     /** 全量替换账号管理端资源授权。 */
     @PostMapping("/v1/admin/sys/accounts/grant-resource")
     @SaCheckPermission(value = "iam:account:grantresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_account", action = "grant_resource")
     public ApiResponse<Void> grantResource(@Valid @RequestBody SysAccountGrantResourceParam param) {
         accountService.grantResources(param);
         return ApiResponse.ok();
@@ -157,6 +160,7 @@ public class AdminAccountController {
     /** 全量替换账号客户端资源授权。 */
     @PostMapping("/v1/admin/sys/accounts/grant-client-resource")
     @SaCheckPermission(value = "iam:account:grantclientresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_account", action = "grant_client_resource")
     public ApiResponse<Void> grantClientResource(@Valid @RequestBody SysAccountGrantResourceParam param) {
         accountService.grantClientResources(param);
         return ApiResponse.ok();

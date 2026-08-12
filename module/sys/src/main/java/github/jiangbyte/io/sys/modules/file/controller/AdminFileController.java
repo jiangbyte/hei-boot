@@ -1,4 +1,4 @@
-package github.jiangbyte.io.sys.modules.file.controller.admin;
+package github.jiangbyte.io.sys.modules.file.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -64,6 +64,7 @@ public class AdminFileController {
     /** 更新。 */
     @PostMapping("/v1/admin/sys/file/update")
     @SaCheckPermission(value = "sys:file:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_file", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysFileEditParam param) {
         fileService.update(param);
         return ApiResponse.ok();

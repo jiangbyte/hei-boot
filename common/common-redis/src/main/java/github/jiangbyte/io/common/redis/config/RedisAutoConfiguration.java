@@ -1,19 +1,17 @@
 package github.jiangbyte.io.common.redis.config;
 
-import github.jiangbyte.io.common.redis.RedisKeys;
 import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 /**
- * Redis 自动配置：定制 RedisTemplate / StringRedisTemplate 等。
+ * Redis 自动配置：定制 Redisson 连接池 / 超时等默认值。
  *
  * Author: Charlie
  */
@@ -21,13 +19,6 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass(Config.class)
 @EnableConfigurationProperties(HeiRedisProperties.class)
 public class RedisAutoConfiguration {
-
-    /** 注册 RedisKeys。 */
-    @Bean
-    @ConditionalOnMissingBean
-    public RedisKeys redisKeys(HeiRedisProperties properties) {
-        return new RedisKeys(properties.getKeyPrefix());
-    }
 
     /**
      * 为单机 Redisson 填充连接池 / 超时 / keepalive 默认值。

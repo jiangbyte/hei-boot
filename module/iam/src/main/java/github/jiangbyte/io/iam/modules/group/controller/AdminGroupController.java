@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.group.entity.SysGroup;
 import github.jiangbyte.io.iam.modules.group.param.SysGroupAddParam;
@@ -44,6 +45,7 @@ public class AdminGroupController {
     /** 创建用户组。 */
     @PostMapping("/v1/admin/sys/groups/create")
     @SaCheckPermission(value = "iam:group:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysGroupAddParam param) {
         groupService.create(param);
         return ApiResponse.ok();
@@ -52,6 +54,7 @@ public class AdminGroupController {
     /** 更新用户组。 */
     @PostMapping("/v1/admin/sys/groups/update")
     @SaCheckPermission(value = "iam:group:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysGroupEditParam param) {
         groupService.update(param);
         return ApiResponse.ok();
@@ -60,6 +63,7 @@ public class AdminGroupController {
     /** 批量删除用户组。 */
     @PostMapping("/v1/admin/sys/groups/delete")
     @SaCheckPermission(value = "iam:group:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         groupService.delete(param);
         return ApiResponse.ok();
@@ -89,6 +93,7 @@ public class AdminGroupController {
     /** 全量替换用户组成员。 */
     @PostMapping("/v1/admin/sys/groups/grant-user")
     @SaCheckPermission(value = "iam:group:grantuser", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "grant_user")
     public ApiResponse<Void> grantUser(@Valid @RequestBody SysGroupGrantUserParam param) {
         groupService.grantUsers(param);
         return ApiResponse.ok();
@@ -106,6 +111,7 @@ public class AdminGroupController {
     /** 全量替换用户组角色授权。 */
     @PostMapping("/v1/admin/sys/groups/grant-role")
     @SaCheckPermission(value = "iam:group:grantrole", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "grant_role")
     public ApiResponse<Void> grantRole(@Valid @RequestBody SysGroupGrantRoleParam param) {
         groupService.grantRoles(param);
         return ApiResponse.ok();
@@ -123,6 +129,7 @@ public class AdminGroupController {
     /** 全量替换用户组管理端资源授权。 */
     @PostMapping("/v1/admin/sys/groups/grant-resource")
     @SaCheckPermission(value = "iam:group:grantresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "grant_resource")
     public ApiResponse<Void> grantResource(@Valid @RequestBody SysGroupGrantResourceParam param) {
         groupService.grantResources(param);
         return ApiResponse.ok();
@@ -140,6 +147,7 @@ public class AdminGroupController {
     /** 全量替换用户组客户端资源授权。 */
     @PostMapping("/v1/admin/sys/groups/grant-client-resource")
     @SaCheckPermission(value = "iam:group:grantclientresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_group", action = "grant_client_resource")
     public ApiResponse<Void> grantClientResource(@Valid @RequestBody SysGroupGrantResourceParam param) {
         groupService.grantClientResources(param);
         return ApiResponse.ok();

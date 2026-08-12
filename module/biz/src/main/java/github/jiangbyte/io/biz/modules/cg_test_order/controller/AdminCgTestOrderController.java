@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.biz.modules.cg_test_order.entity.CgTestOrder;
 import github.jiangbyte.io.biz.modules.cg_test_order.param.CgTestOrderAddParam;
@@ -42,6 +43,7 @@ public class AdminCgTestOrderController {
     /** 创建测试订单。 */
     @PostMapping("/v1/admin/biz/cg-test-order/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody CgTestOrderAddParam param) {
         cgTestOrderService.create(param);
         return ApiResponse.ok();
@@ -50,6 +52,7 @@ public class AdminCgTestOrderController {
     /** 更新测试订单。 */
     @PostMapping("/v1/admin/biz/cg-test-order/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody CgTestOrderEditParam param) {
         cgTestOrderService.update(param);
         return ApiResponse.ok();
@@ -58,6 +61,7 @@ public class AdminCgTestOrderController {
     /** 批量删除测试订单。 */
     @PostMapping("/v1/admin/biz/cg-test-order/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         cgTestOrderService.delete(param);
         return ApiResponse.ok();
@@ -80,6 +84,7 @@ public class AdminCgTestOrderController {
     /** 创建订单明细。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
     public ApiResponse<Void> childCreate(@Valid @RequestBody CgTestOrderItemAddParam param) {
         cgTestOrderService.childCreate(param);
         return ApiResponse.ok();
@@ -88,6 +93,7 @@ public class AdminCgTestOrderController {
     /** 更新订单明细。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
     public ApiResponse<Void> childUpdate(@Valid @RequestBody CgTestOrderItemEditParam param) {
         cgTestOrderService.childUpdate(param);
         return ApiResponse.ok();
@@ -96,6 +102,7 @@ public class AdminCgTestOrderController {
     /** 批量删除订单明细。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
     public ApiResponse<Void> childDelete(@Valid @RequestBody IdsParam param) {
         cgTestOrderService.childDelete(param);
         return ApiResponse.ok();

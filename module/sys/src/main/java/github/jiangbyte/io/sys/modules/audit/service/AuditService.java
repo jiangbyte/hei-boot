@@ -2,7 +2,7 @@ package github.jiangbyte.io.sys.modules.audit.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import github.jiangbyte.io.common.mq.audit.AuditEventMessage;
+import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.sys.modules.audit.entity.SysOperationAuditLog;
 import github.jiangbyte.io.sys.modules.audit.param.SysAuditPageParam;
 

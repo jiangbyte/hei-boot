@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.resource.result.SysResourceOwnResult;
 import github.jiangbyte.io.iam.modules.role.entity.SysRole;
@@ -42,6 +43,7 @@ public class AdminRoleController {
     /** 创建角色。 */
     @PostMapping("/v1/admin/sys/roles/create")
     @SaCheckPermission(value = "iam:role:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysRoleAddParam param) {
         roleService.create(param);
         return ApiResponse.ok();
@@ -50,6 +52,7 @@ public class AdminRoleController {
     /** 更新角色。 */
     @PostMapping("/v1/admin/sys/roles/update")
     @SaCheckPermission(value = "iam:role:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysRoleEditParam param) {
         roleService.update(param);
         return ApiResponse.ok();
@@ -58,6 +61,7 @@ public class AdminRoleController {
     /** 批量删除角色。 */
     @PostMapping("/v1/admin/sys/roles/delete")
     @SaCheckPermission(value = "iam:role:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         roleService.delete(param);
         return ApiResponse.ok();
@@ -89,6 +93,7 @@ public class AdminRoleController {
     /** 全量替换角色管理端资源授权。 */
     @PostMapping("/v1/admin/sys/roles/grant-resource")
     @SaCheckPermission(value = "iam:role:grantresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "grant_resource")
     public ApiResponse<Void> grantResource(@Valid @RequestBody SysRoleGrantResourceParam param) {
         roleService.grantResources(param);
         return ApiResponse.ok();
@@ -106,6 +111,7 @@ public class AdminRoleController {
     /** 全量替换角色客户端资源授权。 */
     @PostMapping("/v1/admin/sys/roles/grant-client-resource")
     @SaCheckPermission(value = "iam:role:grantclientresource", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "grant_client_resource")
     public ApiResponse<Void> grantClientResource(@Valid @RequestBody SysRoleGrantResourceParam param) {
         roleService.grantClientResources(param);
         return ApiResponse.ok();
@@ -121,6 +127,7 @@ public class AdminRoleController {
     /** 全量替换角色成员。 */
     @PostMapping("/v1/admin/sys/roles/grant-user")
     @SaCheckPermission(value = "iam:role:grantuser", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_role", action = "grant_user")
     public ApiResponse<Void> grantUser(@Valid @RequestBody SysRoleGrantUserParam param) {
         roleService.grantUsers(param);
         return ApiResponse.ok();

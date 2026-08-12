@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity.CgTestKnowledgeCategory;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.param.CgTestKnowledgeCategoryAddParam;
@@ -43,6 +44,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 创建知识分类。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody CgTestKnowledgeCategoryAddParam param) {
         cgTestKnowledgeCategoryService.create(param);
         return ApiResponse.ok();
@@ -51,6 +53,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 更新知识分类。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody CgTestKnowledgeCategoryEditParam param) {
         cgTestKnowledgeCategoryService.update(param);
         return ApiResponse.ok();
@@ -59,6 +62,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 批量删除知识分类。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         cgTestKnowledgeCategoryService.delete(param);
         return ApiResponse.ok();
@@ -88,6 +92,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 创建知识文档。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
     public ApiResponse<Void> childCreate(@Valid @RequestBody CgTestKnowledgeDocAddParam param) {
         cgTestKnowledgeCategoryService.childCreate(param);
         return ApiResponse.ok();
@@ -96,6 +101,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 更新知识文档。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
     public ApiResponse<Void> childUpdate(@Valid @RequestBody CgTestKnowledgeDocEditParam param) {
         cgTestKnowledgeCategoryService.childUpdate(param);
         return ApiResponse.ok();
@@ -104,6 +110,7 @@ public class AdminCgTestKnowledgeCategoryController {
     /** 批量删除知识文档。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
     public ApiResponse<Void> childDelete(@Valid @RequestBody IdsParam param) {
         cgTestKnowledgeCategoryService.childDelete(param);
         return ApiResponse.ok();

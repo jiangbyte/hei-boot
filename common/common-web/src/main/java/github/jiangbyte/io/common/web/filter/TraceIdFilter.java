@@ -2,6 +2,7 @@ package github.jiangbyte.io.common.web.filter;
 
 import github.jiangbyte.io.common.core.trace.TraceIdHolder;
 import github.jiangbyte.io.common.web.log.RequestLogMdc;
+import github.jiangbyte.io.common.web.util.ClientIpResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,7 +64,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
         RequestLogMdc.putIfHasText(RequestLogMdc.TRACE_ID, traceId);
         RequestLogMdc.putIfHasText(RequestLogMdc.METHOD, request.getMethod());
         RequestLogMdc.putIfHasText(RequestLogMdc.PATH, request.getRequestURI());
-        RequestLogMdc.putIfHasText(RequestLogMdc.CLIENT_IP, resolveClientIp(request));
+        RequestLogMdc.putIfHasText(RequestLogMdc.CLIENT_IP, ClientIpResolver.resolve(request, trustForwardedHeaders));
         RequestLogMdc.putIfHasText(RequestLogMdc.USER_AGENT, request.getHeader("User-Agent"));
         RequestLogMdc.syncOtelSpan();
 
@@ -78,23 +79,5 @@ public class TraceIdFilter extends OncePerRequestFilter {
             MDC.remove("traceId");
             TraceIdHolder.clear();
         }
-    }
-
-    private String resolveClientIp(HttpServletRequest request) {
-        if (trustForwardedHeaders) {
-            String forwarded = request.getHeader("X-Forwarded-For");
-            if (StringUtils.hasText(forwarded)) {
-                String first = forwarded.split(",")[0].trim();
-                if (StringUtils.hasText(first)) {
-                    return first;
-                }
-            }
-            String realIp = request.getHeader("X-Real-IP");
-            if (StringUtils.hasText(realIp)) {
-                return realIp.trim();
-            }
-        }
-        String remote = request.getRemoteAddr();
-        return StringUtils.hasText(remote) ? remote : "unknown";
     }
 }

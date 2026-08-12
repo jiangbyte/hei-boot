@@ -2,8 +2,8 @@ package github.jiangbyte.io.common.log.aspect;
 
 import github.jiangbyte.io.common.core.trace.TraceIdHolder;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
-import github.jiangbyte.io.common.mq.audit.AuditEventMessage;
-import github.jiangbyte.io.common.mq.audit.AuditEventPublisher;
+import github.jiangbyte.io.common.log.audit.AuditEventMessage;
+import github.jiangbyte.io.common.log.audit.AuditEventPublisher;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.common.web.log.RequestLogMdc;
@@ -20,7 +20,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.Instant;
 
 /**
- * 操作审计切面：拦截 @OperationAudit，组装审计消息并经 MQ 发布。
+ * 操作审计切面：拦截 @OperationAudit，组装审计消息并经 AuditEventPublisher 发布。
  *
  * Author: Charlie
  */

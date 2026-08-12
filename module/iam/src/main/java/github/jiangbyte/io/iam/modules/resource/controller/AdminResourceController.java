@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.iam.modules.resource.entity.SysResource;
 import github.jiangbyte.io.iam.modules.resource.entity.SysResourceModule;
 import github.jiangbyte.io.iam.modules.resource.param.SysResourceAddParam;
@@ -48,6 +49,7 @@ public class AdminResourceController {
     /** 创建管理端资源。 */
     @PostMapping("/v1/admin/sys/resources/create")
     @SaCheckPermission(value = "iam:resource:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysResourceAddParam param) {
         resourceService.create(param);
         return ApiResponse.ok();
@@ -56,6 +58,7 @@ public class AdminResourceController {
     /** 更新管理端资源。 */
     @PostMapping("/v1/admin/sys/resources/update")
     @SaCheckPermission(value = "iam:resource:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysResourceEditParam param) {
         resourceService.update(param);
         return ApiResponse.ok();
@@ -64,6 +67,7 @@ public class AdminResourceController {
     /** 批量删除管理端资源。 */
     @PostMapping("/v1/admin/sys/resources/delete")
     @SaCheckPermission(value = "iam:resource:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         resourceService.delete(param);
         return ApiResponse.ok();
@@ -99,6 +103,7 @@ public class AdminResourceController {
     /** 绑定管理端资源权限。 */
     @PostMapping("/v1/admin/resource-permissions")
     @SaCheckPermission(value = "iam:resource:grant", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "grant")
     public ApiResponse<Void> bindPermission(@Valid @RequestBody SysResourcePermissionBindParam param) {
         resourceService.bindPermission(param);
         return ApiResponse.ok();
@@ -107,6 +112,7 @@ public class AdminResourceController {
     /** 创建按钮资源。 */
     @PostMapping("/v1/admin/sys/resource-buttons/create")
     @SaCheckPermission(value = "iam:resource:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "create")
     public ApiResponse<Void> createButton(@Valid @RequestBody SysResourceButtonAddParam param) {
         resourceService.createButton(param);
         return ApiResponse.ok();
@@ -115,6 +121,7 @@ public class AdminResourceController {
     /** 更新按钮资源。 */
     @PostMapping("/v1/admin/sys/resource-buttons/update")
     @SaCheckPermission(value = "iam:resource:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "update")
     public ApiResponse<Void> updateButton(@Valid @RequestBody SysResourceButtonEditParam param) {
         resourceService.updateButton(param);
         return ApiResponse.ok();
@@ -123,6 +130,7 @@ public class AdminResourceController {
     /** 批量删除按钮资源。 */
     @PostMapping("/v1/admin/sys/resource-buttons/delete")
     @SaCheckPermission(value = "iam:resource:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resource", action = "delete")
     public ApiResponse<Void> deleteButtons(@Valid @RequestBody IdsParam param) {
         resourceService.deleteButtons(param);
         return ApiResponse.ok();
@@ -139,6 +147,7 @@ public class AdminResourceController {
     /** 创建资源模块。 */
     @PostMapping("/v1/admin/sys/resource-modules/create")
     @SaCheckPermission(value = "iam:resourcemodule:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resourcemodule", action = "create")
     public ApiResponse<Void> createModule(@Valid @RequestBody SysResourceModuleAddParam param) {
         resourceService.createModule(param);
         return ApiResponse.ok();
@@ -147,6 +156,7 @@ public class AdminResourceController {
     /** 更新资源模块。 */
     @PostMapping("/v1/admin/sys/resource-modules/update")
     @SaCheckPermission(value = "iam:resourcemodule:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resourcemodule", action = "update")
     public ApiResponse<Void> updateModule(@Valid @RequestBody SysResourceModuleEditParam param) {
         resourceService.updateModule(param);
         return ApiResponse.ok();
@@ -155,6 +165,7 @@ public class AdminResourceController {
     /** 批量删除资源模块。 */
     @PostMapping("/v1/admin/sys/resource-modules/delete")
     @SaCheckPermission(value = "iam:resourcemodule:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_resourcemodule", action = "delete")
     public ApiResponse<Void> deleteModules(@Valid @RequestBody IdsParam param) {
         resourceService.deleteModules(param);
         return ApiResponse.ok();

@@ -6,6 +6,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
 import github.jiangbyte.io.sys.modules.codegen.param.SysCodegenFieldsUpdateBatchParam;
@@ -46,6 +47,7 @@ public class AdminCodegenController {
     /** 创建。 */
     @PostMapping("/v1/admin/sys/codegen/create")
     @SaCheckPermission(value = "sys:codegen:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_codegen", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysCodegenPlanSaveParam param) {
         codegenService.create(param);
         return ApiResponse.ok();
@@ -54,6 +56,7 @@ public class AdminCodegenController {
     /** 更新。 */
     @PostMapping("/v1/admin/sys/codegen/update")
     @SaCheckPermission(value = "sys:codegen:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_codegen", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysCodegenPlanSaveParam param) {
         codegenService.update(param);
         return ApiResponse.ok();
@@ -62,6 +65,7 @@ public class AdminCodegenController {
     /** 批量删除。 */
     @PostMapping("/v1/admin/sys/codegen/delete")
     @SaCheckPermission(value = "sys:codegen:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_codegen", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         codegenService.delete(param);
         return ApiResponse.ok();
@@ -107,6 +111,7 @@ public class AdminCodegenController {
     /** 批量更新字段配置。 */
     @PostMapping("/v1/admin/sys/codegen/fields/update-batch")
     @SaCheckPermission(value = "sys:codegen:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_codegen", action = "update")
     public ApiResponse<Void> updateFieldsBatch(@Valid @RequestBody SysCodegenFieldsUpdateBatchParam param) {
         codegenService.updateFieldsBatch(param);
         return ApiResponse.ok();

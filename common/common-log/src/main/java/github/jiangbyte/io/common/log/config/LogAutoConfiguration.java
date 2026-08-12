@@ -1,8 +1,8 @@
 package github.jiangbyte.io.common.log.config;
 
+import github.jiangbyte.io.common.log.audit.AuditEventPublisher;
 import github.jiangbyte.io.common.log.aspect.OperationAuditAspect;
 import github.jiangbyte.io.common.log.format.HeiStructuredLoggingJsonMembersCustomizer;
-import github.jiangbyte.io.common.mq.audit.AuditEventPublisher;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

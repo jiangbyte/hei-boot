@@ -3,8 +3,15 @@ logging:
     github.jiangbyte.io: ${LOGGING_LEVEL_HEI:info}
     # SQL 排查时可设 LOGGING_LEVEL_IBATIS=debug
     org.apache.ibatis: ${LOGGING_LEVEL_IBATIS:warn}
+  structured:
+    format:
+      console: github.jiangbyte.io.common.log.format.HeiConsoleKeyValueStructuredLogFormatter
+      file: github.jiangbyte.io.common.log.format.HeiKeyValueStructuredLogFormatter
 
 spring:
+  output:
+    ansi:
+      enabled: always
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
@@ -48,24 +55,19 @@ spring:
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DATABASE:0}
       password: ${REDIS_PASSWORD:123456}
-  rabbitmq:
-    host: ${RABBITMQ_HOST:127.0.0.1}
-    port: ${RABBITMQ_PORT:5673}
-    username: ${RABBITMQ_USERNAME:admin}
-    password: ${RABBITMQ_PASSWORD:123456}
-    virtual-host: ${RABBITMQ_VHOST:/}
   flyway:
     enabled: true
 
 # 仅本地用的 XXL-JOB Admin 位于 app/xxl-job（勿部署到生产）
 hei:
   logging:
-    json: ${LOG_JSON:true}
+    json: false
   # 与 hei-fastapi/.env 的 APP__CONFIG_CRYPTO_KEY 保持一致（仅开发）
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
   xxl-job:
-    enabled: true
+    # 本地开发关闭（xxl-job-admin 未启动）；需要时在对应 yml 中开启
+    enabled: false
     access-token: ${XXL_JOB_ACCESS_TOKEN:default_token}
     admin:
       addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:9004/xxl-job-admin}
@@ -74,6 +76,6 @@ hei:
       port: ${XXL_JOB_EXECUTOR_PORT:9999}
       logpath: ./logs/xxl-job
       logretentiondays: 30
-  mq:
+  log:
     audit:
-      consume-enabled: ${HEI_MQ_AUDIT_CONSUME_ENABLED:true}
+      consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}

@@ -6,66 +6,143 @@ import cn.dev33.satoken.stp.StpInterface;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.security.satoken.SessionPermissionProvider;
 import github.jiangbyte.io.common.security.web.AccountMdcInterceptor;
+import github.jiangbyte.io.common.security.web.SessionCookiePathFilter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sa-Token 路由鉴权配置：注册拦截规则、匿名路径与异常处理。
+ * Sa-Token 统一安全配置：鉴权白名单、安全响应头、Cookie Path 改写。
+ * <p>
+ * Cookie CSRF 由 {@code sa-token.cookie.sameSite/httpOnly/secure} 承担，不自研 CSRF Filter。
  *
  * Author: Charlie
  */
 @AutoConfiguration
 @EnableConfigurationProperties(HeiSecurityProperties.class)
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class SaTokenSecurityConfig implements WebMvcConfigurer {
 
-    private final HeiSecurityProperties securityProperties;
+    public static final String TOKEN_COOKIE = "Authorization";
 
-    public SaTokenSecurityConfig(HeiSecurityProperties securityProperties) {
+    private final HeiSecurityProperties securityProperties;
+    private final Environment environment;
+    private final boolean cookieAuthEnabled;
+
+    public SaTokenSecurityConfig(
+            HeiSecurityProperties securityProperties,
+            Environment environment) {
         this.securityProperties = securityProperties;
+        this.environment = environment;
+        this.cookieAuthEnabled = environment.getProperty("sa-token.is-read-cookie", Boolean.class, false);
     }
 
-    /** 注册 Sa-Token 权限/角色接口实现。 */
+    @Bean
+    public FilterRegistrationBean<SecurityHeadersFilter> securityHeadersFilter() {
+        FilterRegistrationBean<SecurityHeadersFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(new SecurityHeadersFilter(securityProperties));
+        reg.addUrlPatterns("/**");
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+        return reg;
+    }
+
+    @Bean
+    public FilterRegistrationBean<SessionCookiePathFilter> sessionCookiePathFilter() {
+        String cookieName = environment.getProperty("sa-token.token-name", TOKEN_COOKIE);
+        FilterRegistrationBean<SessionCookiePathFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(new SessionCookiePathFilter(cookieAuthEnabled, cookieName));
+        reg.addUrlPatterns("/**");
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 12);
+        return reg;
+    }
+
+    public static class SecurityHeadersFilter extends OncePerRequestFilter {
+        private final HeiSecurityProperties securityProperties;
+
+        public SecurityHeadersFilter(HeiSecurityProperties securityProperties) {
+            this.securityProperties = securityProperties;
+        }
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                throws ServletException, IOException {
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("X-Frame-Options", "DENY");
+            response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+            response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+            if (StringUtils.hasText(securityProperties.getContentSecurityPolicy())) {
+                response.setHeader("Content-Security-Policy", securityProperties.getContentSecurityPolicy());
+            }
+            long hsts = securityProperties.getHstsMaxAgeSeconds();
+            if (hsts > 0) {
+                StringBuilder value = new StringBuilder("max-age=").append(hsts);
+                if (securityProperties.isHstsIncludeSubDomains()) {
+                    value.append("; includeSubDomains");
+                }
+                if (securityProperties.isHstsPreload()) {
+                    value.append("; preload");
+                }
+                response.setHeader("Strict-Transport-Security", value.toString());
+            }
+            filterChain.doFilter(request, response);
+        }
+    }
+
     @Bean
     public StpInterface stpInterface() {
         return new SessionPermissionProvider();
     }
 
-    /** 注册 Sa-Token 鉴权与账号 MDC 拦截器。 */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        List<String> exclude = new ArrayList<>();
-        exclude.add("/favicon.ico");
-        if (securityProperties.isExposeDocs()) {
-            exclude.add("/swagger-ui/**");
-            exclude.add("/v3/api-docs/**");
-            exclude.add("/doc.html");
-            exclude.add("/webjars/**");
-        }
-        if (securityProperties.isExposeActuator()) {
-            exclude.add("/actuator/**");
-        }
-        if (securityProperties.isExposeDruid()) {
-            exclude.add("/druid/**");
-        }
-        if (securityProperties.getIgnoreUrls() != null) {
-            exclude.addAll(securityProperties.getIgnoreUrls());
-        }
+        String[] ignorePatterns = buildIgnorePatterns();
         registry.addInterceptor(new SaInterceptor(handler -> {
                     SaRouter.match("/api/*/admin/**")
-                            .notMatch(exclude)
+                            .notMatch(ignorePatterns)
                             .check(r -> StpKit.ADMIN.checkLogin());
                     SaRouter.match("/api/*/portal/**")
-                            .notMatch(exclude)
+                            .notMatch(ignorePatterns)
                             .check(r -> StpKit.PORTAL.checkLogin());
                 }))
                 .addPathPatterns("/**");
-        // 在 Sa-Token 之后执行，便于 LoginHelper 解析会话写入 MDC。
         registry.addInterceptor(new AccountMdcInterceptor()).addPathPatterns("/**");
+    }
+
+    private String[] buildIgnorePatterns() {
+        List<String> patterns = new ArrayList<>(securityProperties.getIgnoreUrls());
+        if (securityProperties.isExposeDocs()) {
+            patterns.add("/doc.html");
+            patterns.add("/doc.html/**");
+            patterns.add("/webjars/**");
+            patterns.add("/v3/api-docs");
+            patterns.add("/v3/api-docs/**");
+            patterns.add("/swagger-ui/**");
+            patterns.add("/swagger-ui.html");
+        }
+        if (securityProperties.isExposeActuator()) {
+            patterns.add("/actuator");
+            patterns.add("/actuator/**");
+        }
+        if (securityProperties.isExposeDruid()) {
+            patterns.add("/druid");
+            patterns.add("/druid/**");
+        }
+        return patterns.toArray(String[]::new);
     }
 }

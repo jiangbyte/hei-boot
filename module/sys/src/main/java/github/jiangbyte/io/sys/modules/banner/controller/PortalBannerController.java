@@ -1,6 +1,7 @@
 package github.jiangbyte.io.sys.modules.banner.controller;
 
 import github.jiangbyte.io.common.core.domain.ApiResponse;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.sys.modules.banner.entity.SysBanner;
 import github.jiangbyte.io.sys.modules.banner.service.BannerService;
@@ -38,6 +39,7 @@ public class PortalBannerController {
 
     /** Banner 互动上报。 */
     @PostMapping("/v1/portal/sys/banners/interaction")
+    @OperationAudit(resourceType = "sys_banner", action = "interaction")
     public ApiResponse<Void> interaction(@Valid @RequestBody IdParam param) {
         bannerService.interaction(param.getId());
         return ApiResponse.ok();

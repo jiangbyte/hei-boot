@@ -12,6 +12,7 @@ import github.jiangbyte.io.auth.modules.session.result.SessionAccountResult;
 import github.jiangbyte.io.auth.modules.session.result.SessionAnalysisResult;
 import github.jiangbyte.io.auth.modules.session.result.SessionTokenResult;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.core.domain.PageResult;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
@@ -129,6 +130,7 @@ public class AdminSessionController {
     /** 按账号批量强制下线（踢出全部 Token）。 */
     @PostMapping("/v1/admin/auth/sessions/exit")
     @SaCheckPermission(value = "auth:session:exit", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "auth_session", action = "exit")
     public ApiResponse<Void> exit(@Valid @RequestBody SessionExitParam request) {
         for (SessionExitParam.Target target : request.getTargets()) {
             resolveLogic(target.getAccountType()).logout(target.getAccountId());
@@ -139,6 +141,7 @@ public class AdminSessionController {
     /** 按 Token 值批量强制下线（同时尝试管理端与门户 StpLogic）。 */
     @PostMapping("/v1/admin/auth/sessions/token/exit")
     @SaCheckPermission(value = "auth:session:tokenexit", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "auth_session", action = "token_exit")
     public ApiResponse<Void> tokenExit(@Valid @RequestBody SessionTokenExitParam request) {
         LinkedHashSet<String> tokens = new LinkedHashSet<>(request.getTokens());
         for (String token : tokens) {

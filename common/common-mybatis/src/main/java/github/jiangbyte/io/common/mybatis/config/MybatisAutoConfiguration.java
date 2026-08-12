@@ -3,12 +3,14 @@ package github.jiangbyte.io.common.mybatis.config;
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import github.jiangbyte.io.common.mybatis.datasource.DataSourceRoutingAspect;
 import github.jiangbyte.io.common.mybatis.handler.HeiMetaObjectHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 /**
- * MyBatis-Plus 自动配置：注册元对象填充、分页等基础设施 Bean。
+ * MyBatis-Plus 自动配置：注册元对象填充、分页与数据源路由等基础设施 Bean。
  *
  * Author: Charlie
  */
@@ -27,5 +29,12 @@ public class MybatisAutoConfiguration {
     @Bean
     public HeiMetaObjectHandler heiMetaObjectHandler() {
         return new HeiMetaObjectHandler();
+    }
+
+    /** 注册读写数据源路由切面（不依赖应用根包扫描）。 */
+    @Bean
+    @ConditionalOnMissingBean
+    public DataSourceRoutingAspect dataSourceRoutingAspect() {
+        return new DataSourceRoutingAspect();
     }
 }

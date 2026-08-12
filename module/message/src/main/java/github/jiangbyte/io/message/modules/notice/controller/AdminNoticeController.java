@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.message.modules.notice.entity.MsgNotice;
 import github.jiangbyte.io.message.modules.notice.param.MsgNoticeAddParam;
@@ -37,6 +38,7 @@ public class AdminNoticeController {
     /** 创建公告或通知。 */
     @PostMapping("/v1/admin/message/notices/create")
     @SaCheckPermission(value = "message:notice:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody MsgNoticeAddParam param) {
         noticeService.create(param);
         return ApiResponse.ok();
@@ -45,6 +47,7 @@ public class AdminNoticeController {
     /** 更新公告或通知。 */
     @PostMapping("/v1/admin/message/notices/update")
     @SaCheckPermission(value = "message:notice:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody MsgNoticeEditParam param) {
         noticeService.update(param);
         return ApiResponse.ok();
@@ -53,6 +56,7 @@ public class AdminNoticeController {
     /** 批量删除公告/通知。 */
     @PostMapping("/v1/admin/message/notices/delete")
     @SaCheckPermission(value = "message:notice:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         noticeService.delete(param);
         return ApiResponse.ok();
@@ -75,6 +79,7 @@ public class AdminNoticeController {
     /** 批量发布消息。 */
     @PostMapping("/v1/admin/message/notices/publish")
     @SaCheckPermission(value = "message:notice:publish", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "publish")
     public ApiResponse<Void> publish(@Valid @RequestBody IdsParam param) {
         noticeService.publish(param);
         return ApiResponse.ok();
@@ -83,6 +88,7 @@ public class AdminNoticeController {
     /** 批量撤回消息。 */
     @PostMapping("/v1/admin/message/notices/revoke")
     @SaCheckPermission(value = "message:notice:revoke", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "revoke")
     public ApiResponse<Void> revoke(@Valid @RequestBody IdsParam param) {
         noticeService.revoke(param);
         return ApiResponse.ok();
@@ -91,6 +97,7 @@ public class AdminNoticeController {
     /** 设置公告置顶。 */
     @PostMapping("/v1/admin/message/notices/pin")
     @SaCheckPermission(value = "message:notice:pin", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_notice", action = "pin")
     public ApiResponse<Void> pin(@Valid @RequestBody MsgNoticePinParam param) {
         noticeService.pin(param);
         return ApiResponse.ok();
@@ -116,6 +123,7 @@ public class AdminNoticeController {
 
     /** 标记指定消息为已读。 */
     @PostMapping("/v1/admin/message/notices/read")
+    @OperationAudit(resourceType = "message_notice", action = "read")
     public ApiResponse<Void> read(@Valid @RequestBody MsgNoticeReadParam param) {
         noticeService.markRead(param);
         return ApiResponse.ok();
@@ -123,6 +131,7 @@ public class AdminNoticeController {
 
     /** 将全部可见消息标记为已读。 */
     @PostMapping("/v1/admin/message/notices/read-all")
+    @OperationAudit(resourceType = "message_notice", action = "read_all")
     public ApiResponse<Void> readAll() {
         noticeService.markAllRead();
         return ApiResponse.ok();

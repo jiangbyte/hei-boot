@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.iam.modules.dept.entity.SysDept;
 import github.jiangbyte.io.iam.modules.dept.param.SysDeptAddParam;
 import github.jiangbyte.io.iam.modules.dept.param.SysDeptEditParam;
@@ -40,6 +41,7 @@ public class AdminDeptController {
     /** 创建部门。 */
     @PostMapping("/v1/admin/sys/depts/create")
     @SaCheckPermission(value = "iam:dept:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_dept", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysDeptAddParam param) {
         deptService.create(param);
         return ApiResponse.ok();
@@ -48,6 +50,7 @@ public class AdminDeptController {
     /** 更新部门。 */
     @PostMapping("/v1/admin/sys/depts/update")
     @SaCheckPermission(value = "iam:dept:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_dept", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysDeptEditParam param) {
         deptService.update(param);
         return ApiResponse.ok();
@@ -56,6 +59,7 @@ public class AdminDeptController {
     /** 批量删除部门。 */
     @PostMapping("/v1/admin/sys/depts/delete")
     @SaCheckPermission(value = "iam:dept:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_dept", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         deptService.delete(param);
         return ApiResponse.ok();

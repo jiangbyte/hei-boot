@@ -1,10 +1,11 @@
-package github.jiangbyte.io.sys.modules.dict.controller.admin;
+package github.jiangbyte.io.sys.modules.dict.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.sys.modules.dict.entity.SysDict;
 import github.jiangbyte.io.sys.modules.dict.param.SysDictAddParam;
@@ -39,6 +40,7 @@ public class AdminDictController {
     /** 创建。 */
     @PostMapping("/v1/admin/sys/dicts/create")
     @SaCheckPermission(value = "sys:dict:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_dict", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody SysDictAddParam param) {
         dictService.create(param);
         return ApiResponse.ok();
@@ -47,6 +49,7 @@ public class AdminDictController {
     /** 更新。 */
     @PostMapping("/v1/admin/sys/dicts/update")
     @SaCheckPermission(value = "sys:dict:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_dict", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody SysDictEditParam param) {
         dictService.update(param);
         return ApiResponse.ok();
@@ -55,6 +58,7 @@ public class AdminDictController {
     /** 批量删除。 */
     @PostMapping("/v1/admin/sys/dicts/delete")
     @SaCheckPermission(value = "sys:dict:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "sys_dict", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         dictService.delete(param);
         return ApiResponse.ok();

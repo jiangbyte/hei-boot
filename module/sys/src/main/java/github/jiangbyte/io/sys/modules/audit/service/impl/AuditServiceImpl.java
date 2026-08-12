@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
-import github.jiangbyte.io.common.mq.audit.AuditEventMessage;
+import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.audit.entity.SysOperationAuditLog;
 import github.jiangbyte.io.sys.modules.audit.mapper.SysOperationAuditLogMapper;

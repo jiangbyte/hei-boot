@@ -32,7 +32,7 @@ spring:
       timeout: 3s
       connect-timeout: 10s
 
-# SLF4J + Logback。默认 Logstash JSON（MDC/字段进 JSON）；LOG_JSON=false 时由 EPP 切到键值格式。
+# Boot 原生 structured logging。默认 Logstash JSON；profile 可切到键值 formatter。
 logging:
   file:
     name: ${LOGGING_FILE_NAME:./logs/${spring.application.name}.log}
@@ -91,7 +91,7 @@ hei:
     # CORS 由 Sa-Token SaStrategy.corsHandle 处理。空=本地默认端口；单项 "*"=通配且关 credentials
     # cors-allowed-origins:
     #   - "*"
-    cookie-csrf-enabled: ${HEI_SECURITY_COOKIE_CSRF_ENABLED:false}
+    # Cookie CSRF 请用 sa-token.cookie.sameSite/httpOnly/secure，不另设开关
     # 仅在 HTTPS（边缘 TLS）后开启。生产示例：31536000
     hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
     hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
@@ -123,17 +123,25 @@ hei:
       - /api/v1/files/**
   rate-limit:
     enabled: ${HEI_RATE_LIMIT_ENABLED:true}
-    trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:false}
-  redis:
-    key-prefix: ${HEI_REDIS_KEY_PREFIX:hei}
+    default-permits: ${HEI_RATE_LIMIT_DEFAULT_PERMITS:60}
+    default-window-seconds: ${HEI_RATE_LIMIT_DEFAULT_WINDOW_SECONDS:60}
   # 与 hei-fastapi 共享的 Fernet 密钥（APP__CONFIG_CRYPTO_KEY）；解密 STORAGE_*/MAIL_*/SMS_* 敏感配置
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:}}
   logging:
-    # true → Logstash JSON（默认，含开发环境）；false → 键值控制台（对齐 hei-fastapi LOG_JSON）
+    # true → Logstash JSON；false → 键值控制台（对齐 hei-fastapi LOG_JSON）
     json: ${LOG_JSON:true}
     service: ${HEI_LOGGING_SERVICE:${spring.application.name}}
     service-version: ${HEI_LOGGING_SERVICE_VERSION:0.1.0-SNAPSHOT}
+    redact-keys: ${HEI_LOGGING_REDACT_KEYS:password,secret,token,cryptoKey,crypto-key,accessKey,access-key,privateKey,private-key}
+  log:
+    audit:
+      async-enabled: ${HEI_LOG_AUDIT_ASYNC_ENABLED:true}
+      stream-key: ${HEI_LOG_AUDIT_STREAM_KEY:hei:audit:stream}
+      group-name: ${HEI_LOG_AUDIT_GROUP_NAME:hei-audit-group}
+      max-len: ${HEI_LOG_AUDIT_MAX_LEN:10000}
+      consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+      trim-interval-ms: ${HEI_LOG_AUDIT_TRIM_INTERVAL_MS:60000}
   observability:
     tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
     # OTLP 指标推送（OtlpMeterRegistry）。默认关闭——本地无 collector；可用 Prometheus 抓取。
@@ -149,9 +157,7 @@ hei:
     kv-mount: ${HEI_VAULT_KV_MOUNT:secret}
     kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
     namespace: ${VAULT_NAMESPACE:}
-  mq:
-    audit:
-      consume-enabled: ${HEI_MQ_AUDIT_CONSUME_ENABLED:true}
+    fail-fast: ${HEI_VAULT_FAIL_FAST:true}
   xxl-job:
     enabled: true
     access-token: ${XXL_JOB_ACCESS_TOKEN:default_token}

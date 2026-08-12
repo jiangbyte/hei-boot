@@ -10,6 +10,8 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ansi.AnsiColor;
+import org.springframework.boot.ansi.AnsiOutput;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,5 +41,19 @@ class HeiKeyValueStructuredLogFormatterTest {
         assertFalse(line.contains("empty="));
         assertFalse(line.contains("dash=-"));
         assertTrue(line.contains("[info]"));
+    }
+
+    @Test
+    void consoleFormatterColorsLevelWhenAnsiEnabled() {
+        AnsiOutput.setEnabled(AnsiOutput.Enabled.ALWAYS);
+        try {
+            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+            Logger logger = context.getLogger("access");
+            LoggingEvent event = new LoggingEvent("fqcn", logger, Level.INFO, "hello", null, null);
+            String line = new HeiConsoleKeyValueStructuredLogFormatter().format(event);
+            assertTrue(line.contains(AnsiOutput.toString(AnsiColor.GREEN, "info")));
+        } finally {
+            AnsiOutput.setEnabled(AnsiOutput.Enabled.DETECT);
+        }
     }
 }

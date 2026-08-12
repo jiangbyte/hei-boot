@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.message.modules.feedback.entity.MsgFeedback;
 import github.jiangbyte.io.message.modules.feedback.param.MsgFeedbackAddParam;
@@ -34,6 +35,7 @@ public class AdminFeedbackController {
 
     /** 当前管理用户提交反馈。 */
     @PostMapping("/v1/admin/message/feedbacks/submit")
+    @OperationAudit(resourceType = "message_feedback", action = "submit")
     public ApiResponse<Void> submit(@Valid @RequestBody MsgFeedbackAddParam param) {
         feedbackService.submit(param);
         return ApiResponse.ok();
@@ -68,6 +70,7 @@ public class AdminFeedbackController {
     /** 管理端更新反馈状态或回复。 */
     @PostMapping("/v1/admin/message/feedbacks/update")
     @SaCheckPermission(value = "message:feedback:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_feedback", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody MsgFeedbackEditParam param) {
         feedbackService.update(param);
         return ApiResponse.ok();
@@ -76,6 +79,7 @@ public class AdminFeedbackController {
     /** 管理端批量删除反馈。 */
     @PostMapping("/v1/admin/message/feedbacks/delete")
     @SaCheckPermission(value = "message:feedback:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "message_feedback", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         feedbackService.delete(param);
         return ApiResponse.ok();

@@ -13,6 +13,7 @@ import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import github.jiangbyte.io.common.security.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,6 +55,7 @@ public class AdminAuthController {
 
     /** 发送管理端登录 OTP。 */
     @PostMapping("/v1/admin/send-login-code")
+    @RateLimit(key = "admin:send-login-code", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "send_login_code")
     public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
         authService.sendLoginCode(request, AccountType.ADMIN);
@@ -62,6 +64,7 @@ public class AdminAuthController {
 
     /** 管理端登录。 */
     @PostMapping("/v1/admin/login")
+    @RateLimit(key = "admin:login", permits = 20, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "login")
     public ApiResponse<LoginResult> login(@Valid @RequestBody LoginParam request) {
         request.setAccountType(AccountType.ADMIN);
@@ -85,6 +88,7 @@ public class AdminAuthController {
 
     /** 管理端忘记密码（发重置邮件）。 */
     @PostMapping("/v1/admin/forgot-password")
+    @RateLimit(key = "admin:forgot-password", permits = 5, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "forgot_password")
     public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordParam request) {
         authService.forgotPassword(request, AccountType.ADMIN);
@@ -93,6 +97,7 @@ public class AdminAuthController {
 
     /** 管理端通过令牌重置密码。 */
     @PostMapping("/v1/admin/reset-password")
+    @RateLimit(key = "admin:reset-password", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "reset_password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordParam request) {
         authService.resetPassword(request, AccountType.ADMIN);

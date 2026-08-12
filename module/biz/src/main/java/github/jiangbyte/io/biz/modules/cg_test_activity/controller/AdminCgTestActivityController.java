@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.biz.modules.cg_test_activity.entity.CgTestActivity;
 import github.jiangbyte.io.biz.modules.cg_test_activity.param.CgTestActivityAddParam;
@@ -38,6 +39,7 @@ public class AdminCgTestActivityController {
     /** 创建测试活动。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/create")
     @SaCheckPermission(value = "biz:cgtestactivity:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestactivity", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody CgTestActivityAddParam param) {
         cgTestActivityService.create(param);
         return ApiResponse.ok();
@@ -46,6 +48,7 @@ public class AdminCgTestActivityController {
     /** 更新测试活动。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/update")
     @SaCheckPermission(value = "biz:cgtestactivity:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestactivity", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody CgTestActivityEditParam param) {
         cgTestActivityService.update(param);
         return ApiResponse.ok();
@@ -54,6 +57,7 @@ public class AdminCgTestActivityController {
     /** 批量删除测试活动。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/delete")
     @SaCheckPermission(value = "biz:cgtestactivity:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestactivity", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         cgTestActivityService.delete(param);
         return ApiResponse.ok();

@@ -3,8 +3,11 @@ package github.jiangbyte.io.common.log.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * 结构化日志配置属性：JSON/键值格式开关、service 与 service_version。
+ * 结构化日志配置属性：JSON/键值格式开关、service 与脱敏键。
  *
  * Author: Charlie
  */
@@ -23,4 +26,9 @@ public class HeiLoggingProperties {
 
     /** service_version 字段。 */
     private String serviceVersion = "0.1.0-SNAPSHOT";
+
+    /** 日志 MDC/字段脱敏键名（小写匹配，含连字符/下划线变体）。 */
+    private List<String> redactKeys = new ArrayList<>(List.of(
+            "password", "secret", "token", "cryptoKey", "crypto-key",
+            "accessKey", "access-key", "privateKey", "private-key"));
 }

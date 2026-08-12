@@ -8,6 +8,7 @@
     <dependencies>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-web</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-security</artifactId></dependency>
+        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-log</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-mybatis</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-satoken</artifactId></dependency>
         <dependency>

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.entity.CgTestCatalog;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.param.CgTestCatalogAddParam;
@@ -39,6 +40,7 @@ public class AdminCgTestCatalogController {
     /** 创建测试目录。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/create")
     @SaCheckPermission(value = "biz:cgtestcatalog:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestcatalog", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody CgTestCatalogAddParam param) {
         cgTestCatalogService.create(param);
         return ApiResponse.ok();
@@ -47,6 +49,7 @@ public class AdminCgTestCatalogController {
     /** 更新测试目录。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/update")
     @SaCheckPermission(value = "biz:cgtestcatalog:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestcatalog", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody CgTestCatalogEditParam param) {
         cgTestCatalogService.update(param);
         return ApiResponse.ok();
@@ -55,6 +58,7 @@ public class AdminCgTestCatalogController {
     /** 批量删除测试目录。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/delete")
     @SaCheckPermission(value = "biz:cgtestcatalog:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "biz_cgtestcatalog", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         cgTestCatalogService.delete(param);
         return ApiResponse.ok();
