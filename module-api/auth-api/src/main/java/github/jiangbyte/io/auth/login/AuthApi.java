@@ -22,22 +22,38 @@ public interface AuthApi {
     void updateCurrentPassword(String passwordKeyId, String oldPassword, String newPassword, String otpCode);
 
     /**
-     * 校验密码后更新当前用户手机号，并可开启手机登录。
+     * 向待绑定邮箱发送验证码。
      *
-     * @param passwordKeyId    RSA 传输密钥 id
-     * @param password         当前密码（可能为密文）
-     * @param phone            新手机号
-     * @param phoneLoginEnabled 是否启用手机号登录身份
+     * @param target 新邮箱
      */
-    void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled);
+    void sendBindEmailCode(String target);
 
     /**
-     * 校验密码后更新当前用户邮箱，并可开启邮箱登录。
+     * 向待绑定手机发送验证码。
      *
-     * @param passwordKeyId    RSA 传输密钥 id
-     * @param password         当前密码（可能为密文）
-     * @param email            新邮箱
-     * @param emailLoginEnabled 是否启用邮箱登录身份
+     * @param target 新手机号
      */
-    void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled);
+    void sendBindPhoneCode(String target);
+
+    /**
+     * 校验密码与（绑定时）OTP 后更新当前用户手机号，并可开启手机登录。
+     *
+     * @param passwordKeyId     RSA 传输密钥 id
+     * @param password          当前密码（可能为密文）
+     * @param phone             新手机号
+     * @param phoneLoginEnabled 是否启用手机号登录身份
+     * @param otpCode           绑定 OTP；解绑时可空
+     */
+    void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled, String otpCode);
+
+    /**
+     * 校验密码与（绑定时）OTP 后更新当前用户邮箱，并可开启邮箱登录。
+     *
+     * @param passwordKeyId     RSA 传输密钥 id
+     * @param password          当前密码（可能为密文）
+     * @param email             新邮箱
+     * @param emailLoginEnabled 是否启用邮箱登录身份
+     * @param otpCode           绑定 OTP；解绑时可空
+     */
+    void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled, String otpCode);
 }

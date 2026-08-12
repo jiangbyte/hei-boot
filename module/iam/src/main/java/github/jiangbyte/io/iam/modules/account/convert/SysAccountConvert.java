@@ -72,6 +72,7 @@ public interface SysAccountConvert {
     @Mapping(target = "emailIdentityBindStatus", ignore = true)
     @Mapping(target = "phoneIdentityBindStatus", ignore = true)
     @Mapping(target = "identities", ignore = true)
+    @Mapping(target = "oauthBindings", ignore = true)
     @Mapping(target = "remark", ignore = true)
     SysAccountResult toResult(SysAccount entity);
 

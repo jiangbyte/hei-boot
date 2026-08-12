@@ -1,0 +1,131 @@
+<!-- Author: Charlie -->
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores'
+import { clearToken, setToken } from '@/utils/session'
+import { getSafeRedirect } from '@/utils/validate'
+import { wireBool } from '@/utils/wire'
+import { refreshDict, syncDictTree } from '@/utils/dict'
+import AuthLayout from './AuthLayout.vue'
+
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+
+const error = ref('')
+const tip = ref('正在完成登录…')
+
+onMounted(() => {
+  void handleCallback()
+})
+
+async function handleCallback() {
+  const status = String(route.query.oauth_status || '')
+  const action = String(route.query.oauth_action || '')
+  const rawMessage = typeof route.query.oauth_message === 'string' ? route.query.oauth_message : ''
+  const token = typeof route.query.token === 'string' ? route.query.token : ''
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
+
+  if (status !== 'ok') {
+    let msg = '三方登录失败'
+    if (rawMessage) {
+      try {
+        msg = decodeURIComponent(rawMessage)
+      } catch {
+        msg = rawMessage
+      }
+    }
+    error.value = msg
+    tip.value = msg
+    window.$message?.error?.(msg)
+    // 管理端未绑定三方时引导密码登录后再绑
+    window.setTimeout(() => {
+      void router.replace({
+        path: '/auth/login',
+        query: redirect ? { redirect } : undefined,
+      })
+    }, 1600)
+    return
+  }
+
+  try {
+    if (token) {
+      clearToken()
+      setToken(token, true)
+      authStore.sessionChecked = true
+    }
+
+    if (action === 'bound') {
+      tip.value = '绑定成功，正在跳转…'
+      await authStore.refreshUserInfo()
+      window.$message?.success?.('绑定成功')
+      await router.replace('/usercenter?tab=oauth')
+      return
+    }
+
+    const passwordExpired = wireBool(String(route.query.password_expired ?? false))
+    const forceBindEmail = wireBool(String(route.query.force_bind_email ?? false))
+    const forceBindPhone = wireBool(String(route.query.force_bind_phone ?? false))
+    if (passwordExpired) {
+      window.$message?.warning?.('密码已过期，请先修改密码')
+    } else if (forceBindEmail || forceBindPhone) {
+      window.$message?.warning?.('请先完成账号安全绑定')
+    } else {
+      window.$message?.success?.('登录成功')
+    }
+
+    tip.value = '登录成功，正在进入系统…'
+    await authStore.finishLogin(getSafeRedirect(redirect))
+    syncDictTree()
+    await refreshDict()
+  } catch (e: any) {
+    const msg = e?.message || '登录会话建立失败'
+    error.value = msg
+    tip.value = msg
+    window.$message?.error?.(msg)
+    window.setTimeout(() => {
+      void router.replace('/auth/login')
+    }, 1600)
+  }
+}
+</script>
+
+<template>
+  <AuthLayout
+    title="三方登录"
+    copyright=""
+  >
+    <div class="oauth-callback">
+      <NSpin
+        v-if="!error"
+        :show="true"
+      >
+        <div class="oauth-callback__tip">
+          {{ tip }}
+        </div>
+      </NSpin>
+      <NResult
+        v-else
+        status="error"
+        title="三方登录失败"
+        :description="error"
+      />
+    </div>
+  </AuthLayout>
+</template>
+
+<style scoped>
+.oauth-callback {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+}
+
+.oauth-callback__tip {
+  padding: 24px 8px;
+  color: var(--n-text-color-3, #6b7280);
+  font-size: 14px;
+}
+</style>

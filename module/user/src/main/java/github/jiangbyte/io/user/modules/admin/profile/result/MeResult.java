@@ -2,7 +2,6 @@ package github.jiangbyte.io.user.modules.admin.profile.result;
 
 import github.jiangbyte.io.common.core.enums.AccountType;
 import lombok.Data;
-import org.dromara.core.trans.vo.TransPojo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.Set;
  * Author: Charlie
  */
 @Data
-public class MeResult implements TransPojo {
+public class MeResult {
     private String accountId;
     private String account;
     private AccountType accountType;
@@ -28,5 +27,10 @@ public class MeResult implements TransPojo {
     private List<DeptIdNameResult> deptIdNames = new ArrayList<>();
     private List<GroupIdNameResult> groupIdNames = new ArrayList<>();
     private Set<String> permissionKeys;
+    private Boolean passwordExpired = false;
+    /** 是否需强制绑定邮箱（硬拦截） */
+    private Boolean forceBindEmail = false;
+    /** 是否需强制绑定手机（硬拦截） */
+    private Boolean forceBindPhone = false;
     private UserProfileResult profile;
 }

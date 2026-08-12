@@ -1,4 +1,6 @@
-package github.jiangbyte.io.iam.modules.account.support;
+package github.jiangbyte.io.iam.modules.account.provider;
+
+import github.jiangbyte.io.iam.modules.account.support.PasswordHelper;
 
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.iam.password.PasswordPolicyApi;
@@ -12,13 +14,13 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * 密码策略校验：复杂度、连续字符、弱口令与用户信息包含检查。
+ * PasswordPolicyApi 实现：复杂度、连续字符、弱口令与用户信息包含检查。
  *
  * Author: Charlie
  */
 @Service
 @RequiredArgsConstructor
-public class PasswordPolicyService implements PasswordPolicyApi {
+public class PasswordPolicyApiProvider implements PasswordPolicyApi {
 
     private static final Pattern HAS_UPPER = Pattern.compile("[A-Z]");
     private static final Pattern HAS_LOWER = Pattern.compile("[a-z]");

@@ -8,6 +8,7 @@ import github.jiangbyte.io.common.mybatis.handler.HeiMetaObjectHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 /**
  * MyBatis-Plus 自动配置：注册元对象填充、分页与数据源路由等基础设施 Bean。
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Bean;
  * Author: Charlie
  */
 @AutoConfiguration
+@ComponentScan("github.jiangbyte.io.common.mybatis")
 public class MybatisAutoConfiguration {
 
     /** 注册 MyBatis-Plus 拦截器（含分页）。 */

@@ -11,9 +11,9 @@ import github.jiangbyte.io.auth.modules.session.param.SessionTokenExitParam;
 import github.jiangbyte.io.auth.modules.session.result.SessionAccountResult;
 import github.jiangbyte.io.auth.modules.session.result.SessionAnalysisResult;
 import github.jiangbyte.io.auth.modules.session.result.SessionTokenResult;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
-import github.jiangbyte.io.common.core.domain.PageResult;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -44,47 +44,26 @@ import java.util.Locale;
 @RequestMapping("/api")
 public class AdminSessionController {
 
-    /** 汇总在线账号/Token 数量及近一小时新增等分析指标。 */
+    /** 汇总在线账号/Token 数量及近一小时新增等分析指标（轻量：不读 LoginUser）。 */
     @GetMapping("/v1/admin/auth/sessions/analysis")
     @SaCheckPermission(value = "auth:session:analysis", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SessionAnalysisResult> analysis() {
-        List<SessionAccountResult> items = collectSessions(null);
         SessionAnalysisResult result = new SessionAnalysisResult();
-        result.setOnlineAccountCount(items.size());
-        int tokenCount = 0;
-        int adminCount = 0;
-        int portalCount = 0;
-        int oneHourNew = 0;
-        int maxToken = 0;
-        OffsetDateTime oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
-        for (SessionAccountResult item : items) {
-            int count = item.getTokenCount() == null ? 0 : item.getTokenCount();
-            tokenCount += count;
-            maxToken = Math.max(maxToken, count);
-            if (AccountType.ADMIN.name().equalsIgnoreCase(item.getAccountType())) {
-                adminCount++;
-            } else if (AccountType.PORTAL.name().equalsIgnoreCase(item.getAccountType())) {
-                portalCount++;
-            }
-            for (SessionTokenResult token : item.getTokens()) {
-                OffsetDateTime loginAt = parseTime(token.getLoginAt());
-                if (loginAt != null && !loginAt.isBefore(oneHourAgo)) {
-                    oneHourNew++;
-                }
-            }
-        }
-        result.setOnlineTokenCount(tokenCount);
-        result.setAdminAccountCount(adminCount);
-        result.setPortalAccountCount(portalCount);
-        result.setOneHourNewCount(oneHourNew);
-        result.setMaxTokenCount(maxToken);
+        AnalysisAccumulator admin = analyzeLogic(StpKit.ADMIN);
+        AnalysisAccumulator portal = analyzeLogic(StpKit.PORTAL);
+        result.setOnlineAccountCount(admin.accountCount + portal.accountCount);
+        result.setOnlineTokenCount(admin.tokenCount + portal.tokenCount);
+        result.setAdminAccountCount(admin.accountCount);
+        result.setPortalAccountCount(portal.accountCount);
+        result.setOneHourNewCount(admin.oneHourNew + portal.oneHourNew);
+        result.setMaxTokenCount(Math.max(admin.maxToken, portal.maxToken));
         return ApiResponse.ok(result);
     }
 
     /** 分页查询在线会话，支持账号类型、账号、IP、关键字过滤。 */
     @GetMapping("/v1/admin/auth/sessions/page")
     @SaCheckPermission(value = "auth:session:page", type = StpKit.TYPE_ADMIN)
-    public ApiResponse<PageResult<SessionAccountResult>> page(@Valid @ModelAttribute SessionPageParam query) {
+    public ApiResponse<Page<SessionAccountResult>> page(@Valid @ModelAttribute SessionPageParam query) {
         List<SessionAccountResult> items = collectSessions(query.getAccountType());
         // 按查询条件内存过滤后再分页
         if (StringUtils.hasText(query.getAccountId())) {
@@ -114,8 +93,10 @@ public class AdminSessionController {
         }
         int from = Math.max(0, (query.getCurrent() - 1) * query.getSize());
         int to = Math.min(items.size(), from + query.getSize());
-        List<SessionAccountResult> page = from >= items.size() ? List.of() : items.subList(from, to);
-        return ApiResponse.ok(PageResult.of(page, items.size(), query.getCurrent(), query.getSize()));
+        List<SessionAccountResult> records = from >= items.size() ? List.of() : items.subList(from, to);
+        Page<SessionAccountResult> page = new Page<>(query.getCurrent(), query.getSize(), items.size());
+        page.setRecords(records);
+        return ApiResponse.ok(page);
     }
 
     /** 列出指定账号下的全部 Token 会话。 */
@@ -124,7 +105,7 @@ public class AdminSessionController {
     public ApiResponse<List<SessionTokenResult>> tokens(
             @RequestParam String accountId,
             @RequestParam(required = false) String accountType) {
-        return ApiResponse.ok(listTokens(resolveLogic(accountType), accountId, accountType));
+        return ApiResponse.ok(listTokens(resolveLogic(accountType), accountId, accountType).tokens());
     }
 
     /** 按账号批量强制下线（踢出全部 Token）。 */
@@ -176,14 +157,14 @@ public class AdminSessionController {
                 continue;
             }
             String accountId = String.valueOf(loginId);
-            List<SessionTokenResult> tokens = listTokens(stpLogic, accountId, accountType);
+            TokenBundle bundle = listTokens(stpLogic, accountId, accountType);
+            List<SessionTokenResult> tokens = bundle.tokens();
             SessionAccountResult item = new SessionAccountResult();
             item.setAccountId(accountId);
             item.setAccountType(accountType);
             item.setTokenCount(tokens.size());
             item.setTokens(tokens);
             if (!tokens.isEmpty()) {
-                // 用最新 Token 填充最近登录摘要
                 SessionTokenResult latest = tokens.getFirst();
                 item.setClientIp(latest.getClientIp());
                 item.setDeviceLabel(latest.getDeviceLabel());
@@ -195,18 +176,57 @@ public class AdminSessionController {
                         .filter(StringUtils::hasText)
                         .min(String::compareTo)
                         .orElse(null));
-                item.setAccount(readAccount(latest, accountSession, stpLogic, accountId));
-            } else {
-                item.setAccount(readAccount(null, accountSession, stpLogic, accountId));
             }
+            String account = bundle.account();
+            if (!StringUtils.hasText(account) && accountSession != null) {
+                Object user = accountSession.get(LoginHelper.LOGIN_USER_KEY);
+                if (user instanceof LoginUser loginUser && StringUtils.hasText(loginUser.getAccount())) {
+                    account = loginUser.getAccount();
+                }
+            }
+            item.setAccount(StringUtils.hasText(account) ? account : accountId);
             items.add(item);
         }
         return items;
     }
 
-    private List<SessionTokenResult> listTokens(StpLogic stpLogic, String accountId, String accountType) {
+    /** 分析用轻量扫描：只读 session/token 元数据，不拉 LoginUser。 */
+    private AnalysisAccumulator analyzeLogic(StpLogic stpLogic) {
+        AnalysisAccumulator acc = new AnalysisAccumulator();
+        OffsetDateTime oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
+        List<String> sessionIds = stpLogic.searchSessionId("", 0, -1, false);
+        for (String sessionId : sessionIds) {
+            SaSession accountSession = stpLogic.getSessionBySessionId(sessionId);
+            Object loginId = accountSession == null ? null : accountSession.getLoginId();
+            if (loginId == null) {
+                continue;
+            }
+            acc.accountCount++;
+            List<String> tokenValues = stpLogic.getTokenValueListByLoginId(String.valueOf(loginId));
+            int count = tokenValues == null ? 0 : tokenValues.size();
+            acc.tokenCount += count;
+            acc.maxToken = Math.max(acc.maxToken, count);
+            if (tokenValues == null) {
+                continue;
+            }
+            for (String token : tokenValues) {
+                SaSession session = stpLogic.getTokenSessionByToken(token);
+                if (session == null) {
+                    continue;
+                }
+                OffsetDateTime loginAt = parseTime(formatEpoch(session.getCreateTime()));
+                if (loginAt != null && !loginAt.isBefore(oneHourAgo)) {
+                    acc.oneHourNew++;
+                }
+            }
+        }
+        return acc;
+    }
+
+    private TokenBundle listTokens(StpLogic stpLogic, String accountId, String accountType) {
         List<String> tokenValues = stpLogic.getTokenValueListByLoginId(accountId);
         List<SessionTokenResult> result = new ArrayList<>();
+        String account = null;
         for (String token : tokenValues) {
             SessionTokenResult info = new SessionTokenResult();
             info.setToken(token);
@@ -215,7 +235,6 @@ public class AdminSessionController {
             SaSession session = stpLogic.getTokenSessionByToken(token);
             if (session != null) {
                 info.setLoginAt(formatEpoch(session.getCreateTime()));
-                // 从 Token Session 读取 LoginUser 客户端信息
                 Object user = session.get(LoginHelper.LOGIN_USER_KEY);
                 if (user instanceof LoginUser loginUser) {
                     info.setAccountType(loginUser.getAccountType() == null
@@ -225,6 +244,9 @@ public class AdminSessionController {
                     info.setDeviceLabel(loginUser.getDeviceLabel());
                     info.setUserAgent(loginUser.getUserAgent());
                     info.setRememberMe(loginUser.isRememberMe());
+                    if (!StringUtils.hasText(account) && StringUtils.hasText(loginUser.getAccount())) {
+                        account = loginUser.getAccount();
+                    }
                 }
             }
             long timeout = stpLogic.getTokenTimeout(token);
@@ -239,30 +261,7 @@ public class AdminSessionController {
             String right = b.getLastActiveAt() != null ? b.getLastActiveAt() : "";
             return right.compareTo(left);
         });
-        return result;
-    }
-
-    private String readAccount(
-            SessionTokenResult token,
-            SaSession accountSession,
-            StpLogic stpLogic,
-            String accountId) {
-        if (token != null) {
-            SaSession tokenSession = stpLogic.getTokenSessionByToken(token.getToken());
-            if (tokenSession != null) {
-                Object user = tokenSession.get(LoginHelper.LOGIN_USER_KEY);
-                if (user instanceof LoginUser loginUser && StringUtils.hasText(loginUser.getAccount())) {
-                    return loginUser.getAccount();
-                }
-            }
-        }
-        if (accountSession != null) {
-            Object user = accountSession.get(LoginHelper.LOGIN_USER_KEY);
-            if (user instanceof LoginUser loginUser && StringUtils.hasText(loginUser.getAccount())) {
-                return loginUser.getAccount();
-            }
-        }
-        return accountId;
+        return new TokenBundle(result, account);
     }
 
     private StpLogic resolveLogic(String accountType) {
@@ -292,5 +291,15 @@ public class AdminSessionController {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private record TokenBundle(List<SessionTokenResult> tokens, String account) {
+    }
+
+    private static final class AnalysisAccumulator {
+        private int accountCount;
+        private int tokenCount;
+        private int oneHourNew;
+        private int maxToken;
     }
 }

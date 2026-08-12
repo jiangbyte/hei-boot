@@ -103,14 +103,20 @@ hei:
       - /api/v1/admin/send-login-code
       - /api/v1/admin/forgot-password
       - /api/v1/admin/reset-password
+      - /api/v1/admin/oauth/*/authorize
+      - /api/v1/admin/oauth/*/callback
       - /api/v1/admin/public/**
       - /api/v1/portal/captcha
       - /api/v1/portal/password-key
       - /api/v1/portal/login
       - /api/v1/portal/send-login-code
       - /api/v1/portal/register
+      - /api/v1/portal/register/send-code
       - /api/v1/portal/forgot-password
       - /api/v1/portal/reset-password
+      - /api/v1/portal/oauth/*/authorize
+      - /api/v1/portal/oauth/*/callback
+      - /api/v1/portal/oauth/wechat-mp/login
       - /api/v1/portal/public/**
       # 门户匿名可读（对齐 hei-fastapi auth_whitelist._builtin_portal_public_paths）
       - /api/v1/portal/sys/banners/list
@@ -133,7 +139,7 @@ hei:
     json: ${LOG_JSON:true}
     service: ${HEI_LOGGING_SERVICE:${spring.application.name}}
     service-version: ${HEI_LOGGING_SERVICE_VERSION:0.1.0-SNAPSHOT}
-    redact-keys: ${HEI_LOGGING_REDACT_KEYS:password,secret,token,cryptoKey,crypto-key,accessKey,access-key,privateKey,private-key}
+    redact-keys: ${HEI_LOGGING_REDACT_KEYS:password,secret,cryptoKey,crypto-key,accessKey,access-key,privateKey,private-key,accessToken,refreshToken,idToken,apiToken,authToken}
   log:
     audit:
       async-enabled: ${HEI_LOG_AUDIT_ASYNC_ENABLED:true}
@@ -179,7 +185,7 @@ mybatis-plus:
 # easy-trans 3.1.4 官方 TransServiceConfig 在 Spring Boot 4 下会因
 # org.springframework.boot.web.client.RestTemplateBuilder 包迁移而 ClassNotFoundException。
 # 已由 common-mybatis 的 EasyTransBoot4ImportFilter + EasyTransBoot4AutoConfiguration 接管，无需再配 exclude。
-# 全局 Advice 仅翻译 TransPojo/VO（TransPojoOnlyResponseBodyAdvice）；普通 Result DTO 不参与。
+# 全局 Advice 仅翻译 TransPojo/VO（TransPojoOnlyResponseBodyAdvice）；Result DTO 不实现 TransPojo，应翻译 entity 后再填充。
 easy-trans:
   is-enable-global: true
   is-enable-tile: true

@@ -50,8 +50,8 @@
 .auth-card {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(340px, 1.05fr);
-  width: min(100%, 960px);
-  min-height: 560px;
+  width: min(100%, 880px);
+  height: 520px;
   border-radius: var(--auth-card-radius);
   overflow: hidden;
   background: var(--n-card-color, #fff);
@@ -108,7 +108,6 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 480px;
 }
 
 .auth-card__logo {
@@ -185,13 +184,28 @@
 }
 
 .auth-card__form {
-  padding: 40px 44px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 32px 40px;
+  overflow: hidden;
   background: var(--n-card-color, #fff);
 }
 
+.auth-card__form-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
 .auth-card__form-head {
-  margin-bottom: 20px;
+  flex-shrink: 0;
+  margin-bottom: 16px;
   text-align: center;
 }
 
@@ -214,23 +228,93 @@
   text-decoration: none;
 }
 
-/* 紧凑行距：压小 Naive 默认反馈占位，而不是清零导致粘连 */
-.auth-card__form :deep(.n-form-item) {
-  margin-bottom: 12px;
-  --n-feedback-height: 18px;
+.auth-card__form-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* 原生 form + 独立 form-item：预留错误提示行高 */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+.auth-card__form .auth-form .n-form-item,
+.auth-center__body .auth-form .n-form-item {
+  margin-bottom: 0;
+  --n-feedback-height: 28px;
   --n-feedback-font-size: 12px;
 }
 
-.auth-card__form :deep(.n-form-item-feedback-wrapper) {
+.auth-card__form .auth-form .n-form-item-feedback-wrapper,
+.auth-center__body .auth-form .n-form-item-feedback-wrapper {
+  display: flex;
+  align-items: flex-start;
   min-height: var(--n-feedback-height);
 }
 
-.auth-card__form :deep(.n-button.n-button--primary-type) {
-  font-weight: 600;
+.auth-card__form .auth-form .n-form-item-feedback-wrapper .n-form-item-feedback,
+.auth-center__body .auth-form .n-form-item-feedback-wrapper .n-form-item-feedback {
+  margin-top: 2px;
+  min-height: 0;
+  line-height: 18px;
 }
 
-.auth-card__form :deep(.n-tabs-nav) {
-  margin-bottom: 12px;
+.auth-card__form .auth-form .auth-login-tabs {
+  margin-bottom: 16px;
+}
+
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-nav {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-nav-scroll-content,
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-tab-wrapper {
+  flex: 1;
+}
+
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-tab {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-card__form .auth-form .auth-login-tabs .n-tabs-pane-wrapper,
+.auth-card__form .auth-form .auth-login-tabs .n-tab-pane {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.auth-card__form .auth-form .auth-form-row,
+.auth-center__body .auth-form .auth-form-row {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.auth-card__form .auth-form .auth-form-foot {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--n-divider-color, #eef2f7);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--auth-muted, var(--n-text-color-3, #8b95a5));
+}
+
+.auth-card__form .n-button.n-button--primary-type,
+.auth-center__body .n-button.n-button--primary-type {
+  font-weight: 600;
 }
 
 /* ---- 找回密码居中 ---- */
@@ -281,26 +365,12 @@
   text-align: left;
 }
 
-.auth-center__body :deep(.n-form-item) {
-  margin-bottom: 12px;
-  --n-feedback-height: 18px;
-  --n-feedback-font-size: 12px;
-}
-
-.auth-center__body :deep(.n-form-item-feedback-wrapper) {
-  min-height: var(--n-feedback-height);
-}
-
-.auth-center__body :deep(.n-button.n-button--primary-type) {
-  font-weight: 600;
-}
-
 .auth-center__links {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 16px;
-  margin-top: 12px;
+  margin-top: 0;
   font-size: 13px;
 }
 
@@ -312,15 +382,11 @@
 @media (max-width: 860px) {
   .auth-card {
     grid-template-columns: 1fr;
-    min-height: auto;
+    height: auto;
   }
 
   .auth-card__brand {
     padding: 28px 24px 24px;
-  }
-
-  .auth-card__brand-inner {
-    min-height: auto;
   }
 
   .auth-card__brand-deco::before,
@@ -333,7 +399,14 @@
   }
 
   .auth-card__form {
+    height: auto;
+    justify-content: flex-start;
     padding: 28px 24px;
+    overflow: visible;
+  }
+
+  .auth-card__form-body {
+    overflow: visible;
   }
 
   .auth-center {

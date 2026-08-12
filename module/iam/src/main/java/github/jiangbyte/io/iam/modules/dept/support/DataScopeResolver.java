@@ -3,11 +3,14 @@ package github.jiangbyte.io.iam.modules.dept.support;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.common.security.datascope.DataScopeSupport;
 import github.jiangbyte.io.iam.modules.dept.entity.SysDept;
 import github.jiangbyte.io.iam.modules.dept.mapper.SysDeptMapper;
 import github.jiangbyte.io.iam.modules.relation.constants.IamRelationTypes;
+import github.jiangbyte.io.iam.modules.relation.entity.SysIamRelation;
+import github.jiangbyte.io.iam.modules.relation.mapper.SysIamRelationMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -34,10 +37,71 @@ import lombok.RequiredArgsConstructor;
 public class DataScopeResolver {
 
     private final SysDeptMapper deptMapper;
+    private final SysIamRelationMapper relationMapper;
 
     /** 解析当前登录用户对权限键的数据范围约束。 */
     public DataScopeConstraint resolve(String permissionKey) {
         return DataScopeSupport.resolveCurrent(permissionKey, this::listDeptAndChildIds);
+    }
+
+    /**
+     * 断言账号在权限键对应数据范围内可访问。
+     * DEPTS 范围按 ACCOUNT_DEPT 关系判定，与 {@link #applyAccountScope} 对齐。
+     */
+    public void assertAccountAccessible(String accountId, String permissionKey) {
+        assertAccountAccessible(accountId, resolve(permissionKey));
+    }
+
+    /** 使用已解析约束断言账号可访问（批量场景避免重复 resolve/部门展开）。 */
+    public void assertAccountAccessible(String accountId, DataScopeConstraint constraint) {
+        if (constraint instanceof DataScopeConstraint.Depts depts) {
+            if (!accountInDepts(accountId, depts.deptIds())) {
+                throw new BizException(403, "无权访问该数据");
+            }
+            return;
+        }
+        DataScopeSupport.assertAccountAccessible(constraint, accountId);
+    }
+
+    /**
+     * 批量断言账号可访问：只 resolve 一次；DEPTS 时一次查出挂靠关系再内存判定。
+     */
+    public void assertAccountsAccessible(Collection<String> accountIds, String permissionKey) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return;
+        }
+        DataScopeConstraint constraint = resolve(permissionKey);
+        if (constraint instanceof DataScopeConstraint.All) {
+            return;
+        }
+        if (constraint instanceof DataScopeConstraint.Deny) {
+            throw new BizException(403, "无权访问该数据");
+        }
+        if (constraint instanceof DataScopeConstraint.Self self) {
+            for (String accountId : accountIds) {
+                DataScopeSupport.assertAccountAccessible(constraint, accountId);
+            }
+            return;
+        }
+        if (constraint instanceof DataScopeConstraint.Depts depts) {
+            Set<String> allowed = accountIdsInDepts(accountIds, depts.deptIds());
+            for (String accountId : accountIds) {
+                if (!allowed.contains(accountId)) {
+                    throw new BizException(403, "无权访问该数据");
+                }
+            }
+        }
+    }
+
+    /** 断言负责人/归属部门在权限键对应数据范围内可访问。 */
+    public void assertOwnerOrDeptAccessible(String createdBy, String ownerDeptId, String permissionKey) {
+        assertOwnerOrDeptAccessible(createdBy, ownerDeptId, resolve(permissionKey));
+    }
+
+    /** 使用已解析约束断言负责人/部门可访问。 */
+    public void assertOwnerOrDeptAccessible(
+            String createdBy, String ownerDeptId, DataScopeConstraint constraint) {
+        DataScopeSupport.assertOwnerOrDeptAccessible(constraint, createdBy, ownerDeptId);
     }
 
     /**
@@ -144,6 +208,36 @@ public class DataScopeResolver {
         }
         // 4. 排序后返回稳定 id 列表
         return result.stream().sorted().collect(Collectors.toList());
+    }
+
+    /** 账号是否挂在给定部门集合中（ACCOUNT_DEPT）。 */
+    private boolean accountInDepts(String accountId, List<String> deptIds) {
+        if (!StringUtils.hasText(accountId) || deptIds == null || deptIds.isEmpty()) {
+            return false;
+        }
+        return accountIdsInDepts(List.of(accountId), deptIds).contains(accountId);
+    }
+
+    /** 批量：哪些账号挂在给定部门集合中。 */
+    private Set<String> accountIdsInDepts(Collection<String> accountIds, List<String> deptIds) {
+        if (accountIds == null || accountIds.isEmpty() || deptIds == null || deptIds.isEmpty()) {
+            return Set.of();
+        }
+        List<String> ids = accountIds.stream().filter(StringUtils::hasText).distinct().toList();
+        if (ids.isEmpty()) {
+            return Set.of();
+        }
+        return relationMapper.selectList(Wrappers.<SysIamRelation>lambdaQuery()
+                        .select(SysIamRelation::getSubjectId)
+                        .eq(SysIamRelation::getSubjectType, IamRelationTypes.SUBJECT_ACCOUNT)
+                        .in(SysIamRelation::getSubjectId, ids)
+                        .eq(SysIamRelation::getRelationType, IamRelationTypes.ACCOUNT_DEPT)
+                        .eq(SysIamRelation::getTargetType, IamRelationTypes.TARGET_DEPT)
+                        .in(SysIamRelation::getTargetId, deptIds))
+                .stream()
+                .map(SysIamRelation::getSubjectId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
     }
 
     /** 写入恒假条件以拒绝查询结果。 */

@@ -16,4 +16,6 @@ public class EmailUpdateParam {
     private String password;
     private String email;
     private Boolean emailLoginEnabled = false;
+    /** 绑定/换绑时必填的邮箱 OTP */
+    private String otpCode;
 }

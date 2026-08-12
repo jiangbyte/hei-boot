@@ -88,6 +88,15 @@ public class PortalAuthController {
         return ApiResponse.ok(authService.registerPortal(request));
     }
 
+    /** 发送门户注册 OTP。 */
+    @PostMapping("/v1/portal/register/send-code")
+    @RateLimit(key = "portal:register-send-code", permits = 10, windowSeconds = 60)
+    @OperationAudit(resourceType = "auth", action = "send_register_code")
+    public ApiResponse<Void> sendRegisterCode(@Valid @RequestBody SendLoginCodeParam request) {
+        authService.sendRegisterCode(request);
+        return ApiResponse.ok();
+    }
+
     /** 门户登出。 */
     @PostMapping("/v1/portal/logout")
     @OperationAudit(resourceType = "auth", action = "logout")

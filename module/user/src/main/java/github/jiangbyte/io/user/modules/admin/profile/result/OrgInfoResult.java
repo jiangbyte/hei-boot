@@ -1,7 +1,6 @@
 package github.jiangbyte.io.user.modules.admin.profile.result;
 
 import lombok.Data;
-import org.dromara.core.trans.vo.TransPojo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.List;
  * Author: Charlie
  */
 @Data
-public class OrgInfoResult implements TransPojo {
+public class OrgInfoResult {
     private List<RoleIdNameResult> roleIdNames = new ArrayList<>();
     private List<DeptIdNameResult> deptIdNames = new ArrayList<>();
     private List<GroupIdNameResult> groupIdNames = new ArrayList<>();

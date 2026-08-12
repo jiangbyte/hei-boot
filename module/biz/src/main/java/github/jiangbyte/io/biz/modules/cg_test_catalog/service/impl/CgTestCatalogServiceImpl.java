@@ -1,11 +1,14 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.mybatis.datascope.OwnerDeptDataScope;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.convert.CgTestCatalogConvert;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.entity.CgTestCatalog;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.mapper.CgTestCatalogMapper;
@@ -36,7 +39,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, CgTestCatalog> implements CgTestCatalogService {
 
+    private static final String PERMISSION_KEY = "biz:cgtestcatalog:page";
+
     private final CgTestCatalogConvert cgTestCatalogConvert;
+    private final OwnerDeptDataScope ownerDeptDataScope;
 
     @Override
     @Transactional
@@ -55,6 +61,7 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
         if (entity == null) {
             throw new BizException(404, "CgTestCatalog not found");
         }
+        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         cgTestCatalogConvert.update(param, entity);
         this.updateById(entity);
     }
@@ -65,6 +72,11 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
         // 空列表直接返回；否则按 ID 删除
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
+        }
+        List<CgTestCatalog> entities = this.listByIds(param.getIds());
+        DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
+        for (CgTestCatalog entity : entities) {
+            ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), scope);
         }
         this.removeByIds(param.getIds());
     }
@@ -77,6 +89,7 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
         if (entity == null) {
             throw new BizException(404, "CgTestCatalog not found");
         }
+        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         return entity;
     }
 
@@ -84,13 +97,14 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
     @ReadDataSource
     public Page<CgTestCatalog> page(CgTestCatalogPageParam param) {
         // 按编码/名称等条件分页查询
-        return this.page(new Page<>(param.getCurrent(), param.getSize()),
-                Wrappers.<CgTestCatalog>lambdaQuery()
-                        .like(StringUtils.hasText(param.getCode()), CgTestCatalog::getCode, param.getCode())
-                        .like(StringUtils.hasText(param.getName()), CgTestCatalog::getName, param.getName())
-                        .like(StringUtils.hasText(param.getCategory()), CgTestCatalog::getCategory, param.getCategory())
-                        .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestCatalog::getStatus, param.getStatus())
-                        .orderByDesc(CgTestCatalog::getCreatedAt));
+        LambdaQueryWrapper<CgTestCatalog> wrapper = Wrappers.<CgTestCatalog>lambdaQuery()
+                .like(StringUtils.hasText(param.getCode()), CgTestCatalog::getCode, param.getCode())
+                .like(StringUtils.hasText(param.getName()), CgTestCatalog::getName, param.getName())
+                .like(StringUtils.hasText(param.getCategory()), CgTestCatalog::getCategory, param.getCategory())
+                .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestCatalog::getStatus, param.getStatus())
+                .orderByDesc(CgTestCatalog::getCreatedAt);
+        ownerDeptDataScope.apply(wrapper, PERMISSION_KEY, CgTestCatalog::getCreatedBy, CgTestCatalog::getOwnerDeptId);
+        return this.page(new Page<>(param.getCurrent(), param.getSize()), wrapper);
     }
 
     @Override

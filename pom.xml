@@ -46,6 +46,7 @@
         <xxl-sso.version>2.4.0</xxl-sso.version>
         <mybatis-spring-boot.version>4.0.1</mybatis-spring-boot.version>
         <flyway.version>12.4.0</flyway.version>
+        <justauth.version>1.16.7</justauth.version>
     </properties>
 
     <modules>
@@ -310,6 +311,11 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>me.zhyd.oauth</groupId>
+                <artifactId>JustAuth</artifactId>
+                <version>${justauth.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -33,8 +33,17 @@ public interface AuthService {
     /** 向邮箱或手机发送登录 OTP。 */
     void sendLoginCode(SendLoginCodeParam request, AccountType accountType);
 
+    /** 向邮箱或手机发送门户注册 OTP（图形验证码通过后）。 */
+    void sendRegisterCode(SendLoginCodeParam request);
+
     /** 密码或 OTP 登录并签发会话。 */
     LoginResult login(LoginParam request);
+
+    /** 三方登录成功后签发会话。 */
+    LoginResult issueLoginForAccount(
+            github.jiangbyte.io.iam.account.AccountInfo account,
+            AccountType accountType,
+            String loginLabel);
 
     /** 门户用户自助注册。 */
     RegisterResult registerPortal(RegisterParam request);
@@ -70,6 +79,12 @@ public interface AuthService {
      */
     void updateCurrentPassword(String passwordKeyId, String oldPassword, String newPassword, String otpCode);
 
+    /** 向待绑定邮箱发送验证码。 */
+    void sendBindEmailCode(String target);
+
+    /** 向待绑定手机发送验证码。 */
+    void sendBindPhoneCode(String target);
+
     /**
      * 更新当前用户手机号及是否允许手机登录。
      *
@@ -77,8 +92,9 @@ public interface AuthService {
      * @param password          加密后的登录密码（用于身份确认）
      * @param phone             新手机号
      * @param phoneLoginEnabled 是否启用手机登录身份
+     * @param otpCode           绑定 OTP；解绑时可空
      */
-    void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled);
+    void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled, String otpCode);
 
     /**
      * 更新当前用户邮箱及是否允许邮箱登录。
@@ -87,6 +103,7 @@ public interface AuthService {
      * @param password          加密后的登录密码（用于身份确认）
      * @param email             新邮箱
      * @param emailLoginEnabled 是否启用邮箱登录身份
+     * @param otpCode           绑定 OTP；解绑时可空
      */
-    void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled);
+    void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled, String otpCode);
 }

@@ -55,6 +55,15 @@ public final class LoginHelper {
         stpLogic(accountType).logout();
     }
 
+    /** 注销指定账号在 ADMIN/PORTAL 下的全部会话（授权变更后踢下线）。 */
+    public static void logoutAccount(String accountId) {
+        if (accountId == null || accountId.isBlank()) {
+            return;
+        }
+        StpKit.ADMIN.logout(accountId);
+        StpKit.PORTAL.logout(accountId);
+    }
+
     /** 获取当前登录用户（Optional）。 */
     public static Optional<LoginUser> currentUser() {
         StpLogic stpLogic = resolveStpLogic();

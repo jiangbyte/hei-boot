@@ -15,6 +15,9 @@ import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.auth.modules.login.convert.AuthConvert;
 import github.jiangbyte.io.auth.modules.login.support.AuthCryptoService;
 import github.jiangbyte.io.auth.modules.login.support.LoginProtectionService;
+import github.jiangbyte.io.auth.modules.login.result.OauthProviderOptionResult;
+import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
+import github.jiangbyte.io.auth.modules.oauth.support.OauthProvider;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
@@ -94,14 +97,52 @@ public class AuthServiceImpl implements AuthService {
         result.setAllowOtp(configApi.getBoolean("AUTH_LOGIN_" + typeName + "_ALLOW_OTP", true));
         boolean defaultRegister = type == AccountType.PORTAL;
         result.setRegisterEnabled(configApi.getBoolean("AUTH_REGISTER_" + typeName + "_ENABLED", defaultRegister));
-        result.setRegisterRequirePhone(configApi.getBoolean("AUTH_REGISTER_" + typeName + "_REQUIRE_PHONE", false));
-        result.setRegisterRequireEmail(configApi.getBoolean(
-                "AUTH_REGISTER_" + typeName + "_REQUIRE_EMAIL", type == AccountType.PORTAL));
+        if (type == AccountType.PORTAL) {
+            result.setRegisterAllowAccount(configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT", true));
+            result.setRegisterAllowEmail(configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_EMAIL", true));
+            result.setRegisterAllowPhone(configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_PHONE", false));
+        } else {
+            result.setRegisterAllowAccount(false);
+            result.setRegisterAllowEmail(false);
+            result.setRegisterAllowPhone(false);
+        }
+        result.setForceBindEmail(configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_EMAIL", false));
+        result.setForceBindPhone(configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false));
+        result.setOauthProviders(buildOauthProviderOptions(type));
         result.setPasswordChangeVerifyMethod(
                 configApi.getValue("PASSWORD_CHANGE_VERIFY_METHOD", "OLD_PASSWORD").trim().toUpperCase(Locale.ROOT));
         result.setCopyrightText(nullToEmpty(configApi.getValue("COPYRIGHT_TEXT", "")).trim());
         result.setCopyrightUrl(nullToEmpty(configApi.getValue("COPYRIGHT_URL", "")).trim());
         return result;
+    }
+
+    private java.util.List<OauthProviderOptionResult> buildOauthProviderOptions(AccountType type) {
+        java.util.List<OauthProviderOptionResult> list = new java.util.ArrayList<>();
+        for (OauthProvider provider : OauthProvider.values()) {
+            // 管理端隐藏小程序入口
+            if (type == AccountType.ADMIN && provider == OauthProvider.WECHAT_MP) {
+                continue;
+            }
+            OauthProviderOptionResult item = new OauthProviderOptionResult();
+            item.setProvider(provider.name());
+            item.setLabel(provider.getLabel());
+            item.setWebOAuth(provider.isWebOAuth());
+            item.setEnabled(configApi.getBoolean(OauthClientFacade.configKey(type, provider, "ENABLED"), false));
+            list.add(item);
+        }
+        return list;
+    }
+
+    @Override
+    public LoginResult issueLoginForAccount(AccountInfo account, AccountType accountType, String loginLabel) {
+        if (account == null || !"ENABLED".equalsIgnoreCase(account.getAccountStatus())) {
+            throw new BizException(401, "账号不可用");
+        }
+        if (!accountType.name().equalsIgnoreCase(account.getAccountType())) {
+            throw new BizException(401, "账号类型不匹配");
+        }
+        String label = StringUtils.hasText(loginLabel) ? loginLabel : accountApi.findIdentifier(account.getId(), "ACCOUNT");
+        return issueSession(account, accountType, true, label);
     }
 
     @Override
@@ -123,6 +164,25 @@ public class AuthServiceImpl implements AuthService {
         String code = sixDigitCode();
         Duration ttl = otpTtl();
         cryptoService.storeLoginOtp(type.name(), channel, normalized, code, ttl);
+        sendCodeMailOrSms(channel, normalized, "LOGIN_CODE", code, ttl);
+    }
+
+    @Override
+    public void sendRegisterCode(SendLoginCodeParam request) {
+        cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
+        if (!configApi.getBoolean("AUTH_REGISTER_PORTAL_ENABLED", true)) {
+            throw new BizException("门户注册已关闭");
+        }
+        String channel = normalizeChannel(request.getChannel());
+        ensureRegisterChannelAllowed(channel);
+        String normalized = normalizeTarget(channel, request.getTarget());
+        String identityType = "EMAIL".equals(channel) ? "EMAIL" : "PHONE";
+        if (accountApi.findByIdentifier(normalized, identityType) != null) {
+            throw new BizException("EMAIL".equals(channel) ? "邮箱已被使用" : "手机号已被使用");
+        }
+        String code = sixDigitCode();
+        Duration ttl = otpTtl();
+        cryptoService.storeRegisterOtp(channel, normalized, code, ttl);
         sendCodeMailOrSms(channel, normalized, "LOGIN_CODE", code, ttl);
     }
 
@@ -149,22 +209,22 @@ public class AuthServiceImpl implements AuthService {
                 if (account == null
                         || !"ENABLED".equalsIgnoreCase(account.getAccountStatus())
                         || !accountType.name().equalsIgnoreCase(account.getAccountType())) {
-                    throw new BizException(401, "Invalid account or password");
+                    throw new BizException(401, "账号或密码错误");
                 }
             } else {
                 // 密码登录：解密传输密文并校验哈希
                 if (!StringUtils.hasText(request.getPassword()) || !StringUtils.hasText(request.getPasswordKeyId())) {
-                    throw new BizException("Password is required");
+                    throw new BizException("请输入密码");
                 }
                 String rawPassword = cryptoService.decryptPassword(request.getPasswordKeyId(), request.getPassword());
                 account = accountApi.findByIdentifier(request.getAccount(), identityType);
                 if (account == null
                         || !"ENABLED".equalsIgnoreCase(account.getAccountStatus())
                         || !accountApi.matchesPassword(rawPassword, account.getPasswordHash())) {
-                    throw new BizException(401, "Invalid account or password");
+                    throw new BizException(401, "账号或密码错误");
                 }
                 if (!accountType.name().equalsIgnoreCase(account.getAccountType())) {
-                    throw new BizException(401, "Account type mismatch");
+                    throw new BizException(401, "账号类型不匹配");
                 }
             }
             LoginResult result = issueSession(account, accountType, request.getRememberMe(), request.getAccount());
@@ -180,41 +240,62 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public RegisterResult registerPortal(RegisterParam request) {
         if (!configApi.getBoolean("AUTH_REGISTER_PORTAL_ENABLED", true)) {
-            throw new BizException("Portal registration is disabled");
+            throw new BizException("门户注册已关闭");
         }
         cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
-        String email = StringUtils.hasText(request.getEmail())
-                ? request.getEmail().trim().toLowerCase(Locale.ROOT)
-                : null;
-        String phone = StringUtils.hasText(request.getPhone()) ? request.getPhone().trim() : null;
-        if (configApi.getBoolean("AUTH_REGISTER_PORTAL_REQUIRE_EMAIL", true) && !StringUtils.hasText(email)) {
-            throw new BizException("Email is required for registration");
-        }
-        if (configApi.getBoolean("AUTH_REGISTER_PORTAL_REQUIRE_PHONE", false) && !StringUtils.hasText(phone)) {
-            throw new BizException("Phone is required for registration");
+        String channel = normalizeRegisterChannel(request.getRegisterChannel());
+        ensureRegisterChannelAllowed(channel);
+
+        String accountName;
+        String email = null;
+        String phone = null;
+        if ("ACCOUNT".equals(channel)) {
+            accountName = requireAccountName(request.getAccount());
+            if (accountApi.findByIdentifier(accountName, "ACCOUNT") != null) {
+                throw new BizException("账号已存在");
+            }
+        } else if ("EMAIL".equals(channel)) {
+            email = normalizeTarget("EMAIL", request.getEmail());
+            if (!StringUtils.hasText(request.getOtpCode())) {
+                throw new BizException("请输入邮箱验证码");
+            }
+            if (!cryptoService.consumeRegisterOtp("EMAIL", email, request.getOtpCode().trim())) {
+                throw new BizException("验证码无效或已过期");
+            }
+            if (accountApi.findByIdentifier(email, "EMAIL") != null) {
+                throw new BizException("邮箱已被使用");
+            }
+            accountName = allocateAccountFromEmail(email);
+        } else {
+            phone = normalizeTarget("PHONE", request.getPhone());
+            if (!StringUtils.hasText(request.getOtpCode())) {
+                throw new BizException("请输入手机验证码");
+            }
+            if (!cryptoService.consumeRegisterOtp("PHONE", phone, request.getOtpCode().trim())) {
+                throw new BizException("验证码无效或已过期");
+            }
+            if (accountApi.findByIdentifier(phone, "PHONE") != null) {
+                throw new BizException("手机号已被使用");
+            }
+            accountName = allocateAccountFromPhone(phone);
         }
 
         String rawPassword = cryptoService.decryptPassword(request.getPasswordKeyId(), request.getPassword());
-        passwordPolicyApi.assertValid(rawPassword, null, request.getAccount(), email, phone);
+        passwordPolicyApi.assertValid(rawPassword, null, accountName, email, phone);
 
-        AccountInfo existing = accountApi.findByIdentifier(request.getAccount(), "ACCOUNT");
-        if (existing != null) {
-            throw new BizException("Account already exists");
-        }
-
-        // 创建门户账号与可选手机身份
         AccountInfo account = accountApi.createPortalAccount(
-                request.getAccount(),
+                accountName,
                 email,
                 accountApi.encodePassword(rawPassword));
         if (StringUtils.hasText(phone)) {
             accountApi.upsertIdentity(account.getId(), "PHONE", phone, true);
         }
 
-        String nickname = StringUtils.hasText(request.getNickname())
-                ? request.getNickname()
-                : "user-" + account.getId().substring(Math.max(0, account.getId().length() - 8));
-        portalUserProfileApi.createProfile(account.getId(), request.getName(), nickname, email);
+        String nickname = "user-" + account.getId().substring(Math.max(0, account.getId().length() - 8));
+        portalUserProfileApi.createProfile(account.getId(), null, nickname, email);
+        if (StringUtils.hasText(phone)) {
+            portalUserProfileApi.updatePhone(account.getId(), phone);
+        }
         accountApi.recordPasswordHistory(account.getId(), rawPassword, account.getId(), "register");
 
         // 按配置挂接默认角色/部门
@@ -231,13 +312,13 @@ public class AuthServiceImpl implements AuthService {
             try {
                 mailSenderFacade.sendTemplated("REGISTER_SUCCESS", email, Map.of(
                         "app_name", configApi.getValue("APP_NAME", "HEI"),
-                        "account", request.getAccount()));
+                        "account", accountName));
             } catch (Exception ignored) {
                 // 尽力发送生命周期邮件
             }
         }
 
-        return authConvert.toRegisterResponse(account.getId(), request.getAccount(), AccountType.PORTAL);
+        return authConvert.toRegisterResponse(account.getId(), accountName, AccountType.PORTAL);
     }
 
     @Override
@@ -266,7 +347,7 @@ public class AuthServiceImpl implements AuthService {
         String key = "AUTH_PASSWORD_RESET_URL_" + type.name();
         String base = configApi.getValue(key, "").trim();
         if (!StringUtils.hasText(base)) {
-            throw new BizException("Missing sys_config: " + key);
+            throw new BizException("缺少系统配置: " + key);
         }
         String separator = base.contains("?") ? "&" : "?";
         return base + separator + "token=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
@@ -280,11 +361,11 @@ public class AuthServiceImpl implements AuthService {
         // 消费一次性重置令牌
         String accountId = cryptoService.consumeResetToken(request.getToken());
         if (!StringUtils.hasText(accountId)) {
-            throw new BizException("Invalid or expired reset token");
+            throw new BizException("重置令牌无效或已过期");
         }
         AccountInfo account = accountApi.getById(accountId);
         if (account == null || !accountType.name().equalsIgnoreCase(account.getAccountType())) {
-            throw new BizException("Invalid reset token");
+            throw new BizException("重置令牌无效");
         }
         String accountName = accountApi.findIdentifier(accountId, "ACCOUNT");
         String email = accountApi.findIdentifier(accountId, "EMAIL");
@@ -309,8 +390,29 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResult refreshSession() {
         LoginUser user = LoginHelper.requireUser();
+        AccountInfo account = accountApi.getById(user.getAccountId());
+        if (account == null) {
+            throw new BizException(401, "账号不存在或已失效");
+        }
+        AccountAuthorizationInfo authorization = accountApi.getAuthorization(account.getId());
+        int expireDays = configApi.getInt("PASSWORD_VALIDITY_DAYS", 90);
+        boolean passwordExpired = accountApi.isPasswordExpired(account.getId(), expireDays);
+
+        user.setRoles(authorization.roleSet());
+        user.setPermissions(authorization.permissionSet());
+        user.setClientPermissions(authorization.clientPermissionSet());
+        user.setClientResources(authorization.clientResourceSet());
+        user.setRoleIds(authorization.getRoleIds());
+        user.setDeptIds(authorization.getDeptIds());
+        user.setGroupIds(authorization.getGroupIds());
+        user.setResourceIds(authorization.getResourceIds());
+        user.setButtonCodes(authorization.getButtonCodes());
+        user.setPermissionGrants(PermissionGrantInfo.toLoginGrants(authorization.getPermissionGrants()));
+        user.setPasswordExpired(passwordExpired);
+
         StpLogic logic = LoginHelper.stpLogic(user.getAccountType());
-        // 优先使用配置的 TTL 续期，否则沿用当前 Token 超时
+        logic.getTokenSession().set(LoginHelper.LOGIN_USER_KEY, user);
+
         long renewTtl = configApi.getLong("AUTH_TOKEN_TTL_SECONDS", 0);
         if (renewTtl <= 0) {
             renewTtl = logic.getTokenTimeout();
@@ -323,6 +425,7 @@ public class AuthServiceImpl implements AuthService {
         response.setToken(logic.getTokenValue());
         response.setExpiresIn(logic.getTokenTimeout());
         response.setPasswordExpiryWarningDays(passwordExpiryWarningDays(user.getAccountId()));
+        applyForceBindFlags(response, user.getAccountType(), user.getAccountId());
         return response;
     }
 
@@ -333,7 +436,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new BizException(401, "未登录"));
         AccountInfo account = accountApi.getById(loginUser.getAccountId());
         if (account == null) {
-            throw new BizException(404, "Account not found");
+            throw new BizException(404, "账号不存在");
         }
         // 标记注销后立即踢出当前会话
         accountApi.cancelAccount(
@@ -349,13 +452,13 @@ public class AuthServiceImpl implements AuthService {
         // 解析改密校验方式与联系人
         String method = changeVerifyMethod();
         if (!"EMAIL_CODE".equals(method) && !"PHONE_CODE".equals(method)) {
-            throw new BizException("Current password change method does not use verification code");
+            throw new BizException("当前改密方式不使用验证码");
         }
         String identityType = "EMAIL_CODE".equals(method) ? "EMAIL" : "PHONE";
         String channel = "EMAIL_CODE".equals(method) ? "EMAIL" : "PHONE";
         String target = accountApi.findIdentifier(loginUser.getAccountId(), identityType);
         if (!StringUtils.hasText(target)) {
-            throw new BizException("Account has no bound contact for verification");
+            throw new BizException("账号未绑定可用于校验的联系方式");
         }
         // 生成 OTP 写入缓存
         String code = sixDigitCode();
@@ -374,12 +477,12 @@ public class AuthServiceImpl implements AuthService {
         String rawOld = decrypted[0];
         String rawNew = decrypted[1];
         if (!StringUtils.hasText(rawNew)) {
-            throw new BizException("New password is required");
+            throw new BizException("请输入新密码");
         }
         // 加载账号并校验旧密码或 OTP
         AccountInfo account = accountApi.getById(loginUser.getAccountId());
         if (account == null) {
-            throw new BizException(404, "Account not found");
+            throw new BizException(404, "账号不存在");
         }
         verifyChangePassword(account, loginUser.getAccountType(), rawOld, otpCode);
         // 校验密码策略后更新哈希与历史
@@ -393,48 +496,71 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     @Override
-    public void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled) {
+    public void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled, String otpCode) {
         LoginUser loginUser = LoginHelper.requireUser();
         // 解密并校验登录密码
         String rawPassword = cryptoService.decryptPassword(passwordKeyId, password);
         AccountInfo account = accountApi.getById(loginUser.getAccountId());
         if (account == null) {
-            throw new BizException(404, "Account not found");
+            throw new BizException(404, "账号不存在");
         }
         if (!accountApi.matchesPassword(rawPassword, account.getPasswordHash())) {
-            throw new BizException("Invalid password");
+            throw new BizException("密码错误");
         }
         if (phoneLoginEnabled && !StringUtils.hasText(phone)) {
-            throw new BizException("Phone login requires a phone");
+            throw new BizException("开启手机登录需填写手机号");
+        }
+        String normalized = StringUtils.hasText(phone) ? phone.trim() : null;
+        String current = accountApi.findIdentifier(account.getId(), "PHONE");
+        boolean needsOtp = StringUtils.hasText(normalized) && !normalized.equals(nullToEmpty(current));
+        if (needsOtp) {
+            if (!StringUtils.hasText(otpCode)) {
+                throw new BizException("请输入手机验证码");
+            }
+            if (!cryptoService.consumeBindOtp(
+                    loginUser.getAccountType().name(), "PHONE", account.getId(), normalized, otpCode.trim())) {
+                throw new BizException("验证码无效或已过期");
+            }
         }
         // 更新手机身份
-        accountApi.upsertIdentity(account.getId(), "PHONE", phone, phoneLoginEnabled);
+        accountApi.upsertIdentity(account.getId(), "PHONE", normalized, phoneLoginEnabled);
         // 同步档案手机号
         if (loginUser.getAccountType() == AccountType.ADMIN) {
-            adminUserProfileApi.updatePhone(loginUser.getAccountId(), phone);
+            adminUserProfileApi.updatePhone(loginUser.getAccountId(), normalized);
         } else {
-            portalUserProfileApi.updatePhone(loginUser.getAccountId(), phone);
+            portalUserProfileApi.updatePhone(loginUser.getAccountId(), normalized);
         }
     }
 
     @Transactional
     @Override
-    public void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled) {
+    public void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled, String otpCode) {
         LoginUser loginUser = LoginHelper.requireUser();
         // 解密并校验登录密码
         String rawPassword = cryptoService.decryptPassword(passwordKeyId, password);
         AccountInfo account = accountApi.getById(loginUser.getAccountId());
         if (account == null) {
-            throw new BizException(404, "Account not found");
+            throw new BizException(404, "账号不存在");
         }
         if (!accountApi.matchesPassword(rawPassword, account.getPasswordHash())) {
-            throw new BizException("Invalid password");
+            throw new BizException("密码错误");
         }
         if (emailLoginEnabled && !StringUtils.hasText(email)) {
-            throw new BizException("Email login requires an email");
+            throw new BizException("开启邮箱登录需填写邮箱");
         }
         // 更新邮箱身份
         String normalized = StringUtils.hasText(email) ? email.trim().toLowerCase(Locale.ROOT) : null;
+        String current = accountApi.findIdentifier(account.getId(), "EMAIL");
+        boolean needsOtp = StringUtils.hasText(normalized) && !normalized.equalsIgnoreCase(nullToEmpty(current));
+        if (needsOtp) {
+            if (!StringUtils.hasText(otpCode)) {
+                throw new BizException("请输入邮箱验证码");
+            }
+            if (!cryptoService.consumeBindOtp(
+                    loginUser.getAccountType().name(), "EMAIL", account.getId(), normalized, otpCode.trim())) {
+                throw new BizException("验证码无效或已过期");
+            }
+        }
         accountApi.upsertIdentity(account.getId(), "EMAIL", normalized, emailLoginEnabled);
         // 同步档案邮箱
         if (loginUser.getAccountType() == AccountType.ADMIN) {
@@ -442,6 +568,34 @@ public class AuthServiceImpl implements AuthService {
         } else {
             portalUserProfileApi.updateEmail(loginUser.getAccountId(), normalized);
         }
+    }
+
+    @Override
+    public void sendBindEmailCode(String target) {
+        LoginUser loginUser = LoginHelper.requireUser();
+        String normalized = normalizeTarget("EMAIL", target);
+        AccountInfo other = accountApi.findByIdentifier(normalized, "EMAIL");
+        if (other != null && !loginUser.getAccountId().equals(other.getId())) {
+            throw new BizException("邮箱已被使用");
+        }
+        String code = sixDigitCode();
+        Duration ttl = otpTtl();
+        cryptoService.storeBindOtp(loginUser.getAccountType().name(), "EMAIL", loginUser.getAccountId(), normalized, code, ttl);
+        sendCodeMailOrSms("EMAIL", normalized, "BIND_EMAIL_CODE", code, ttl);
+    }
+
+    @Override
+    public void sendBindPhoneCode(String target) {
+        LoginUser loginUser = LoginHelper.requireUser();
+        String normalized = normalizeTarget("PHONE", target);
+        AccountInfo other = accountApi.findByIdentifier(normalized, "PHONE");
+        if (other != null && !loginUser.getAccountId().equals(other.getId())) {
+            throw new BizException("手机号已被使用");
+        }
+        String code = sixDigitCode();
+        Duration ttl = otpTtl();
+        cryptoService.storeBindOtp(loginUser.getAccountType().name(), "PHONE", loginUser.getAccountId(), normalized, code, ttl);
+        sendCodeMailOrSms("PHONE", normalized, "BIND_PHONE_CODE", code, ttl);
     }
 
     private LoginResult issueSession(AccountInfo account, AccountType accountType, Boolean rememberMe, String loginAccount) {
@@ -484,7 +638,92 @@ public class AuthServiceImpl implements AuthService {
         response.setToken(LoginHelper.stpLogic(accountType).getTokenValue());
         response.setExpiresIn(LoginHelper.stpLogic(accountType).getTokenTimeout());
         response.setPasswordExpiryWarningDays(passwordExpiryWarningDays(account.getId()));
+        applyForceBindFlags(response, accountType, account.getId());
         return response;
+    }
+
+    private void applyForceBindFlags(LoginResult response, AccountType accountType, String accountId) {
+        AccountType type = accountType == null ? AccountType.ADMIN : accountType;
+        String typeName = type.name();
+        boolean forceEmail = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_EMAIL", false)
+                && !StringUtils.hasText(accountApi.findIdentifier(accountId, "EMAIL"));
+        boolean forcePhone = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false)
+                && !StringUtils.hasText(accountApi.findIdentifier(accountId, "PHONE"));
+        response.setForceBindEmail(forceEmail);
+        response.setForceBindPhone(forcePhone);
+    }
+
+    private void ensureRegisterChannelAllowed(String channel) {
+        if ("ACCOUNT".equals(channel) && !configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_ACCOUNT", true)) {
+            throw new BizException("用户名注册已关闭");
+        }
+        if ("EMAIL".equals(channel) && !configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_EMAIL", true)) {
+            throw new BizException("邮箱注册已关闭");
+        }
+        if ("PHONE".equals(channel) && !configApi.getBoolean("AUTH_REGISTER_PORTAL_ALLOW_PHONE", false)) {
+            throw new BizException("手机注册已关闭");
+        }
+    }
+
+    private static String normalizeRegisterChannel(String channel) {
+        if (!StringUtils.hasText(channel)) {
+            throw new BizException("请选择注册通道");
+        }
+        String value = channel.trim().toUpperCase(Locale.ROOT);
+        if (!"ACCOUNT".equals(value) && !"EMAIL".equals(value) && !"PHONE".equals(value)) {
+            throw new BizException("不支持的注册通道");
+        }
+        return value;
+    }
+
+    private static String requireAccountName(String account) {
+        if (!StringUtils.hasText(account)) {
+            throw new BizException("请输入用户名");
+        }
+        String value = account.trim();
+        if (value.length() < 3 || value.length() > 64) {
+            throw new BizException("用户名需 3-64 个字符");
+        }
+        return value;
+    }
+
+    private String allocateAccountFromEmail(String email) {
+        String local = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
+        String base = sanitizeAccountBase(local);
+        return allocateUniqueAccount(base);
+    }
+
+    private String allocateAccountFromPhone(String phone) {
+        String digits = phone.replaceAll("\\D", "");
+        String base = "u" + (digits.length() > 8 ? digits.substring(digits.length() - 8) : digits);
+        return allocateUniqueAccount(base);
+    }
+
+    private static String sanitizeAccountBase(String raw) {
+        String cleaned = raw == null ? "" : raw.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase(Locale.ROOT);
+        if (!StringUtils.hasText(cleaned)) {
+            cleaned = "user";
+        }
+        if (cleaned.length() < 3) {
+            cleaned = cleaned + "000".substring(0, 3 - cleaned.length());
+        }
+        if (cleaned.length() > 48) {
+            cleaned = cleaned.substring(0, 48);
+        }
+        return cleaned;
+    }
+
+    private String allocateUniqueAccount(String base) {
+        String candidate = base;
+        int suffix = 0;
+        while (accountApi.findByIdentifier(candidate, "ACCOUNT") != null) {
+            suffix++;
+            candidate = base + suffix;
+            if (candidate.length() > 64) {
+                candidate = base.substring(0, Math.max(3, 64 - String.valueOf(suffix).length())) + suffix;
+            }
+        }
+        return candidate;
     }
 
     private Integer passwordExpiryWarningDays(String accountId) {
@@ -507,7 +746,7 @@ public class AuthServiceImpl implements AuthService {
     private void verifyLoginOtp(LoginParam request, AccountType accountType, String identityType) {
         String code = request.getOtpCode() == null ? "" : request.getOtpCode().trim();
         if (!StringUtils.hasText(code)) {
-            throw new BizException(401, "Invalid or expired OTP code");
+            throw new BizException(401, "验证码无效或已过期");
         }
         String channel;
         if ("EMAIL".equalsIgnoreCase(identityType)) {
@@ -515,11 +754,11 @@ public class AuthServiceImpl implements AuthService {
         } else if ("PHONE".equalsIgnoreCase(identityType)) {
             channel = "PHONE";
         } else {
-            throw new BizException("OTP login requires email or phone");
+            throw new BizException("OTP 登录需使用邮箱或手机");
         }
         String normalized = normalizeLoginAccount(identityType, request.getAccount());
         if (!cryptoService.consumeLoginOtp(accountType.name(), channel, normalized, code)) {
-            throw new BizException(401, "Invalid or expired OTP code");
+            throw new BizException(401, "验证码无效或已过期");
         }
     }
 
@@ -527,39 +766,39 @@ public class AuthServiceImpl implements AuthService {
         String method = changeVerifyMethod();
         if ("OLD_PASSWORD".equals(method)) {
             if (!StringUtils.hasText(oldPassword) || !accountApi.matchesPassword(oldPassword, account.getPasswordHash())) {
-                throw new BizException("Old password is incorrect");
+                throw new BizException("旧密码不正确");
             }
             return;
         }
         if ("EMAIL_CODE".equals(method) || "PHONE_CODE".equals(method)) {
             if (!StringUtils.hasText(otpCode)) {
-                throw new BizException("Verification code is required");
+                throw new BizException("请输入验证码");
             }
             String channel = "EMAIL_CODE".equals(method) ? "EMAIL" : "PHONE";
             if (!cryptoService.consumeChangePasswordOtp(accountType.name(), channel, account.getId(), otpCode.trim())) {
-                throw new BizException("Invalid or expired verification code");
+                throw new BizException("验证码无效或已过期");
             }
             return;
         }
-        throw new BizException("Unsupported password change verify method: " + method);
+        throw new BizException("不支持的改密校验方式: " + method);
     }
 
     private void ensureIdentityAllowed(AccountType accountType, String identityType, String loginMode) {
         String typeName = accountType.name();
         String mode = StringUtils.hasText(loginMode) ? loginMode.trim().toUpperCase(Locale.ROOT) : "PASSWORD";
         if ("OTP".equals(mode) && !configApi.getBoolean("AUTH_LOGIN_" + typeName + "_ALLOW_OTP", true)) {
-            throw new BizException("OTP login is disabled");
+            throw new BizException("OTP 登录已关闭");
         }
         if ("EMAIL".equalsIgnoreCase(identityType)
                 && !configApi.getBoolean("AUTH_LOGIN_" + typeName + "_ALLOW_EMAIL", true)) {
-            throw new BizException("Email login is disabled");
+            throw new BizException("邮箱登录已关闭");
         }
         if ("PHONE".equalsIgnoreCase(identityType)
                 && !configApi.getBoolean("AUTH_LOGIN_" + typeName + "_ALLOW_PHONE", true)) {
-            throw new BizException("Phone login is disabled");
+            throw new BizException("手机登录已关闭");
         }
         if ("ACCOUNT".equalsIgnoreCase(identityType) && "OTP".equals(mode)) {
-            throw new BizException("OTP login requires email or phone");
+            throw new BizException("OTP 登录需使用邮箱或手机");
         }
     }
 
@@ -591,7 +830,7 @@ public class AuthServiceImpl implements AuthService {
             smsSenderFacade.sendTemplated(templateScene, target, vars);
             return;
         }
-        throw new BizException("Unsupported channel");
+        throw new BizException("不支持的发送渠道");
     }
 
     private Duration otpTtl() {
@@ -610,18 +849,18 @@ public class AuthServiceImpl implements AuthService {
 
     private static String normalizeChannel(String channel) {
         if (!StringUtils.hasText(channel)) {
-            throw new BizException("Channel is required");
+            throw new BizException("请指定发送渠道");
         }
         String value = channel.trim().toUpperCase(Locale.ROOT);
         if (!"EMAIL".equals(value) && !"PHONE".equals(value)) {
-            throw new BizException("Unsupported channel");
+            throw new BizException("不支持的发送渠道");
         }
         return value;
     }
 
     private static String normalizeTarget(String channel, String target) {
         if (!StringUtils.hasText(target)) {
-            throw new BizException("Target is required");
+            throw new BizException("请填写接收目标");
         }
         return "EMAIL".equals(channel) ? target.trim().toLowerCase(Locale.ROOT) : target.trim();
     }

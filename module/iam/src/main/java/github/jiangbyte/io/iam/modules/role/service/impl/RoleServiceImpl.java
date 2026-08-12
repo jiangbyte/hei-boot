@@ -8,6 +8,7 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.account.service.AccountService;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
@@ -69,6 +70,8 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         SysRole existing = this.getOne(Wrappers.<SysRole>lambdaQuery()
                 .eq(SysRole::getCode, param.getCode()).last("limit 1"));
         if (existing != null && !role.getId().equals(existing.getId())) {
@@ -86,6 +89,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         }
         // 分批：先清主体/客体关系，再删角色
         for (List<String> batch : BatchPartition.partition(param.getIds())) {
+            List<SysRole> roles = this.listByIds(batch);
+            DataScopeConstraint scope = dataScopeResolver.resolve("iam:role:page");
+            for (SysRole role : roles) {
+                dataScopeResolver.assertOwnerOrDeptAccessible(
+                        role.getCreatedBy(), role.getOwnerDeptId(), scope);
+            }
             relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_ROLE, batch);
             relationService.deleteByTargetIds(IamRelationTypes.TARGET_ROLE, batch);
             this.removeByIds(batch);
@@ -99,6 +108,8 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         return role;
     }
 
@@ -122,9 +133,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Override
     @ReadDataSource
     public SysResourceOwnResult ownResources(String id, String accountType) {
-        if (this.getById(id) == null) {
+        SysRole role = this.getById(id);
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         // 拼装授权树 + 已授列表
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
@@ -138,9 +152,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Transactional
     public void grantResources(SysRoleGrantResourceParam param) {
         // 全量替换角色管理端资源
-        if (this.getById(param.getId()) == null) {
+        SysRole role = this.getById(param.getId());
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_ROLE,
                 param.getId(),
@@ -151,9 +168,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Override
     @ReadDataSource
     public SysResourceOwnResult ownClientResources(String id, String accountType) {
-        if (this.getById(id) == null) {
+        SysRole role = this.getById(id);
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         // 拼装客户端授权树 + 已授列表
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
@@ -167,9 +187,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Transactional
     public void grantClientResources(SysRoleGrantResourceParam param) {
         // 全量替换角色客户端资源
-        if (this.getById(param.getId()) == null) {
+        SysRole role = this.getById(param.getId());
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_ROLE,
                 param.getId(),
@@ -180,9 +203,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Override
     @ReadDataSource
     public SysOwnUserResult ownUsers(String id) {
-        if (this.getById(id) == null) {
+        SysRole role = this.getById(id);
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         // 查角色成员 id，再回填用户详情
         List<String> accountIds = relationService.listSubjectIds(
                 IamRelationTypes.ACCOUNT_ROLE, IamRelationTypes.TARGET_ROLE, id);
@@ -197,9 +223,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Transactional
     public void grantUsers(SysRoleGrantUserParam param) {
         // 全量替换角色成员
-        if (this.getById(param.getId()) == null) {
+        SysRole role = this.getById(param.getId());
+        if (role == null) {
             throw new BizException(404, "Role not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         relationService.replaceRoleUsers(param.getId(), param.getAccountIds());
     }
 }

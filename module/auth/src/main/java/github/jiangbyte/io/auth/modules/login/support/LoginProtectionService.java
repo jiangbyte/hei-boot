@@ -31,10 +31,10 @@ public class LoginProtectionService {
         String type = accountType.name();
         String normalized = normalizeAccount(account);
         if (isLocked(lockAccountKey(type, normalized))) {
-            throw new BizException(401, "Account is temporarily locked");
+            throw new BizException(401, "账号已临时锁定");
         }
         if (StringUtils.hasText(clientIp) && isLocked(lockIpKey(type, clientIp))) {
-            throw new BizException(401, "Too many failed login attempts from this IP");
+            throw new BizException(401, "该 IP 登录失败次数过多");
         }
     }
 

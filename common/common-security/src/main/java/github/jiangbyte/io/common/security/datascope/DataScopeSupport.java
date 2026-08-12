@@ -1,6 +1,7 @@
 package github.jiangbyte.io.common.security.datascope;
 
 import github.jiangbyte.io.common.core.enums.DataScopeType;
+import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import org.springframework.util.StringUtils;
@@ -92,6 +93,51 @@ public final class DataScopeSupport {
         return LoginHelper.currentUser()
                 .map(user -> resolve(user, permissionKey, expandDeptAndChildren))
                 .orElseGet(DataScopeConstraint.Deny::new);
+    }
+
+    /** 账号主体：ALL 放行；SELF 比账号 id；部门范围需调用方结合关系判定（此处无 dept 上下文则拒绝）。 */
+    public static boolean allowsAccount(DataScopeConstraint constraint, String accountId) {
+        if (constraint == null) {
+            return false;
+        }
+        return switch (constraint) {
+            case DataScopeConstraint.All ignored -> true;
+            case DataScopeConstraint.Self self ->
+                    StringUtils.hasText(accountId) && accountId.equals(self.accountId());
+            case DataScopeConstraint.Depts ignored -> false;
+            case DataScopeConstraint.Deny ignored -> false;
+        };
+    }
+
+    /** 负责人/部门主体：ALL 放行；SELF 比负责人；DEPTS 要求 ownerDeptId 非空且落在范围内。 */
+    public static boolean allowsOwnerOrDept(
+            DataScopeConstraint constraint, String ownerAccountId, String ownerDeptId) {
+        if (constraint == null) {
+            return false;
+        }
+        return switch (constraint) {
+            case DataScopeConstraint.All ignored -> true;
+            case DataScopeConstraint.Self self ->
+                    StringUtils.hasText(ownerAccountId) && ownerAccountId.equals(self.accountId());
+            case DataScopeConstraint.Depts depts ->
+                    StringUtils.hasText(ownerDeptId)
+                            && depts.deptIds() != null
+                            && depts.deptIds().contains(ownerDeptId);
+            case DataScopeConstraint.Deny ignored -> false;
+        };
+    }
+
+    public static void assertAccountAccessible(DataScopeConstraint constraint, String accountId) {
+        if (!allowsAccount(constraint, accountId)) {
+            throw new BizException(403, "无权访问该数据");
+        }
+    }
+
+    public static void assertOwnerOrDeptAccessible(
+            DataScopeConstraint constraint, String ownerAccountId, String ownerDeptId) {
+        if (!allowsOwnerOrDept(constraint, ownerAccountId, ownerDeptId)) {
+            throw new BizException(403, "无权访问该数据");
+        }
     }
 
     private static DataScopeType parseScope(String raw) {

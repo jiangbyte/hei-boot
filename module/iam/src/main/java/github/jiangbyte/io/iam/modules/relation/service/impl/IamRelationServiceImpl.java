@@ -8,12 +8,14 @@ import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
+import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccount;
 import github.jiangbyte.io.iam.modules.account.mapper.SysAccountMapper;
 import github.jiangbyte.io.iam.modules.account.support.AccountAuthorization;
 import github.jiangbyte.io.iam.modules.client.entity.SysClientResource;
 import github.jiangbyte.io.iam.modules.client.mapper.SysClientResourceMapper;
 import github.jiangbyte.io.iam.modules.dept.result.SysDeptGrantResult;
+import github.jiangbyte.io.iam.modules.dept.support.DataScopeResolver;
 import github.jiangbyte.io.iam.modules.relation.constants.IamRelationTypes;
 import github.jiangbyte.io.iam.modules.relation.entity.SysIamRelation;
 import github.jiangbyte.io.iam.modules.relation.mapper.SysIamRelationMapper;
@@ -52,6 +54,7 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
     private final SysResourceMapper resourceMapper;
     private final SysClientResourceMapper clientResourceMapper;
     private final SysAccountMapper accountMapper;
+    private final DataScopeResolver dataScopeResolver;
 
     @Override
     public AccountAuthorization getAccountAuthorization(String accountId) {
@@ -578,10 +581,12 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
     @Override
     @Transactional
     public void replaceAccountRoles(String accountId, List<String> roleIds) {
+        assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-角色
         String accountType = resolveAccountType(accountId);
         deleteSubjectRelations(IamRelationTypes.SUBJECT_ACCOUNT, accountId, IamRelationTypes.ACCOUNT_ROLE, accountType);
         if (CollectionUtils.isEmpty(roleIds)) {
+            LoginHelper.logoutAccount(accountId);
             return;
         }
         List<SysIamRelation> relations = new ArrayList<>();
@@ -595,15 +600,18 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
                     roleId));
         }
         saveRelations(relations);
+        LoginHelper.logoutAccount(accountId);
     }
 
     @Override
     @Transactional
     public void replaceAccountGroups(String accountId, List<String> groupIds) {
+        assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-用户组
         String accountType = resolveAccountType(accountId);
         deleteSubjectRelations(IamRelationTypes.SUBJECT_ACCOUNT, accountId, IamRelationTypes.ACCOUNT_GROUP, accountType);
         if (CollectionUtils.isEmpty(groupIds)) {
+            LoginHelper.logoutAccount(accountId);
             return;
         }
         List<SysIamRelation> relations = new ArrayList<>();
@@ -617,15 +625,18 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
                     groupId));
         }
         saveRelations(relations);
+        LoginHelper.logoutAccount(accountId);
     }
 
     @Override
     @Transactional
     public void replaceAccountDepts(String accountId, List<SysDeptGrantResult> grantInfoList) {
+        assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-部门
         String accountType = resolveAccountType(accountId);
         deleteSubjectRelations(IamRelationTypes.SUBJECT_ACCOUNT, accountId, IamRelationTypes.ACCOUNT_DEPT, accountType);
         if (CollectionUtils.isEmpty(grantInfoList)) {
+            LoginHelper.logoutAccount(accountId);
             return;
         }
         List<SysIamRelation> relations = new ArrayList<>();
@@ -641,6 +652,7 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
             relations.add(rel);
         }
         saveRelations(relations);
+        LoginHelper.logoutAccount(accountId);
     }
 
     @Override
@@ -718,6 +730,9 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
             relations.add(rel);
         }
         saveRelations(relations);
+        if (IamRelationTypes.SUBJECT_ACCOUNT.equals(subjectType)) {
+            LoginHelper.logoutAccount(subjectId);
+        }
     }
 
     @Override
@@ -792,6 +807,9 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
             relations.add(rel);
         }
         saveRelations(relations);
+        if (IamRelationTypes.SUBJECT_ACCOUNT.equals(subjectType)) {
+            LoginHelper.logoutAccount(subjectId);
+        }
     }
 
     private Map<String, Set<String>> resolvePermissionResourceIds(
@@ -836,6 +854,12 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
     @Override
     @Transactional
     public void replaceRoleUsers(String roleId, List<String> accountIds) {
+        SysRole role = roleMapper.selectById(roleId);
+        if (role == null) {
+            throw new BizException(404, "Role not found");
+        }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
         // 先按角色目标删光 ACCOUNT_ROLE，再按账号类型批量重建
         getBaseMapper().delete(Wrappers.<SysIamRelation>lambdaQuery()
                 .eq(SysIamRelation::getRelationType, IamRelationTypes.ACCOUNT_ROLE)
@@ -1091,5 +1115,13 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
             return false;
         }
         return expected.equalsIgnoreCase(actual);
+    }
+
+    /** 有登录态时校验账号数据范围（注册等无登录链路跳过）。 */
+    private void assertAccountAccessibleIfLoggedIn(String accountId) {
+        if (LoginHelper.currentUser().isEmpty()) {
+            return;
+        }
+        dataScopeResolver.assertAccountAccessible(accountId, "iam:account:page");
     }
 }

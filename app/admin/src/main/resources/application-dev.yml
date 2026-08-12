@@ -66,8 +66,7 @@ hei:
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
   xxl-job:
-    # 本地开发关闭（xxl-job-admin 未启动）；需要时在对应 yml 中开启
-    enabled: false
+    enabled: true
     access-token: ${XXL_JOB_ACCESS_TOKEN:default_token}
     admin:
       addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:9004/xxl-job-admin}

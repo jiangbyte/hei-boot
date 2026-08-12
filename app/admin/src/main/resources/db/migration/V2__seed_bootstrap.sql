@@ -1,6 +1,6 @@
 -- Bootstrap seed extracted from hei-fastapi scripts/db/seed/data.sql
 -- Structural tables only (FK-safe order). Demo/portal/cg_test data omitted.
--- Password for superadmin: 123456 (Java BCrypt).
+-- Password for superadmin: 123456 (Java BCrypt). Rotate / change after first boot in production.
 
 -- sys_resource_module: 1 rows
 INSERT INTO sys_resource_module (id, name, code, client, icon, color, sort, status, description, extra)

@@ -8,8 +8,8 @@ import {
   Form,
   Input,
   Modal,
-  Radio,
   Result,
+  Space,
   Tabs,
   message,
 } from 'antd'
@@ -44,9 +44,10 @@ type LoginFormValues = {
 }
 
 type RegisterFormValues = {
-  account: string
+  account?: string
   email?: string
   phone?: string
+  otp_code?: string
   password: string
   confirmPassword: string
   captcha_id: string
@@ -57,6 +58,12 @@ const allTabItems = [
   { key: 'ACCOUNT', label: '账号', placeholder: '请输入账号' },
   { key: 'EMAIL', label: '邮箱', placeholder: '请输入登录邮箱' },
   { key: 'PHONE', label: '手机号', placeholder: '请输入登录手机号' },
+]
+
+const registerTabItems = [
+  { key: 'ACCOUNT', label: '用户名', placeholder: '请输入用户名' },
+  { key: 'EMAIL', label: '邮箱', placeholder: '请输入注册邮箱' },
+  { key: 'PHONE', label: '手机号', placeholder: '请输入注册手机号' },
 ]
 
 export function AuthModal() {
@@ -70,19 +77,27 @@ export function AuthModal() {
   const [loginForm] = Form.useForm<LoginFormValues>()
   const [registerForm] = Form.useForm<RegisterFormValues>()
   const [activeType, setActiveType] = useState<LoginType>('ACCOUNT')
+  const [registerChannel, setRegisterChannel] = useState<LoginType>('ACCOUNT')
   const [loginMode, setLoginMode] = useState<'PASSWORD' | 'OTP'>('PASSWORD')
   const [loading, setLoading] = useState(false)
   const [sendingCode, setSendingCode] = useState(false)
+  const [sendingRegisterCode, setSendingRegisterCode] = useState(false)
   const [otpCooldown, setOtpCooldown] = useState(0)
+  const [registerOtpCooldown, setRegisterOtpCooldown] = useState(0)
   const [registerEnabled, setRegisterEnabled] = useState(true)
-  const [requireEmail, setRequireEmail] = useState(true)
-  const [requirePhone, setRequirePhone] = useState(false)
   const [options, setOptions] = useState({
     allow_account: true,
     allow_email: true,
     allow_phone: true,
     allow_otp: true,
+    register_allow_account: true,
+    register_allow_email: true,
+    register_allow_phone: false,
   })
+  const [oauthProviders, setOauthProviders] = useState<
+    Array<{ provider: string; label: string; enabled: boolean; web_oauth: boolean }>
+  >([])
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null)
   const loginCaptchaRef = useRef<CaptchaInputHandle>(null)
   const registerCaptchaRef = useRef<CaptchaInputHandle>(null)
   const loginCaptchaId = Form.useWatch('captcha_id', loginForm) || ''
@@ -104,9 +119,23 @@ export function AuthModal() {
     [options],
   )
 
+  const registerTabs = useMemo(
+    () =>
+      registerTabItems.filter((item) => {
+        if (item.key === 'ACCOUNT') return options.register_allow_account
+        if (item.key === 'EMAIL') return options.register_allow_email
+        return options.register_allow_phone
+      }),
+    [options],
+  )
+
   const resolvedActiveType = tabItems.some((item) => item.key === activeType)
     ? activeType
     : (tabItems[0]?.key as LoginType) || 'ACCOUNT'
+
+  const resolvedRegisterChannel = registerTabs.some((item) => item.key === registerChannel)
+    ? registerChannel
+    : (registerTabs[0]?.key as LoginType) || 'ACCOUNT'
 
   const otpAvailable =
     options.allow_otp && (resolvedActiveType === 'EMAIL' || resolvedActiveType === 'PHONE')
@@ -124,10 +153,24 @@ export function AuthModal() {
           allow_email: wireBool(data.allow_email ?? true),
           allow_phone: wireBool(data.allow_phone ?? true),
           allow_otp: wireBool(data.allow_otp ?? true),
+          register_allow_account: wireBool(data.register_allow_account ?? true),
+          register_allow_email: wireBool(data.register_allow_email ?? true),
+          register_allow_phone: wireBool(data.register_allow_phone ?? false),
         })
         setRegisterEnabled(wireBool(data.register_enabled ?? false))
-        setRequireEmail(wireBool(data.register_require_email ?? false))
-        setRequirePhone(wireBool(data.register_require_phone ?? false))
+        const providers = Array.isArray(data.oauth_providers) ? data.oauth_providers : []
+        setOauthProviders(
+          providers
+            .map((item: any) => ({
+              provider: String(item.provider || ''),
+              label: String(item.label || item.provider || ''),
+              enabled: wireBool(item.enabled ?? false),
+              web_oauth: wireBool(item.web_oauth ?? true),
+            }))
+            .filter((item: { provider: string; enabled: boolean; web_oauth: boolean }) =>
+              Boolean(item.provider && item.enabled && item.web_oauth),
+            ),
+        )
       })
       .catch(() => undefined)
   }, [open])
@@ -138,13 +181,42 @@ export function AuthModal() {
     return () => window.clearTimeout(timer)
   }, [otpCooldown])
 
+  useEffect(() => {
+    if (registerOtpCooldown <= 0) return
+    const timer = window.setTimeout(() => setRegisterOtpCooldown((v) => v - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [registerOtpCooldown])
+
+  async function onOauthLogin(provider: string) {
+    if (oauthLoading) return
+    setOauthLoading(provider)
+    try {
+      const res = await authApi.oauthAuthorize(provider, {
+        intent: 'LOGIN',
+        redirect: redirect || undefined,
+      })
+      const url = res?.data?.authorize_url
+      if (!url) {
+        message.error('无法发起三方登录')
+        return
+      }
+      window.location.href = String(url)
+    } catch {
+      // 全局错误提示
+    } finally {
+      setOauthLoading(null)
+    }
+  }
+
   function resetForms() {
     loginForm.resetFields()
     registerForm.resetFields()
     setLoading(false)
     setOtpCooldown(0)
+    setRegisterOtpCooldown(0)
     setLoginMode('PASSWORD')
     setActiveType('ACCOUNT')
+    setRegisterChannel('ACCOUNT')
   }
 
   async function onSendCode() {
@@ -238,39 +310,93 @@ export function AuthModal() {
     }
   }
 
-  async function onRegisterFinish(values: RegisterFormValues) {
-    const account = values.account.trim()
-    const email = values.email?.trim() || ''
-    const phone = values.phone?.trim() || ''
-
-    if (account.length < 3 || account.length > 64) {
-      message.warning('用户名需 3-64 个字符')
+  async function onSendRegisterCode() {
+    if (registerOtpCooldown > 0 || sendingRegisterCode) return
+    if (resolvedRegisterChannel !== 'EMAIL' && resolvedRegisterChannel !== 'PHONE') return
+    const identity =
+      resolvedRegisterChannel === 'EMAIL'
+        ? registerForm.getFieldValue('email')?.trim()
+        : registerForm.getFieldValue('phone')?.trim()
+    if (!identity) {
+      message.warning(`请输入${registerTabs.find((t) => t.key === resolvedRegisterChannel)?.label}`)
       return
     }
-    if (requireEmail || email) {
+    if (resolvedRegisterChannel === 'EMAIL' && !isValidEmail(identity)) {
+      message.warning('请输入有效邮箱')
+      return
+    }
+    if (resolvedRegisterChannel === 'PHONE' && !isValidPhone(identity)) {
+      message.warning('请输入有效手机号')
+      return
+    }
+    if (!registerCaptchaValue.trim()) {
+      message.warning('请输入图形验证码')
+      return
+    }
+    setSendingRegisterCode(true)
+    try {
+      await authApi.sendRegisterCode({
+        target: identity,
+        channel: resolvedRegisterChannel,
+        captcha_id: registerCaptchaId,
+        captcha_value: registerCaptchaValue,
+      })
+      message.success('验证码已发送，请查收后填写')
+      setRegisterOtpCooldown(OTP_COOLDOWN_SECONDS)
+      await registerCaptchaRef.current?.refresh()
+    } catch {
+      await registerCaptchaRef.current?.refresh()
+    } finally {
+      setSendingRegisterCode(false)
+    }
+  }
+
+  async function onRegisterFinish(values: RegisterFormValues) {
+    const encryptedPayload: Record<string, unknown> = {
+      register_channel: resolvedRegisterChannel,
+      captcha_id: values.captcha_id,
+      captcha_value: values.captcha_value,
+    }
+    if (resolvedRegisterChannel === 'ACCOUNT') {
+      const account = (values.account || '').trim()
+      if (account.length < 3 || account.length > 64) {
+        message.warning('用户名需 3-64 个字符')
+        return
+      }
+      encryptedPayload.account = account
+    } else if (resolvedRegisterChannel === 'EMAIL') {
+      const email = (values.email || '').trim()
       if (!isValidEmail(email) || email.length > 128) {
         message.warning('邮箱格式不正确')
         return
       }
-    }
-    if (requirePhone || phone) {
-      if (!isValidPhone(phone)) {
-        message.warning('手机号格式不正确')
+      if (!values.otp_code?.trim()) {
+        message.warning('请输入邮箱验证码')
         return
       }
+      encryptedPayload.email = email
+      encryptedPayload.otp_code = values.otp_code.trim()
+    } else {
+      const phone = (values.phone || '').trim()
+      if (!isValidPhone(phone)) {
+        message.warning('请输入有效手机号')
+        return
+      }
+      if (!values.otp_code?.trim()) {
+        message.warning('请输入手机验证码')
+        return
+      }
+      encryptedPayload.phone = phone
+      encryptedPayload.otp_code = values.otp_code.trim()
     }
 
     setLoading(true)
     try {
       const encrypted = await encryptPasswords({ password: values.password })
       await authApi.register({
-        account,
-        email: email || undefined,
-        phone: phone || undefined,
+        ...encryptedPayload,
         password: encrypted.values.password || '',
         password_key_id: encrypted.password_key_id,
-        captcha_id: values.captcha_id,
-        captcha_value: values.captcha_value,
       })
       message.success('注册成功，请登录')
       registerForm.resetFields()
@@ -369,42 +495,28 @@ export function AuthModal() {
                     />
                   </Form.Item>
 
-                  {otpAvailable ? (
-                    <Form.Item>
-                      <Radio.Group
-                        value={resolvedLoginMode}
-                        optionType="button"
-                        options={[
-                          { label: '密码登录', value: 'PASSWORD' },
-                          { label: '验证码登录', value: 'OTP' },
-                        ]}
-                        onChange={(e) => setLoginMode(e.target.value)}
-                      />
-                    </Form.Item>
-                  ) : null}
-
                   {resolvedLoginMode === 'PASSWORD' ? (
                     <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
                       <Input.Password placeholder="请输入密码" />
                     </Form.Item>
                   ) : (
-                    <Form.Item
-                      name="otp_code"
-                      rules={[{ required: true, message: '请输入登录验证码' }]}
-                    >
-                      <Input
-                        placeholder="请输入登录验证码"
-                        addonAfter={
-                          <Button
-                            type="link"
-                            loading={sendingCode}
-                            disabled={otpCooldown > 0}
-                            onClick={() => void onSendCode()}
-                          >
-                            {otpCooldown > 0 ? `${otpCooldown}s 后重发` : '发送验证码'}
-                          </Button>
-                        }
-                      />
+                    <Form.Item>
+                      <Space.Compact block>
+                        <Form.Item
+                          name="otp_code"
+                          noStyle
+                          rules={[{ required: true, message: '请输入登录验证码' }]}
+                        >
+                          <Input placeholder="请输入登录验证码" />
+                        </Form.Item>
+                        <Button
+                          loading={sendingCode}
+                          disabled={otpCooldown > 0}
+                          onClick={() => void onSendCode()}
+                        >
+                          {otpCooldown > 0 ? `${otpCooldown}s 后重发` : '发送验证码'}
+                        </Button>
+                      </Space.Compact>
                     </Form.Item>
                   )}
 
@@ -419,10 +531,7 @@ export function AuthModal() {
                     <CaptchaInput
                       ref={loginCaptchaRef}
                       size="large"
-                      captchaId={loginCaptchaId}
-                      captchaValue={loginCaptchaValue}
                       onCaptchaIdChange={(v) => loginForm.setFieldValue('captcha_id', v)}
-                      onCaptchaValueChange={(v) => loginForm.setFieldValue('captcha_value', v)}
                     />
                   </Form.Item>
 
@@ -431,9 +540,25 @@ export function AuthModal() {
                       <Form.Item name="remember" valuePropName="checked" noStyle>
                         <Checkbox>记住我</Checkbox>
                       </Form.Item>
-                      <Link to="/auth/forgot-password" onClick={close}>
-                        忘记密码？
-                      </Link>
+                      <div className="auth-form-row__links">
+                        {otpAvailable ? (
+                          <>
+                            <button
+                              type="button"
+                              className="auth-mode-link"
+                              onClick={() =>
+                                setLoginMode(resolvedLoginMode === 'PASSWORD' ? 'OTP' : 'PASSWORD')
+                              }
+                            >
+                              {resolvedLoginMode === 'PASSWORD' ? '验证码登录' : '密码登录'}
+                            </button>
+                            <span className="auth-form-row__sep">·</span>
+                          </>
+                        ) : null}
+                        <Link to="/auth/forgot-password" onClick={close}>
+                          忘记密码？
+                        </Link>
+                      </div>
                     </div>
                   </Form.Item>
 
@@ -442,8 +567,29 @@ export function AuthModal() {
                       登录
                     </Button>
                   </Form.Item>
+
+                  {oauthProviders.length > 0 ? (
+                    <div className="auth-oauth">
+                      <div className="auth-oauth__divider">
+                        <span>其他登录方式</span>
+                      </div>
+                      <div className="auth-oauth__row">
+                        {oauthProviders.map((item) => (
+                          <Button
+                            key={item.provider}
+                            className="auth-oauth__btn"
+                            loading={oauthLoading === item.provider}
+                            disabled={Boolean(oauthLoading)}
+                            onClick={() => void onOauthLogin(item.provider)}
+                          >
+                            {item.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </Form>
-              ) : !registerEnabled ? (
+              ) : !registerEnabled || registerTabs.length === 0 ? (
                 <Result
                   status="info"
                   title="暂未开放注册"
@@ -461,33 +607,85 @@ export function AuthModal() {
                   initialValues={{ captcha_id: '', captcha_value: '' }}
                   onFinish={(v) => void onRegisterFinish(v)}
                 >
-                  <Form.Item
-                    name="account"
-                    rules={[
-                      { required: true, message: '请输入用户名' },
-                      { min: 3, max: 64, message: '用户名需 3-64 个字符' },
-                    ]}
-                  >
-                    <Input placeholder="用户名" allowClear />
-                  </Form.Item>
+                  <Tabs
+                    activeKey={resolvedRegisterChannel}
+                    items={registerTabs.map((item) => ({ key: item.key, label: item.label }))}
+                    onChange={(key) => setRegisterChannel(key as LoginType)}
+                  />
 
-                  <Form.Item
-                    name="email"
-                    rules={[
-                      { required: requireEmail, message: '请输入邮箱' },
-                      { type: 'email', message: '邮箱格式不正确' },
-                      { max: 128, message: '邮箱最多 128 个字符' },
-                    ]}
-                  >
-                    <Input placeholder="邮箱地址" allowClear />
-                  </Form.Item>
+                  {resolvedRegisterChannel === 'ACCOUNT' ? (
+                    <Form.Item
+                      name="account"
+                      rules={[
+                        { required: true, message: '请输入用户名' },
+                        { min: 3, max: 64, message: '用户名需 3-64 个字符' },
+                      ]}
+                    >
+                      <Input placeholder="用户名" allowClear />
+                    </Form.Item>
+                  ) : null}
 
-                  <Form.Item
-                    name="phone"
-                    rules={[{ required: requirePhone, message: '请输入手机号' }]}
-                  >
-                    <Input placeholder="手机号" allowClear />
-                  </Form.Item>
+                  {resolvedRegisterChannel === 'EMAIL' ? (
+                    <>
+                      <Form.Item
+                        name="email"
+                        rules={[
+                          { required: true, message: '请输入邮箱' },
+                          { type: 'email', message: '邮箱格式不正确' },
+                          { max: 128, message: '邮箱最多 128 个字符' },
+                        ]}
+                      >
+                        <Input placeholder="邮箱" allowClear />
+                      </Form.Item>
+                      <Form.Item>
+                        <Space.Compact block>
+                          <Form.Item
+                            name="otp_code"
+                            noStyle
+                            rules={[{ required: true, message: '请输入邮箱验证码' }]}
+                          >
+                            <Input placeholder="邮箱验证码" />
+                          </Form.Item>
+                          <Button
+                            loading={sendingRegisterCode}
+                            disabled={registerOtpCooldown > 0}
+                            onClick={() => void onSendRegisterCode()}
+                          >
+                            {registerOtpCooldown > 0 ? `${registerOtpCooldown}s 后重发` : '发送验证码'}
+                          </Button>
+                        </Space.Compact>
+                      </Form.Item>
+                    </>
+                  ) : null}
+
+                  {resolvedRegisterChannel === 'PHONE' ? (
+                    <>
+                      <Form.Item
+                        name="phone"
+                        rules={[{ required: true, message: '请输入手机号' }]}
+                      >
+                        <Input placeholder="手机号" allowClear />
+                      </Form.Item>
+                      <Form.Item>
+                        <Space.Compact block>
+                          <Form.Item
+                            name="otp_code"
+                            noStyle
+                            rules={[{ required: true, message: '请输入手机验证码' }]}
+                          >
+                            <Input placeholder="手机验证码" />
+                          </Form.Item>
+                          <Button
+                            loading={sendingRegisterCode}
+                            disabled={registerOtpCooldown > 0}
+                            onClick={() => void onSendRegisterCode()}
+                          >
+                            {registerOtpCooldown > 0 ? `${registerOtpCooldown}s 后重发` : '发送验证码'}
+                          </Button>
+                        </Space.Compact>
+                      </Form.Item>
+                    </>
+                  ) : null}
 
                   <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
                     <Input.Password placeholder="密码" />
@@ -519,10 +717,7 @@ export function AuthModal() {
                     <CaptchaInput
                       ref={registerCaptchaRef}
                       size="large"
-                      captchaId={registerCaptchaId}
-                      captchaValue={registerCaptchaValue}
                       onCaptchaIdChange={(v) => registerForm.setFieldValue('captcha_id', v)}
-                      onCaptchaValueChange={(v) => registerForm.setFieldValue('captcha_value', v)}
                     />
                   </Form.Item>
 

@@ -14,6 +14,10 @@ public class LoginResult {
     private String accountId;
     private AccountType accountType;
     private Boolean passwordExpired = false;
+    /** 是否需强制绑定邮箱（硬拦截） */
+    private Boolean forceBindEmail = false;
+    /** 是否需强制绑定手机（硬拦截） */
+    private Boolean forceBindPhone = false;
     /**
      * 处于告警窗口时的剩余天数；不适用时为 null。
      */

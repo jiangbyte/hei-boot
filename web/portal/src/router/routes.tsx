@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/home'
 import { LoginPage } from '@/pages/auth/login'
 import { RegisterPage } from '@/pages/auth/register'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
+import { OAuthCallbackPage } from '@/pages/auth/oauth-callback'
 import { NotFoundPage } from '@/pages/error/not-found'
 import { UserCenterPage } from '@/pages/usercenter'
 import { ProfilePage } from '@/pages/profile'
@@ -68,6 +69,10 @@ export const routes: RouteObject[] = [
         path: 'auth/forgot-password',
         loader: guestOnly,
         element: <ForgotPasswordPage />,
+      },
+      {
+        path: 'auth/oauth/callback',
+        element: <OAuthCallbackPage />,
       },
     ],
   },

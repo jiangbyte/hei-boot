@@ -7,22 +7,32 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 敏感键名匹配工具。
+ * 日志等场景的敏感键名匹配工具（非 HTTP Jackson 脱敏）。
+ *
+ * <p>HTTP 响应脱敏请用 {@link github.jiangbyte.io.common.core.jackson.Sensitive}。
+ * 匹配规则：规范化后全等，或以敏感词结尾（如 {@code userPassword}）；不用 {@code contains}。
  *
  * Author: Charlie
  */
 public final class SensitiveKeys {
 
+    /**
+     * 日志脱敏默认键。不含裸 {@code token}；需要时可通过配置显式加入。
+     */
     public static final Set<String> DEFAULT = Set.of(
             "password",
             "secret",
-            "token",
             "cryptokey",
             "crypto-key",
             "accesskey",
             "access-key",
             "privatekey",
             "private-key",
+            "accesstoken",
+            "refreshtoken",
+            "idtoken",
+            "apitoken",
+            "authtoken",
             "authorization");
 
     private SensitiveKeys() {
@@ -46,15 +56,19 @@ public final class SensitiveKeys {
     }
 
     public static boolean matches(String name, Set<String> keys) {
-        if (name == null || name.isBlank()) {
+        if (name == null || name.isBlank() || keys == null || keys.isEmpty()) {
             return false;
         }
         String c = canonical(name);
-        if (keys.contains(c)) {
-            return true;
-        }
         for (String key : keys) {
-            if (c.contains(key)) {
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            if (c.equals(key)) {
+                return true;
+            }
+            // user_password / api_secret → 以敏感词结尾
+            if (c.length() > key.length() && c.endsWith(key)) {
                 return true;
             }
         }

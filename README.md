@@ -21,7 +21,8 @@ HTTP JSON 线格式仅允许字符串 / 对象 / 数组：`boolean` 与数字一
 文档索引见 [docs/README.md](docs/README.md)。
 
 > **请注意：** 生产仍需自行加固密钥、外部 XXL-JOB、对象存储与高可用配置后再上线。已内置生产 profile
-> 收紧（关闭文档/Actuator 匿名暴露、文件上传白名单、MQ 重试/DLQ、CI 与后端镜像）；上线前仍请核对密钥轮换、TLS/HSTS、网络隔离与压测。
+> 收紧（关闭文档/Actuator 匿名暴露、文件上传白名单、Redis Stream 审计、CI 与后端镜像）；上线前仍请核对密钥轮换、TLS/HSTS（优先 Ingress）、网络隔离与压测。
+> `hei.security.trust-forwarded-headers` 仅在可信反向代理后开启。
 
 ## 架构
 
@@ -33,6 +34,7 @@ HTTP JSON 线格式仅允许字符串 / 对象 / 数组：`boolean` 与数字一
 | XXL-JOB Admin | `app/xxl-job` | **仅本地调试**；生产不要部署，改连外部 Admin |
 
 业务模块由 `app/admin` **显式依赖**装配；新增业务模块时登记 reactor 后，在 `app/admin/pom.xml` 增加依赖即可。
+样板 `module/biz` 放在 Maven profile `with-biz`（默认开启）；生产打包请排除：`mvn -pl app/admin -am -P'!with-biz' package`。
 
 ## 功能概览
 
@@ -87,7 +89,7 @@ Actuator health:    http://127.0.0.1:8000/actuator/health
 
 | 账号 | 密码 | 说明 |
 |------|------|------|
-| `superadmin` | `123456` | Flyway seed 超管（ADMIN） |
+| `superadmin` | `123456` | Flyway seed 超管（ADMIN）；**生产首次启动后必须改密** |
 
 ### 会话 Cookie / Header（对齐 fastapi Web）
 
@@ -103,10 +105,12 @@ Actuator health:    http://127.0.0.1:8000/actuator/health
 ### 生产部署
 
 - **不要部署** `app/xxl-job`。
-- Kubernetes 参考 Chart：[deploy/helm/hei-boot](deploy/helm/hei-boot/)（需自行配置镜像与密钥）。
-- 将 Executor 指向外部 Admin：
+- Kubernetes 参考 Chart：[deploy/helm/hei-boot](deploy/helm/hei-boot/)（需自行配置镜像与密钥；Service 端口 **8000**）。
+- 生产镜像 / 包排除样板业务：`mvn -pl app/admin -am -P'!with-biz' -DskipTests package`（Dockerfile 已使用该 profile）。
+- 将 Executor 指向外部 Admin（可选；默认 `XXL_JOB_ENABLED=false`）：
 
 ```bash
+export XXL_JOB_ENABLED=true
 export XXL_JOB_ADMIN_ADDRESSES=http://xxl-job-admin.example.com/xxl-job-admin
 export XXL_JOB_ACCESS_TOKEN=your_token
 ```
@@ -114,15 +118,32 @@ export XXL_JOB_ACCESS_TOKEN=your_token
 `application-prod.yml` 中 `hei.xxl-job.admin.addresses` 默认占位为
 `${XXL_JOB_ADMIN_ADDRESSES:http://xxl-job-admin.example.com/xxl-job-admin}`。
 
+#### 生产必填环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 主库（也可用 `DB_WRITE_*` / `DB_READ_*` 读写分离） |
+| `REDIS_HOST`（及可选 `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`） | 会话与 Redis Stream 审计 |
+| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值，生产必填） |
+
+可选：
+
+| 变量 | 说明 |
+|------|------|
+| `XXL_JOB_ENABLED` | 默认 `false`；接外部 Admin 时设 `true` |
+| `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN` | 启用 XXL 时必填 |
+| `XXL_JOB_EXECUTOR_APPNAME` / `XXL_JOB_EXECUTOR_PORT` 等 | 执行器覆盖项 |
+
+安全提示：仅在可信 Ingress/反向代理后开启 `HEI_SECURITY_TRUST_FORWARDED_HEADERS`；HSTS 优先在 Ingress 配置（Chart 已带注解样例）。Seed 超管密码见上，首次上线后立即轮换。
 ## 主要 API 前缀
 
 | 前缀 | 用途 |
 |------|------|
 | `/api/v1/admin/**` | 管理端 |
 | `/api/v1/portal/**` | 门户端 |
-| `/api/v1/internal/**` | 内部/健康等 |
-| `/files/**` | 本地文件公开访问（可配置） |
-| `/actuator/**` | 健康与指标 |
+| `/api/v1/files/**` | 公开 CDN 式读文件（匿名可读，可配置） |
+| `/api/*/internal/**` | 集群内部接口（勿对公网暴露） |
+| `/actuator/**` | 健康与指标（勿对公网暴露） |
 | `/swagger-ui/**`、`/v3/api-docs` | OpenAPI |
 
 常用管理端子路径示例：`/api/v1/admin/login`、`/captcha`、`/iam/**`、`/sys/**`、`/user-center/**`、`/message/**`。
@@ -140,7 +161,7 @@ export XXL_JOB_ACCESS_TOKEN=your_token
    跨模块契约时再在 `module-api/` 增加窄接口。
 2. 在 `module/pom.xml`（及必要时 `module-api/pom.xml`）登记 reactor 子模块。
 3. 在根 `pom.xml` 的 `dependencyManagement` 增加该模块版本条目（`${revision}`）。
-4. 在 `app/admin/pom.xml` **显式增加**对该业务模块的依赖。
+4. 在 `app/admin/pom.xml` **显式增加**对该业务模块的依赖（样板 `biz` 走 `with-biz` profile；自有业务模块放主 `dependencies`）。
 5. **库表 / 菜单权限种子**：只在 `app/admin/src/main/resources/db/migration/` **追加**
    `V{n}__*.sql`（建议业务用较高序号，如 `V100__biz_xxx.sql`）。**勿改**已发布的 `V1` / `V2`。
 6. **配置**：改 `app/admin/src/main/resources/application-*.yml` 或环境变量即可
@@ -187,12 +208,14 @@ Executor AppName：`hei-boot-admin`（与 `hei.xxl-job.executor.appname` 一致�
 常用环境变量：
 
 - `SPRING_PROFILES_ACTIVE`：激活配置，默认 `dev`
-- `DB_WRITE_*` / `DB_READ_*` / `DB_*`：数据源
-- `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`
-- `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN`
-- `HEI_LOG_AUDIT_CONSUME_ENABLED`：是否启用审计消费者
+- `DB_WRITE_*` / `DB_READ_*` / `DB_*`：数据源（生产必填，见上表）
+- `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`（生产必填 host）
+- `HEI_CONFIG_CRYPTO_KEY`：配置加解密密钥（生产必填）
+- `XXL_JOB_ENABLED` / `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN`（可选）
+- `HEI_LOG_AUDIT_CONSUME_ENABLED`：是否启用审计消费者（Redis Stream）
 - `HEI_VAULT_ENABLED` / `VAULT_ADDR` / `VAULT_TOKEN`（或 AppRole）：可选密钥注入
 - `LOG_JSON`：日志 JSON/键值开关（local/dev 默认键值，prod 默认 JSON）
+- `hei.codegen.enabled`：代码生成 API；prod 默认 `false`
 
 ### 日志（SLF4J + Logback，对齐 hei-fastapi）
 
@@ -221,8 +244,11 @@ password: hei
 ## 常用命令
 
 ```bash
-# 编译 admin 及其依赖
+# 编译 admin 及其依赖（含默认 with-biz 样板）
 mvn -pl app/admin -am package -DskipTests
+
+# 生产包：排除样板 module/biz
+mvn -pl app/admin -am -P'!with-biz' package -DskipTests
 
 # 编译本地 XXL-JOB Admin
 mvn -pl app/xxl-job -am package -DskipTests
@@ -230,7 +256,7 @@ mvn -pl app/xxl-job -am package -DskipTests
 # 运行不依赖基础设施的单元测试
 mvn -pl app/admin -am test
 
-# 启动 admin
+# 启动 admin（默认 http://127.0.0.1:8000）
 mvn -pl app/admin -am spring-boot:run
 ```
 
@@ -280,7 +306,7 @@ hei-boot
 - `module-api` 只放跨模块窄接口与必要的跨模块值对象（如 `FileInfo`、`AccountInfo`）；不放 entity / HTTP `param`/`result`。
 - 跨模块实现用 `*ApiProvider`（`@Service`）委托本模块 `*Service`；Controller 只依赖本模块 Service。消费者 Maven 只依赖对方 `*-api`，不依赖对方 impl。
 - 权限注解使用 Sa-Token 官方 `@SaCheckPermission` / `@SaCheckLogin`（`type = StpKit.TYPE_ADMIN|PORTAL`）。
-- API 文档：Knife4j，`http://127.0.0.1:8080/doc.html`。
+- API 文档：Knife4j，`http://127.0.0.1:8000/doc.html`。
 - 关联 id 回显优先 Dromara easy-trans（`@Trans` / `TransPojo`）。
 - Mapper Join 优先 MyBatis-Plus-Join；读库路由用 `@ReadDataSource`。
 - 新增业务模块：见上文「二次开发（社区）」checklist（reactor → `dependencyManagement` → **`app/admin` 显式依赖** → 追加 Flyway）。

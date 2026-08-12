@@ -7,6 +7,8 @@ import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.account.AccountIdentityApi;
+import github.jiangbyte.io.iam.org.OrgNameApi;
+import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.sys.file.FileApi;
 import github.jiangbyte.io.sys.file.FileInfo;
 import github.jiangbyte.io.user.portal.profile.PortalUserProfileInfo;
@@ -23,7 +25,6 @@ import github.jiangbyte.io.user.modules.portal.profile.result.RoleIdNameResult;
 import github.jiangbyte.io.user.modules.portal.profile.result.UserProfileResult;
 import github.jiangbyte.io.user.modules.portal.profile.service.PortalUserProfileService;
 import lombok.RequiredArgsConstructor;
-import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -56,33 +57,22 @@ public class PortalUserProfileServiceImpl implements PortalUserProfileService {
     private final PortalUserProfileMapper portalProfileMapper;
     private final FileApi fileApi;
     private final AccountIdentityApi accountIdentityApi;
-    private final TransService transService;
+    private final OrgNameApi orgNameApi;
+    private final ConfigApi configApi;
     private final PortalUserProfileConvert portalUserProfileConvert;
 
     @Override
     @ReadDataSource
     public MeResult currentMe() {
-        // 读取会话与资料，组装 me
-        // 会话 ID 列表 → 批量翻译名称后写入
+        // 读取会话与资料，查 entity 名称后填充 me（Result 不走 easy-trans）
         LoginUser loginUser = LoginHelper.requireUser();
         UserProfileResult profile = currentProfile();
         MeResult response = portalUserProfileConvert.toMe(loginUser, profile);
-        List<RoleIdNameResult> roles = toRoleIdNames(loginUser.getRoleIds());
-        List<DeptIdNameResult> depts = toDeptIdNames(loginUser.getDeptIds());
-        List<GroupIdNameResult> groups = toGroupIdNames(loginUser.getGroupIds());
-        if (!roles.isEmpty()) {
-            transService.transBatch(roles);
-        }
-        if (!depts.isEmpty()) {
-            transService.transBatch(depts);
-        }
-        if (!groups.isEmpty()) {
-            transService.transBatch(groups);
-        }
-        response.setRoleIdNames(roles);
-        response.setDeptIdNames(depts);
-        response.setGroupIdNames(groups);
+        response.setRoleIdNames(toRoleIdNames(loginUser.getRoleIds()));
+        response.setDeptIdNames(toDeptIdNames(loginUser.getDeptIds()));
+        response.setGroupIdNames(toGroupIdNames(loginUser.getGroupIds()));
         response.setAvatar(profile.getAvatar());
+        fillForceBindFlags(response, loginUser);
         return response;
     }
 
@@ -348,6 +338,16 @@ public class PortalUserProfileServiceImpl implements PortalUserProfileService {
         return dto;
     }
 
+    private void fillForceBindFlags(MeResult response, LoginUser loginUser) {
+        String typeName = loginUser.getAccountType() == null ? "PORTAL" : loginUser.getAccountType().name();
+        boolean forceEmail = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_EMAIL", false)
+                && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "EMAIL");
+        boolean forcePhone = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false)
+                && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "PHONE");
+        response.setForceBindEmail(forceEmail);
+        response.setForceBindPhone(forcePhone);
+    }
+
     private UserProfileResult withResolvedAvatar(UserProfileResult dto) {
         if (dto != null) {
             dto.setAvatar(fileApi.resolveUrl(dto.getAvatar()));
@@ -355,49 +355,55 @@ public class PortalUserProfileServiceImpl implements PortalUserProfileService {
         return dto;
     }
 
-    private static List<RoleIdNameResult> toRoleIdNames(Collection<String> ids) {
+    private List<RoleIdNameResult> toRoleIdNames(Collection<String> ids) {
         List<RoleIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.roleNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             RoleIdNameResult item = new RoleIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;
     }
 
-    private static List<DeptIdNameResult> toDeptIdNames(Collection<String> ids) {
+    private List<DeptIdNameResult> toDeptIdNames(Collection<String> ids) {
         List<DeptIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.deptNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             DeptIdNameResult item = new DeptIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;
     }
 
-    private static List<GroupIdNameResult> toGroupIdNames(Collection<String> ids) {
+    private List<GroupIdNameResult> toGroupIdNames(Collection<String> ids) {
         List<GroupIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.groupNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             GroupIdNameResult item = new GroupIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;

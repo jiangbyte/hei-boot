@@ -4,7 +4,7 @@ import { check, sleep } from 'k6'
 /**
  * Baseline HTTP load against hei-boot admin API.
  *
- *   k6 run -e BASE_URL=http://127.0.0.1:8080 -e TOKEN=<sa-token> script/perf/k6-api-baseline.js
+ *   k6 run -e BASE_URL=http://127.0.0.1:8000 -e TOKEN=<sa-token> script/perf/k6-api-baseline.js
  *
  * Without TOKEN, only public/health probes run.
  */
@@ -22,7 +22,7 @@ export const options = {
   },
 }
 
-const BASE = (__ENV.BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '')
+const BASE = (__ENV.BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')
 const TOKEN = __ENV.TOKEN || ''
 
 export default function () {

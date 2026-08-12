@@ -1,11 +1,14 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.mybatis.datascope.OwnerDeptDataScope;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.convert.CgTestKnowledgeCategoryConvert;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity.CgTestKnowledgeCategory;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.mapper.CgTestKnowledgeCategoryMapper;
@@ -42,9 +45,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowledgeCategoryMapper, CgTestKnowledgeCategory> implements CgTestKnowledgeCategoryService {
 
+    private static final String PERMISSION_KEY = "biz:cgtestknowledgecategory:page";
+
     private final CgTestKnowledgeCategoryConvert cgTestKnowledgeCategoryConvert;
     private final CgTestKnowledgeDocMapper cgTestKnowledgeDocMapper;
     private final CgTestKnowledgeDocConvert cgTestKnowledgeDocConvert;
+    private final OwnerDeptDataScope ownerDeptDataScope;
 
     @Override
     @Transactional
@@ -63,6 +69,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         if (entity == null) {
             throw new BizException(404, "CgTestKnowledgeCategory not found");
         }
+        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         cgTestKnowledgeCategoryConvert.update(param, entity);
         this.updateById(entity);
     }
@@ -73,6 +80,11 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         // 空列表直接返回；否则按 ID 删除
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
+        }
+        List<CgTestKnowledgeCategory> entities = this.listByIds(param.getIds());
+        DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
+        for (CgTestKnowledgeCategory entity : entities) {
+            ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), scope);
         }
         this.removeByIds(param.getIds());
     }
@@ -85,6 +97,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         if (entity == null) {
             throw new BizException(404, "CgTestKnowledgeCategory not found");
         }
+        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         return entity;
     }
 
@@ -92,12 +105,13 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @ReadDataSource
     public Page<CgTestKnowledgeCategory> page(CgTestKnowledgeCategoryPageParam param) {
         // 按编码/名称/状态分页查询
-        return this.page(new Page<>(param.getCurrent(), param.getSize()),
-                Wrappers.<CgTestKnowledgeCategory>lambdaQuery()
-                        .like(StringUtils.hasText(param.getCode()), CgTestKnowledgeCategory::getCode, param.getCode())
-                        .like(StringUtils.hasText(param.getName()), CgTestKnowledgeCategory::getName, param.getName())
-                        .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestKnowledgeCategory::getStatus, param.getStatus())
-                        .orderByDesc(CgTestKnowledgeCategory::getCreatedAt));
+        LambdaQueryWrapper<CgTestKnowledgeCategory> wrapper = Wrappers.<CgTestKnowledgeCategory>lambdaQuery()
+                .like(StringUtils.hasText(param.getCode()), CgTestKnowledgeCategory::getCode, param.getCode())
+                .like(StringUtils.hasText(param.getName()), CgTestKnowledgeCategory::getName, param.getName())
+                .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestKnowledgeCategory::getStatus, param.getStatus())
+                .orderByDesc(CgTestKnowledgeCategory::getCreatedAt);
+        ownerDeptDataScope.apply(wrapper, PERMISSION_KEY, CgTestKnowledgeCategory::getCreatedBy, CgTestKnowledgeCategory::getOwnerDeptId);
+        return this.page(new Page<>(param.getCurrent(), param.getSize()), wrapper);
     }
 
     @Override

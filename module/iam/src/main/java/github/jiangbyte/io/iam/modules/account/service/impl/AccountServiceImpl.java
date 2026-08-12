@@ -18,8 +18,10 @@ import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.modules.account.convert.SysAccountConvert;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccount;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccountIdentity;
+import github.jiangbyte.io.iam.modules.account.entity.SysAccountOauthBinding;
 import github.jiangbyte.io.iam.modules.account.mapper.SysAccountIdentityMapper;
 import github.jiangbyte.io.iam.modules.account.mapper.SysAccountMapper;
+import github.jiangbyte.io.iam.modules.account.service.AccountOauthService;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountAddParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountEditParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountPageParam;
@@ -28,6 +30,7 @@ import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantGroupParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantResourceParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantRoleParam;
 import github.jiangbyte.io.iam.modules.account.result.AccountIdentityResult;
+import github.jiangbyte.io.iam.modules.account.result.AccountOauthBindingResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnDeptResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnGroupResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnRoleResult;
@@ -95,6 +98,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     private final ResourceService resourceService;
     private final ClientResourceService clientResourceService;
     private final ConfigApi configApi;
+    private final AccountOauthService accountOauthService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
@@ -377,6 +381,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         if ("CANCELLED".equalsIgnoreCase(param.getAccountStatus())) {
             throw new BizException("注销状态不允许通过管理端设置");
         }
@@ -444,6 +449,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (accounts.size() != uniqueIds.size()) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountsAccessible(uniqueIds, "iam:account:page");
         // 分批清侧车数据后删账号，再踢会话
         for (List<String> batch : BatchPartition.partition(uniqueIds)) {
             cleanupAccountSideData(batch);
@@ -492,6 +498,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         Map<String, SysAccountResult> map = toResultMap(List.of(account));
         return map.get(id);
     }
@@ -555,6 +562,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         List<String> roleIds = relationService.listTargetIds(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 id,
@@ -574,6 +582,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (getBaseMapper().selectById(param.getId()) == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
         relationService.replaceAccountRoles(param.getId(), param.getRoleIds());
     }
 
@@ -584,6 +593,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         List<String> groupIds = relationService.listTargetIds(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 id,
@@ -603,6 +613,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (getBaseMapper().selectById(param.getId()) == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
         relationService.replaceAccountGroups(param.getId(), param.getGroupIds());
     }
 
@@ -610,9 +621,9 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @ReadDataSource
     public SysAccountOwnDeptResult ownDepts(String id) {
         if (getBaseMapper().selectById(id) == null) {
-
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(id, "iam:account:page");
         SysAccountOwnDeptResult result = new SysAccountOwnDeptResult();
         result.setId(id);
         result.setGrantInfoList(relationService.listAccountDepts(id));
@@ -626,6 +637,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (getBaseMapper().selectById(param.getId()) == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
         relationService.replaceAccountDepts(param.getId(), param.getGrantInfoList());
     }
 
@@ -636,6 +648,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
         result.setModules(resourceService.listGrantModules(account.getAccountType()));
@@ -652,6 +665,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 param.getId(),
@@ -666,6 +680,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
         result.setModules(clientResourceService.listGrantModules(account.getAccountType()));
@@ -682,6 +697,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 param.getId(),
@@ -814,6 +830,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             result.setEmailLoginEnabled(identityLoginEnabled(emailIdentity));
             result.setPhoneLoginEnabled(identityLoginEnabled(phoneIdentity));
             result.setIdentities(accountConvert.toIdentityResultList(identities));
+            result.setOauthBindings(toOauthBindingResults(accountOauthService.listByAccount(account.getId())));
 
             String type = StringUtils.hasText(account.getAccountType())
                     ? account.getAccountType().trim().toUpperCase(Locale.ROOT)
@@ -1056,13 +1073,33 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (uniqueIds.isEmpty()) {
             return;
         }
-        // 删关系、身份、密码历史与双侧档案
+        // 删关系、身份、三方绑定、密码历史与双侧档案
         relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_ACCOUNT, uniqueIds);
         identityMapper.delete(Wrappers.<SysAccountIdentity>lambdaQuery()
                 .in(SysAccountIdentity::getAccountId, uniqueIds));
+        accountOauthService.deleteByAccountIds(uniqueIds);
         passwordHelper.deleteHistory(uniqueIds);
         adminUserProfileApi.deleteProfiles(uniqueIds);
         portalUserProfileApi.deleteProfiles(uniqueIds);
+    }
+
+    private List<AccountOauthBindingResult> toOauthBindingResults(List<SysAccountOauthBinding> bindings) {
+        if (bindings == null || bindings.isEmpty()) {
+            return List.of();
+        }
+        List<AccountOauthBindingResult> list = new ArrayList<>(bindings.size());
+        for (SysAccountOauthBinding binding : bindings) {
+            AccountOauthBindingResult row = new AccountOauthBindingResult();
+            row.setId(binding.getId());
+            row.setProvider(binding.getProvider());
+            row.setOpenId(binding.getOpenId());
+            row.setUnionId(binding.getUnionId());
+            row.setNickname(binding.getNickname());
+            row.setAvatar(binding.getAvatar());
+            row.setBoundAt(binding.getBoundAt());
+            list.add(row);
+        }
+        return list;
     }
 
     /**

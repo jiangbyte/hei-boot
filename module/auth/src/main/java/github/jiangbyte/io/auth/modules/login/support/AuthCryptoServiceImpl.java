@@ -70,7 +70,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         String hashed = bucket.getAndDelete();
         if (hashed == null || captchaValue == null
                 || !passwordEncoder.matches(captchaValue.trim().toLowerCase(), hashed)) {
-            throw new BizException("Invalid or expired captcha");
+            throw new BizException("验证码无效或已过期");
         }
     }
 
@@ -89,7 +89,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
             response.setPublicKey(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
             return response;
         } catch (Exception ex) {
-            throw new BizException(500, "Failed to create password key");
+            throw new BizException(500, "创建密码传输密钥失败");
         }
     }
 
@@ -104,7 +104,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         // 解密即消费私钥，防止重放
         String privatePem = bucket.getAndDelete();
         if (privatePem == null) {
-            throw new BizException("Invalid or expired password encryption key");
+            throw new BizException("密码加密密钥无效或已过期");
         }
         try {
             byte[] keyBytes = Base64.getDecoder().decode(privatePem
@@ -132,7 +132,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         } catch (BizException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new BizException("Failed to decrypt password");
+            throw new BizException("密码解密失败");
         }
     }
 
@@ -182,6 +182,38 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         return true;
     }
 
+    @Override
+    public void storeRegisterOtp(String channel, String target, String code, Duration ttl) {
+        redissonClient.getBucket(registerOtpKey(channel, target)).set(code, ttl);
+    }
+
+    @Override
+    public boolean consumeRegisterOtp(String channel, String target, String code) {
+        RBucket<String> bucket = redissonClient.getBucket(registerOtpKey(channel, target));
+        String stored = bucket.get();
+        if (stored == null || code == null || !stored.equals(code.trim())) {
+            return false;
+        }
+        bucket.delete();
+        return true;
+    }
+
+    @Override
+    public void storeBindOtp(String accountType, String channel, String accountId, String target, String code, Duration ttl) {
+        redissonClient.getBucket(bindOtpKey(accountType, channel, accountId, target)).set(code, ttl);
+    }
+
+    @Override
+    public boolean consumeBindOtp(String accountType, String channel, String accountId, String target, String code) {
+        RBucket<String> bucket = redissonClient.getBucket(bindOtpKey(accountType, channel, accountId, target));
+        String stored = bucket.get();
+        if (stored == null || code == null || !stored.equals(code.trim())) {
+            return false;
+        }
+        bucket.delete();
+        return true;
+    }
+
     private static String captchaKey(String captchaId) {
         return "captcha:" + captchaId;
     }
@@ -200,6 +232,14 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
 
     private static String changePasswordOtpKey(String accountType, String channel, String accountId) {
         return "password:change:otp:" + accountType + ":" + channel + ":" + accountId;
+    }
+
+    private static String registerOtpKey(String channel, String target) {
+        return "register:otp:" + channel + ":" + target;
+    }
+
+    private static String bindOtpKey(String accountType, String channel, String accountId, String target) {
+        return "bind:otp:" + accountType + ":" + channel + ":" + accountId + ":" + target;
     }
 
     private static String toPem(byte[] encoded) {

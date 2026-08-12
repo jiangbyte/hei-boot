@@ -27,12 +27,22 @@ public class AuthApiProvider implements AuthApi {
     }
 
     @Override
-    public void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled) {
-        authService.updateCurrentPhone(passwordKeyId, password, phone, phoneLoginEnabled);
+    public void sendBindEmailCode(String target) {
+        authService.sendBindEmailCode(target);
     }
 
     @Override
-    public void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled) {
-        authService.updateCurrentEmail(passwordKeyId, password, email, emailLoginEnabled);
+    public void sendBindPhoneCode(String target) {
+        authService.sendBindPhoneCode(target);
+    }
+
+    @Override
+    public void updateCurrentPhone(String passwordKeyId, String password, String phone, boolean phoneLoginEnabled, String otpCode) {
+        authService.updateCurrentPhone(passwordKeyId, password, phone, phoneLoginEnabled, otpCode);
+    }
+
+    @Override
+    public void updateCurrentEmail(String passwordKeyId, String password, String email, boolean emailLoginEnabled, String otpCode) {
+        authService.updateCurrentEmail(passwordKeyId, password, email, emailLoginEnabled, otpCode);
     }
 }

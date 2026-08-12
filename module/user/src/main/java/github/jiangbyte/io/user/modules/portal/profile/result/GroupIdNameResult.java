@@ -1,22 +1,14 @@
 package github.jiangbyte.io.user.modules.portal.profile.result;
 
 import lombok.Data;
-import org.dromara.core.trans.anno.Trans;
-import org.dromara.core.trans.constant.TransType;
-import org.dromara.core.trans.vo.TransPojo;
 
 /**
- * 用户组 ID-名称项；通过 RPC 翻译填充 {@code name}。
+ * 用户组 ID-名称项（由 entity 查询后填充，非 easy-trans Result）。
  *
  * Author: Charlie
  */
 @Data
-public class GroupIdNameResult implements TransPojo {
-    @Trans(
-            type = TransType.RPC,
-            targetClassName = "github.jiangbyte.io.iam.modules.group.entity.SysGroup",
-            fields = "name",
-            ref = "name")
+public class GroupIdNameResult {
     private String id;
     private String name;
 }

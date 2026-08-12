@@ -2,6 +2,7 @@ package github.jiangbyte.io.auth;
 
 /** Author: Charlie **/
 
+import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpLogic;
 import github.jiangbyte.io.auth.modules.login.convert.AuthConvert;
 import github.jiangbyte.io.auth.modules.login.result.LoginResult;
@@ -14,6 +15,8 @@ import github.jiangbyte.io.common.notify.sms.SmsSenderFacade;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.account.AccountApi;
+import github.jiangbyte.io.iam.account.AccountAuthorizationInfo;
+import github.jiangbyte.io.iam.account.AccountInfo;
 import github.jiangbyte.io.iam.password.PasswordPolicyApi;
 import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.user.admin.profile.AdminUserProfileApi;
@@ -25,7 +28,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -63,6 +69,7 @@ class AuthServiceRefreshSessionTest {
         when(configApi.getLong("AUTH_TOKEN_TTL_SECONDS", 0)).thenReturn(3600L);
         when(configApi.getInt("PASSWORD_EXPIRY_WARNING_DAYS", 0)).thenReturn(0);
         when(configApi.getInt("PASSWORD_VALIDITY_DAYS", 0)).thenReturn(0);
+        when(configApi.getInt("PASSWORD_VALIDITY_DAYS", 90)).thenReturn(90);
         authService = new AuthServiceImpl(
                 cryptoService,
                 accountApi,
@@ -83,6 +90,22 @@ class AuthServiceRefreshSessionTest {
         user.setAccountType(AccountType.ADMIN);
         user.setPasswordExpired(false);
 
+        AccountInfo account = new AccountInfo();
+        account.setId("1");
+        AccountAuthorizationInfo auth = new AccountAuthorizationInfo();
+        auth.setRoleCodes(List.of("ADMIN"));
+        auth.setPermissionKeys(List.of("a:b:c"));
+        auth.setRoleIds(List.of());
+        auth.setDeptIds(List.of());
+        auth.setGroupIds(List.of());
+        auth.setResourceIds(List.of());
+        auth.setButtonCodes(List.of());
+        auth.setPermissionGrants(List.of());
+
+        when(accountApi.getById("1")).thenReturn(account);
+        when(accountApi.getAuthorization("1")).thenReturn(auth);
+        when(accountApi.isPasswordExpired("1", 90)).thenReturn(false);
+
         LoginResult converted = new LoginResult();
         converted.setAccountId("1");
         converted.setAccountType(AccountType.ADMIN);
@@ -90,6 +113,8 @@ class AuthServiceRefreshSessionTest {
         when(authConvert.toLoginResponse(eq("1"), eq(AccountType.ADMIN), eq(false))).thenReturn(converted);
 
         StpLogic stpLogic = mock(StpLogic.class);
+        SaSession tokenSession = mock(SaSession.class);
+        when(stpLogic.getTokenSession()).thenReturn(tokenSession);
         when(stpLogic.getTokenValue()).thenReturn("renewed-token");
         when(stpLogic.getTokenTimeout()).thenReturn(3600L);
 
@@ -99,6 +124,7 @@ class AuthServiceRefreshSessionTest {
 
             LoginResult response = authService.refreshSession();
 
+            verify(tokenSession).set(eq(LoginHelper.LOGIN_USER_KEY), any(LoginUser.class));
             verify(stpLogic).renewTimeout(3600L);
             assertEquals("renewed-token", response.getToken());
             assertEquals(3600L, response.getExpiresIn());

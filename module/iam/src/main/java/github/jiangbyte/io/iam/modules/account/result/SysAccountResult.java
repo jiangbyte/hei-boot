@@ -33,6 +33,7 @@ public class SysAccountResult {
     private String emailIdentityBindStatus;
     private String phoneIdentityBindStatus;
     private List<AccountIdentityResult> identities = new ArrayList<>();
+    private List<AccountOauthBindingResult> oauthBindings = new ArrayList<>();
     private String remark;
     private OffsetDateTime cancelledAt;
     private String cancelledBy;

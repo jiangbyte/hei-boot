@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.dept.support.DataScopeResolver;
 import github.jiangbyte.io.iam.modules.position.convert.SysPositionConvert;
 import github.jiangbyte.io.iam.modules.position.entity.SysPosition;
@@ -50,6 +51,8 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
         if (position == null) {
             throw new BizException(404, "Position not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                position.getCreatedBy(), position.getOwnerDeptId(), "iam:position:page");
         positionConvert.update(param, position);
         this.updateById(position);
     }
@@ -61,6 +64,12 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysPosition> positions = this.listByIds(ids);
+        DataScopeConstraint scope = dataScopeResolver.resolve("iam:position:page");
+        for (SysPosition position : positions) {
+            dataScopeResolver.assertOwnerOrDeptAccessible(
+                    position.getCreatedBy(), position.getOwnerDeptId(), scope);
+        }
         this.removeByIds(ids);
     }
 
@@ -71,6 +80,8 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
         if (position == null) {
             throw new BizException(404, "Position not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                position.getCreatedBy(), position.getOwnerDeptId(), "iam:position:page");
         return position;
     }
 

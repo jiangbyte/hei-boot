@@ -8,6 +8,7 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.account.service.AccountService;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
@@ -72,6 +73,8 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         groupConvert.update(param, group);
         this.updateById(group);
     }
@@ -82,6 +85,12 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         List<String> ids = param.getIds();
         if (ids == null || ids.isEmpty()) {
             return;
+        }
+        List<SysGroup> groups = this.listByIds(ids);
+        DataScopeConstraint scope = dataScopeResolver.resolve("iam:group:page");
+        for (SysGroup group : groups) {
+            dataScopeResolver.assertOwnerOrDeptAccessible(
+                    group.getCreatedBy(), group.getOwnerDeptId(), scope);
         }
         // 先清主体/客体关系，再删用户组
         relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_GROUP, ids);
@@ -96,6 +105,8 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         return group;
     }
 
@@ -115,9 +126,12 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Override
     @ReadDataSource
     public SysOwnUserResult ownUsers(String id) {
-        if (this.getById(id) == null) {
+        SysGroup group = this.getById(id);
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         // 查分组成员 id，再回填用户详情
         List<String> accountIds = relationService.listSubjectIds(
                 IamRelationTypes.ACCOUNT_GROUP, IamRelationTypes.TARGET_GROUP, id);
@@ -132,18 +146,24 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Transactional
     public void grantUsers(SysGroupGrantUserParam param) {
         // 全量替换用户组成员
-        if (this.getById(param.getId()) == null) {
+        SysGroup group = this.getById(param.getId());
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         relationService.replaceGroupUsers(param.getId(), param.getAccountIds());
     }
 
     @Override
     @ReadDataSource
     public SysGroupOwnRoleResult ownRoles(String id, String accountType) {
-        if (this.getById(id) == null) {
+        SysGroup group = this.getById(id);
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         // 查已绑角色 id，再按序回填角色实体
         List<String> roleIds = relationService.listTargetIds(
                 IamRelationTypes.SUBJECT_GROUP, id, IamRelationTypes.GROUP_ROLE, accountType);
@@ -158,18 +178,24 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Transactional
     public void grantRoles(SysGroupGrantRoleParam param) {
         // 全量替换用户组角色
-        if (this.getById(param.getId()) == null) {
+        SysGroup group = this.getById(param.getId());
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         relationService.replaceGroupRoles(param.getId(), param.getRoleIds(), param.getAccountType());
     }
 
     @Override
     @ReadDataSource
     public SysResourceOwnResult ownResources(String id, String accountType) {
-        if (this.getById(id) == null) {
+        SysGroup group = this.getById(id);
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         // 拼装授权树 + 已授列表
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
@@ -183,9 +209,12 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Transactional
     public void grantResources(SysGroupGrantResourceParam param) {
         // 全量替换用户组管理端资源
-        if (this.getById(param.getId()) == null) {
+        SysGroup group = this.getById(param.getId());
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_GROUP,
                 param.getId(),
@@ -196,9 +225,12 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Override
     @ReadDataSource
     public SysResourceOwnResult ownClientResources(String id, String accountType) {
-        if (this.getById(id) == null) {
+        SysGroup group = this.getById(id);
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         // 拼装客户端授权树 + 已授列表
         SysResourceOwnResult result = new SysResourceOwnResult();
         result.setId(id);
@@ -212,9 +244,12 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     @Transactional
     public void grantClientResources(SysGroupGrantResourceParam param) {
         // 全量替换用户组客户端资源
-        if (this.getById(param.getId()) == null) {
+        SysGroup group = this.getById(param.getId());
+        if (group == null) {
             throw new BizException(404, "Group not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(
+                group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_GROUP,
                 param.getId(),

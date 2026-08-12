@@ -16,4 +16,6 @@ public class PhoneUpdateParam {
     private String password;
     private String phone;
     private Boolean phoneLoginEnabled = false;
+    /** 绑定/换绑时必填的手机 OTP */
+    private String otpCode;
 }

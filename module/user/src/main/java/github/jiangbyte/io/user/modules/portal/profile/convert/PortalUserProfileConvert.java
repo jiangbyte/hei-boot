@@ -30,6 +30,7 @@ public interface PortalUserProfileConvert {
     @Mapping(target = "deptIds", source = "loginUser.deptIds")
     @Mapping(target = "groupIds", source = "loginUser.groupIds")
     @Mapping(target = "permissionKeys", source = "loginUser.permissions")
+    @Mapping(target = "passwordExpired", source = "loginUser.passwordExpired")
     @Mapping(target = "name", source = "profile.name")
     @Mapping(target = "nickname", source = "profile.nickname")
     @Mapping(target = "avatar", source = "profile.avatar")
@@ -37,6 +38,8 @@ public interface PortalUserProfileConvert {
     @Mapping(target = "roleIdNames", ignore = true)
     @Mapping(target = "deptIdNames", ignore = true)
     @Mapping(target = "groupIdNames", ignore = true)
+    @Mapping(target = "forceBindEmail", ignore = true)
+    @Mapping(target = "forceBindPhone", ignore = true)
     MeResult toMe(LoginUser loginUser, UserProfileResult profile);
 
     /** 实体转为用户中心资料 DTO。 */

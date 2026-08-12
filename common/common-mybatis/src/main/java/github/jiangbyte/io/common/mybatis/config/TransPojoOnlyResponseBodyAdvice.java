@@ -1,7 +1,6 @@
 package github.jiangbyte.io.common.mybatis.config;
 
 import github.jiangbyte.io.common.core.domain.ApiResponse;
-import github.jiangbyte.io.common.core.domain.PageResult;
 import org.dromara.core.trans.vo.VO;
 import org.dromara.trans.service.impl.TransService;
 import org.dromara.trans.utils.TransUtil;
@@ -77,16 +76,6 @@ public class TransPojoOnlyResponseBodyAdvice implements ResponseBodyAdvice<Objec
     private Object translateRoot(Object root) throws Exception {
         if (root == null) {
             return null;
-        }
-        if (root instanceof PageResult<?> pageResult) {
-            Object records = pageResult.getRecords();
-            Object translated = translateRoot(records);
-            if (translated != records && translated instanceof Collection<?> collection) {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                PageResult raw = pageResult;
-                raw.setRecords(new ArrayList<>(collection));
-            }
-            return pageResult;
         }
         if (root instanceof VO) {
             return TransUtil.transOne(

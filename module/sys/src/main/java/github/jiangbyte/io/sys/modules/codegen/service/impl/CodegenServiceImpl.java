@@ -10,10 +10,8 @@ import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
-import github.jiangbyte.io.iam.modules.resource.entity.SysResource;
-import github.jiangbyte.io.iam.modules.resource.entity.SysResourceModule;
-import github.jiangbyte.io.iam.modules.resource.mapper.SysResourceMapper;
-import github.jiangbyte.io.iam.modules.resource.mapper.SysResourceModuleMapper;
+import github.jiangbyte.io.iam.resource.ResourceMenuApi;
+import github.jiangbyte.io.iam.resource.ResourceMenuNode;
 import github.jiangbyte.io.sys.modules.codegen.mapper.CodegenSchemaMapper;
 import github.jiangbyte.io.sys.modules.codegen.mapper.SysCodegenFieldMapper;
 import github.jiangbyte.io.sys.modules.codegen.mapper.SysCodegenPlanMapper;
@@ -45,7 +43,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -63,13 +60,11 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
     private static final Set<String> AUDIT = Set.of("created_at", "created_by", "updated_at", "updated_by");
     private static final Set<String> RELATION_TYPES = Set.of("LEFT_TREE_TABLE", "MASTER_DETAIL");
     private static final Set<String> TREE_TYPES = Set.of("TREE", "LEFT_TREE_TABLE");
-    private static final Set<String> PARENT_RESOURCE_TYPES = Set.of("CATALOG", "MENU", "PAGE");
 
     private final SysCodegenFieldMapper fieldMapper;
     private final CodegenSchemaMapper schemaMapper;
     private final CodegenTemplateEngine templateEngine;
-    private final SysResourceMapper resourceMapper;
-    private final SysResourceModuleMapper resourceModuleMapper;
+    private final ResourceMenuApi resourceMenuApi;
 
     @Override
     @Transactional
@@ -202,33 +197,12 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
 
     @Override
     public List<Tree<String>> parentResources(String moduleId) {
-        // 组装查询条件
-        Set<String> adminModuleIds = resourceModuleMapper.selectList(Wrappers.<SysResourceModule>lambdaQuery()
-                        .eq(SysResourceModule::getClient, "ADMIN")
-                        .select(SysResourceModule::getId))
-                .stream()
-                .map(SysResourceModule::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        if (adminModuleIds.isEmpty()) {
-            return List.of();
-        }
-        if (StringUtils.hasText(moduleId) && !adminModuleIds.contains(moduleId)) {
-            return List.of();
-        }
-
-        // 组装查询条件
-        List<SysResource> resources = resourceMapper.selectList(Wrappers.<SysResource>lambdaQuery()
-                .eq(SysResource::getStatus, "ENABLED")
-                .in(SysResource::getResourceType, PARENT_RESOURCE_TYPES)
-                .in(SysResource::getModuleId, StringUtils.hasText(moduleId) ? List.of(moduleId) : adminModuleIds)
-                .orderByAsc(SysResource::getSort)
-                .orderByAsc(SysResource::getId));
+        List<ResourceMenuNode> resources = resourceMenuApi.listParentMenus("ADMIN", moduleId);
         if (resources.isEmpty()) {
             return List.of();
         }
 
-        Set<String> ids = resources.stream().map(SysResource::getId).collect(Collectors.toSet());
+        Set<String> ids = resources.stream().map(ResourceMenuNode::getId).collect(Collectors.toSet());
         TreeNodeConfig config = new TreeNodeConfig();
         config.setIdKey("id");
         config.setParentIdKey("parent_id");

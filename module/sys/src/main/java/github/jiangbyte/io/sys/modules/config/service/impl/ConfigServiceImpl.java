@@ -353,7 +353,14 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
     }
 
     private static boolean isSensitive(String configKey) {
-        return StringUtils.hasText(configKey) && SENSITIVE_CONFIG_KEYS.contains(configKey);
+        if (!StringUtils.hasText(configKey)) {
+            return false;
+        }
+        if (SENSITIVE_CONFIG_KEYS.contains(configKey)) {
+            return true;
+        }
+        return configKey.startsWith("AUTH_OAUTH_")
+                && (configKey.endsWith("_CLIENT_SECRET") || configKey.endsWith("_APP_SECRET"));
     }
 
     private void afterMutation(String reason) {

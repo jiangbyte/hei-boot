@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * 门户端文件 API：上传与访问 URL。
+ * 门户端文件 API：上传与访问 URL（仅本人上传的文件）。
  *
  * Author: Charlie
  */
@@ -49,19 +49,24 @@ public class PortalFileController {
     /** 查询详情。 */
     @GetMapping("/v1/portal/sys/file/detail")
     public ApiResponse<SysFile> detail(@Valid @ModelAttribute IdParam param) {
-        return ApiResponse.ok(fileService.detail(param.getId()));
+        SysFile file = fileService.detail(param.getId());
+        fileService.assertOwnedByCurrent(file);
+        return ApiResponse.ok(file);
     }
 
-    /** 按 ID 列表查询。 */
+    /** 按 ID 列表查询（仅返回本人文件）。 */
     @PostMapping("/v1/portal/sys/file/list_by_ids")
     public ApiResponse<List<SysFile>> listByIds(@Valid @RequestBody IdsParam param) {
-        return ApiResponse.ok(fileService.listByIds(param.getIds()));
+        List<SysFile> files = fileService.listByIds(param.getIds());
+        files.forEach(fileService::assertOwnedByCurrent);
+        return ApiResponse.ok(files);
     }
 
-    /** 下载生成代码。 */
+    /** 下载文件。 */
     @GetMapping("/v1/portal/sys/file/download")
     public ResponseEntity<Resource> download(@Valid @ModelAttribute IdParam param) {
         SysFile meta = fileService.detail(param.getId());
+        fileService.assertOwnedByCurrent(meta);
         Resource resource = fileService.download(param.getId());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + meta.getOriginalName() + "\"")
@@ -72,12 +77,20 @@ public class PortalFileController {
     /** 获取文件访问 URL。 */
     @PostMapping("/v1/portal/sys/file/url")
     public ApiResponse<SysFileUrlResult> url(@Valid @RequestBody SysFileObjectNameParam param) {
+        SysFile file = fileService.listByObjectNames(List.of(param.getObjectName())).stream()
+                .findFirst()
+                .orElse(null);
+        fileService.assertOwnedByCurrent(file);
         return ApiResponse.ok(fileService.url(param.getObjectName()));
     }
 
     /** 获取预签名 URL。 */
     @PostMapping("/v1/portal/sys/file/presigned_url")
     public ApiResponse<SysFileUrlResult> presignedUrl(@Valid @RequestBody SysFileObjectNameParam param) {
+        SysFile file = fileService.listByObjectNames(List.of(param.getObjectName())).stream()
+                .findFirst()
+                .orElse(null);
+        fileService.assertOwnedByCurrent(file);
         return ApiResponse.ok(fileService.presignedUrl(param.getObjectName()));
     }
 }

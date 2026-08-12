@@ -18,6 +18,7 @@ import github.jiangbyte.io.sys.modules.codegen.result.SysCodegenPreviewResult;
 import github.jiangbyte.io.sys.modules.codegen.service.CodegenService;
 import cn.hutool.core.lang.tree.Tree;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "hei.codegen", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class AdminCodegenController {
 
     private final CodegenService codegenService;

@@ -20,6 +20,6 @@
 
 - **`app/admin`**：可运行业务 API + 内嵌 XXL-JOB Executor；Flyway 权威源。
 - **`app/xxl-job`**：仅本地调试的 XXL-JOB Admin。
-- **`module/*` / `module-api/*`**：业务实现与跨模块窄接口（无样例 biz 模块）。
+- **`module/*` / `module-api/*`**：业务实现与跨模块窄接口；样板业务在 `module/biz`，生产打包用 `-P'!with-biz'` 排除。
 - **`web/admin` / `web/portal` / `web/admin-uniapp`**：各自独立前端工程（无 `web/packages` 共享层）。
 - **`script/`**：本地脚本与辅助资产；**`deploy/`**：部署参考（Helm）。

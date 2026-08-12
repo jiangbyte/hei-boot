@@ -5,14 +5,14 @@
 ```bash
 # Install k6: https://k6.io/docs/get-started/installation/
 k6 run script/perf/k6-api-baseline.js
-k6 run -e BASE_URL=http://127.0.0.1:8080 -e TOKEN=<token> -e VUS=20 -e DURATION=1m script/perf/k6-api-baseline.js
+k6 run -e BASE_URL=http://127.0.0.1:8000 -e TOKEN=<token> -e VUS=20 -e DURATION=1m script/perf/k6-api-baseline.js
 ```
 
 ## OWASP ZAP baseline
 
 ```bash
 chmod +x script/security/zap-baseline.sh
-./script/security/zap-baseline.sh http://127.0.0.1:8080
+./script/security/zap-baseline.sh http://127.0.0.1:8000
 ```
 
 Reports land in `script/security/out/`.

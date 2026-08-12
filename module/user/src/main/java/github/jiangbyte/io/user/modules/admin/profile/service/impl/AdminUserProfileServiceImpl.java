@@ -7,6 +7,8 @@ import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.account.AccountIdentityApi;
+import github.jiangbyte.io.iam.org.OrgNameApi;
+import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.sys.file.FileApi;
 import github.jiangbyte.io.sys.file.FileInfo;
 import github.jiangbyte.io.user.admin.profile.AdminUserProfileInfo;
@@ -23,7 +25,6 @@ import github.jiangbyte.io.user.modules.admin.profile.result.RoleIdNameResult;
 import github.jiangbyte.io.user.modules.admin.profile.result.UserProfileResult;
 import github.jiangbyte.io.user.modules.admin.profile.service.AdminUserProfileService;
 import lombok.RequiredArgsConstructor;
-import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -56,7 +57,8 @@ public class AdminUserProfileServiceImpl implements AdminUserProfileService {
     private final AdminUserProfileMapper adminProfileMapper;
     private final FileApi fileApi;
     private final AccountIdentityApi accountIdentityApi;
-    private final TransService transService;
+    private final OrgNameApi orgNameApi;
+    private final ConfigApi configApi;
     private final AdminUserProfileConvert adminUserProfileConvert;
 
     @Override
@@ -68,6 +70,7 @@ public class AdminUserProfileServiceImpl implements AdminUserProfileService {
         MeResult response = adminUserProfileConvert.toMe(loginUser, profile);
         fillOrgIdNames(response, loginUser);
         response.setAvatar(profile.getAvatar());
+        fillForceBindFlags(response, loginUser);
         return response;
     }
 
@@ -326,6 +329,16 @@ public class AdminUserProfileServiceImpl implements AdminUserProfileService {
         return dto;
     }
 
+    private void fillForceBindFlags(MeResult response, LoginUser loginUser) {
+        String typeName = loginUser.getAccountType() == null ? "ADMIN" : loginUser.getAccountType().name();
+        boolean forceEmail = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_EMAIL", false)
+                && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "EMAIL");
+        boolean forcePhone = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false)
+                && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "PHONE");
+        response.setForceBindEmail(forceEmail);
+        response.setForceBindPhone(forcePhone);
+    }
+
     private UserProfileResult withResolvedAvatar(UserProfileResult dto) {
         if (dto != null) {
             dto.setAvatar(fileApi.resolveUrl(dto.getAvatar()));
@@ -342,69 +355,63 @@ public class AdminUserProfileServiceImpl implements AdminUserProfileService {
     }
 
     private OrgInfoResult resolveOrgIdNames(LoginUser loginUser) {
-        // 会话 ID 列表 → 可翻译对象 → RPC 批量补名称
+        // 查 entity 名称后填充 Result（Result 不走 easy-trans）
         OrgInfoResult org = new OrgInfoResult();
-        List<RoleIdNameResult> roles = toRoleIdNames(loginUser.getRoleIds());
-        List<DeptIdNameResult> depts = toDeptIdNames(loginUser.getDeptIds());
-        List<GroupIdNameResult> groups = toGroupIdNames(loginUser.getGroupIds());
-        if (!roles.isEmpty()) {
-            transService.transBatch(roles);
-        }
-        if (!depts.isEmpty()) {
-            transService.transBatch(depts);
-        }
-        if (!groups.isEmpty()) {
-            transService.transBatch(groups);
-        }
-        org.setRoleIdNames(roles);
-        org.setDeptIdNames(depts);
-        org.setGroupIdNames(groups);
+        org.setRoleIdNames(toRoleIdNames(loginUser.getRoleIds()));
+        org.setDeptIdNames(toDeptIdNames(loginUser.getDeptIds()));
+        org.setGroupIdNames(toGroupIdNames(loginUser.getGroupIds()));
         return org;
     }
 
-    private static List<RoleIdNameResult> toRoleIdNames(Collection<String> ids) {
+    private List<RoleIdNameResult> toRoleIdNames(Collection<String> ids) {
         List<RoleIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.roleNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             RoleIdNameResult item = new RoleIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;
     }
 
-    private static List<DeptIdNameResult> toDeptIdNames(Collection<String> ids) {
+    private List<DeptIdNameResult> toDeptIdNames(Collection<String> ids) {
         List<DeptIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.deptNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             DeptIdNameResult item = new DeptIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;
     }
 
-    private static List<GroupIdNameResult> toGroupIdNames(Collection<String> ids) {
+    private List<GroupIdNameResult> toGroupIdNames(Collection<String> ids) {
         List<GroupIdNameResult> result = new ArrayList<>();
         if (CollectionUtils.isEmpty(ids)) {
             return result;
         }
+        Map<String, String> names = orgNameApi.groupNames(ids);
         for (String id : ids) {
             if (!StringUtils.hasText(id)) {
                 continue;
             }
             GroupIdNameResult item = new GroupIdNameResult();
             item.setId(id);
+            item.setName(names.get(id));
             result.add(item);
         }
         return result;

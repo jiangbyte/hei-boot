@@ -75,4 +75,46 @@ public interface AuthCryptoService {
      */
     boolean consumeChangePasswordOtp(String accountType, String channel, String accountId, String code);
 
+    /**
+     * 缓存注册 OTP。
+     *
+     * @param channel EMAIL 或 PHONE
+     * @param target  规范化后的邮箱/手机
+     * @param code    验证码明文
+     * @param ttl     有效期
+     */
+    void storeRegisterOtp(String channel, String target, String code, Duration ttl);
+
+    /**
+     * 校验并消费注册 OTP。
+     *
+     * @param channel EMAIL 或 PHONE
+     * @param target  规范化后的邮箱/手机
+     * @param code    用户提交的验证码
+     */
+    boolean consumeRegisterOtp(String channel, String target, String code);
+
+    /**
+     * 缓存绑定 OTP（按账号 ID + 新目标）。
+     *
+     * @param accountType 账号类型名
+     * @param channel     EMAIL 或 PHONE
+     * @param accountId   账号 ID
+     * @param target      规范化后的新邮箱/手机
+     * @param code        验证码明文
+     * @param ttl         有效期
+     */
+    void storeBindOtp(String accountType, String channel, String accountId, String target, String code, Duration ttl);
+
+    /**
+     * 校验并消费绑定 OTP。
+     *
+     * @param accountType 账号类型名
+     * @param channel     EMAIL 或 PHONE
+     * @param accountId   账号 ID
+     * @param target      规范化后的新邮箱/手机
+     * @param code        用户提交的验证码
+     */
+    boolean consumeBindOtp(String accountType, String channel, String accountId, String target, String code);
+
 }

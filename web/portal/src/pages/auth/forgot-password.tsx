@@ -28,8 +28,6 @@ export function ForgotPasswordPage() {
   const openAuthModal = useAuthModalStore((s) => s.open)
   const token = params.get('token') || ''
   const isResetMode = Boolean(token)
-  const captchaId = Form.useWatch('captcha_id', form) || ''
-  const captchaValue = Form.useWatch('captcha_value', form) || ''
   const password = Form.useWatch('password', form) || ''
 
   async function sendLink() {
@@ -144,10 +142,7 @@ export function ForgotPasswordPage() {
             <CaptchaInput
               ref={captchaRef}
               size="large"
-              captchaId={captchaId}
-              captchaValue={captchaValue}
               onCaptchaIdChange={(v) => form.setFieldValue('captcha_id', v)}
-              onCaptchaValueChange={(v) => form.setFieldValue('captcha_value', v)}
             />
           </Form.Item>
 

@@ -3,6 +3,7 @@ package github.jiangbyte.io.user.modules.admin.profile.controller;
 import github.jiangbyte.io.auth.login.AuthApi;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import github.jiangbyte.io.user.modules.admin.profile.param.BindCodeParam;
 import github.jiangbyte.io.user.modules.admin.profile.param.EmailUpdateParam;
 import github.jiangbyte.io.user.modules.admin.profile.param.PasswordUpdateParam;
 import github.jiangbyte.io.user.modules.admin.profile.param.PhoneUpdateParam;
@@ -75,6 +76,14 @@ public class AdminUserCenterController {
         return ApiResponse.ok();
     }
 
+    /** 向待绑定手机发送验证码。 */
+    @PostMapping("/v1/admin/user-center/phone/send-code")
+    @OperationAudit(resourceType = "user_center", action = "send_bind_phone_code")
+    public ApiResponse<Void> sendPhoneCode(@Valid @RequestBody BindCodeParam request) {
+        authApi.sendBindPhoneCode(request.getTarget());
+        return ApiResponse.ok();
+    }
+
     /** 更新当前用户手机号及是否允许手机登录。 */
     @PostMapping("/v1/admin/user-center/phone/update")
     @OperationAudit(resourceType = "user_center", action = "update_phone")
@@ -83,7 +92,16 @@ public class AdminUserCenterController {
                 request.getPasswordKeyId(),
                 request.getPassword(),
                 request.getPhone(),
-                Boolean.TRUE.equals(request.getPhoneLoginEnabled()));
+                Boolean.TRUE.equals(request.getPhoneLoginEnabled()),
+                request.getOtpCode());
+        return ApiResponse.ok();
+    }
+
+    /** 向待绑定邮箱发送验证码。 */
+    @PostMapping("/v1/admin/user-center/email/send-code")
+    @OperationAudit(resourceType = "user_center", action = "send_bind_email_code")
+    public ApiResponse<Void> sendEmailCode(@Valid @RequestBody BindCodeParam request) {
+        authApi.sendBindEmailCode(request.getTarget());
         return ApiResponse.ok();
     }
 
@@ -95,7 +113,8 @@ public class AdminUserCenterController {
                 request.getPasswordKeyId(),
                 request.getPassword(),
                 request.getEmail(),
-                Boolean.TRUE.equals(request.getEmailLoginEnabled()));
+                Boolean.TRUE.equals(request.getEmailLoginEnabled()),
+                request.getOtpCode());
         return ApiResponse.ok();
     }
 

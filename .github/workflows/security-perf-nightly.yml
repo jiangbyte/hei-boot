@@ -8,7 +8,7 @@ on:
       target:
         description: "ZAP / k6 target base URL"
         required: false
-        default: "http://127.0.0.1:8080"
+        default: "http://127.0.0.1:8000"
 
 jobs:
   k6-baseline:
@@ -27,7 +27,7 @@ jobs:
       - name: Run k6 smoke (health probe only without live stack)
         continue-on-error: true
         env:
-          BASE_URL: ${{ inputs.target || 'http://127.0.0.1:8080' }}
+          BASE_URL: ${{ inputs.target || 'http://127.0.0.1:8000' }}
         run: |
           # Nightly against a live endpoint when provided; otherwise document failure as infra-not-up.
           k6 run -e BASE_URL="$BASE_URL" -e VUS=2 -e DURATION=15s script/perf/k6-api-baseline.js
@@ -39,7 +39,7 @@ jobs:
       - name: ZAP baseline
         continue-on-error: true
         env:
-          TARGET: ${{ inputs.target || 'http://127.0.0.1:8080' }}
+          TARGET: ${{ inputs.target || 'http://127.0.0.1:8000' }}
         run: |
           chmod +x script/security/zap-baseline.sh
           ./script/security/zap-baseline.sh "$TARGET"

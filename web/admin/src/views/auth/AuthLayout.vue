@@ -98,18 +98,22 @@ const brandMark = computed(() => String(appTitle).slice(0, 1).toUpperCase())
         </aside>
 
         <div class="auth-card__form">
-          <div class="auth-card__form-head">
-            <h1 class="auth-card__title">
-              {{ title }}
-            </h1>
-            <div
-              v-if="$slots.headerExtra"
-              class="auth-card__form-extra"
-            >
-              <slot name="headerExtra" />
+          <div class="auth-card__form-inner">
+            <div class="auth-card__form-head">
+              <h1 class="auth-card__title">
+                {{ title }}
+              </h1>
+              <div
+                v-if="$slots.headerExtra"
+                class="auth-card__form-extra"
+              >
+                <slot name="headerExtra" />
+              </div>
+            </div>
+            <div class="auth-card__form-body">
+              <slot />
             </div>
           </div>
-          <slot />
         </div>
       </div>
     </template>

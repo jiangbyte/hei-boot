@@ -32,6 +32,9 @@ public interface FileService extends IService<SysFile> {
     /** 查询详情。 */
     SysFile detail(String id);
 
+    /** 断言当前登录用户为文件上传者（门户防 IDOR）。 */
+    void assertOwnedByCurrent(SysFile file);
+
     /** 按 ID 列表查询。 */
     List<SysFile> listByIds(List<String> ids);
 

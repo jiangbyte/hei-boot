@@ -31,9 +31,7 @@ public class PublicFileController {
     /** 按查询参数下载文件。 */
     @GetMapping("/v1/files")
     public ResponseEntity<Resource> downloadByQuery(@RequestParam("object_name") String objectName) {
-
-    /** 转换。 */
-    return toResponse(objectName);
+        return toResponse(objectName);
     }
 
     /** 按路径下载文件。 */
@@ -44,12 +42,9 @@ public class PublicFileController {
         int idx = uri.indexOf(marker);
         String objectName = idx >= 0 ? uri.substring(idx + marker.length()) : "";
         objectName = URLDecoder.decode(objectName, StandardCharsets.UTF_8).replace('\\', '/').replaceAll("^/+", "");
-
-    /** 转换。 */
-    return toResponse(objectName);
+        return toResponse(objectName);
     }
 
-    /** 转换。 */
     private ResponseEntity<Resource> toResponse(String objectName) {
         Resource resource = fileService.publicDownload(objectName);
         String filename = StringUtils.hasText(objectName) && objectName.contains("/")

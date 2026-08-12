@@ -1,7 +1,6 @@
 package github.jiangbyte.io.common.web.jackson;
 
 import github.jiangbyte.io.common.core.jackson.Sensitive;
-import github.jiangbyte.io.common.core.sensitive.SensitiveKeys;
 import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.SerializationConfig;
 import tools.jackson.databind.ValueSerializer;
@@ -10,21 +9,22 @@ import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.ser.BeanPropertyWriter;
 import tools.jackson.databind.ser.ValueSerializerModifier;
 
+import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Set;
 
 /**
- * 按 {@link Sensitive} 注解或属性名自动脱敏（Jackson 3：ValueSerializerModifier）。
+ * 仅对标注了 {@link Sensitive} 的属性做响应脱敏（Jackson 3：ValueSerializerModifier）。
+ *
+ * <p>支持字段或 getter 上的注解；Lombok 生成 getter 时仍识别字段上的 {@code @Sensitive}。
  *
  * Author: Charlie
  */
 public final class SensitiveNameJacksonModule extends SimpleModule {
 
-    public static final String MODULE_NAME = "hei-sensitive-name";
+    public static final String MODULE_NAME = "hei-sensitive-annotation";
 
-    public SensitiveNameJacksonModule(Set<String> redactKeys) {
+    public SensitiveNameJacksonModule() {
         super(MODULE_NAME);
-        Set<String> keys = SensitiveKeys.normalize(redactKeys);
         setSerializerModifier(new ValueSerializerModifier() {
             @Override
             public List<BeanPropertyWriter> changeProperties(
@@ -32,8 +32,9 @@ public final class SensitiveNameJacksonModule extends SimpleModule {
                     BeanDescription.Supplier beanDesc,
                     List<BeanPropertyWriter> beanProperties) {
                 for (BeanPropertyWriter writer : beanProperties) {
-                    if (shouldMask(writer, keys)) {
-                        ValueSerializer<Object> ser = new SensitiveJsonSerializer();
+                    Sensitive sensitive = resolveSensitive(writer);
+                    if (sensitive != null) {
+                        ValueSerializer<Object> ser = new SensitiveJsonSerializer(sensitive);
                         writer.assignSerializer(ser);
                     }
                 }
@@ -42,11 +43,26 @@ public final class SensitiveNameJacksonModule extends SimpleModule {
         });
     }
 
-    private static boolean shouldMask(BeanPropertyWriter writer, Set<String> keys) {
+    private static Sensitive resolveSensitive(BeanPropertyWriter writer) {
         AnnotatedMember member = writer.getMember();
-        if (member != null && member.hasAnnotation(Sensitive.class)) {
-            return true;
+        if (member != null) {
+            Sensitive onMember = member.getAnnotation(Sensitive.class);
+            if (onMember != null) {
+                return onMember;
+            }
         }
-        return SensitiveKeys.matches(writer.getName(), keys);
+        if (member == null) {
+            return null;
+        }
+        String name = writer.getName();
+        for (Class<?> type = member.getDeclaringClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            try {
+                Field field = type.getDeclaredField(name);
+                return field.getAnnotation(Sensitive.class);
+            } catch (NoSuchFieldException ignored) {
+                // try superclass
+            }
+        }
+        return null;
     }
 }

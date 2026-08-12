@@ -10,6 +10,7 @@ import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.oss.StorageService;
+import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.sys.config.RuntimeSettings;
 import github.jiangbyte.io.sys.config.RuntimeSettingsHolder;
 import github.jiangbyte.io.sys.modules.file.convert.SysFileConvert;
@@ -103,6 +104,17 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
             throw new BizException(404, "File not found");
         }
         return withResolvedUrl(file);
+    }
+
+    @Override
+    public void assertOwnedByCurrent(SysFile file) {
+        if (file == null) {
+            throw new BizException(404, "File not found");
+        }
+        String accountId = LoginHelper.requireUser().getAccountId();
+        if (!StringUtils.hasText(file.getCreatedBy()) || !accountId.equals(file.getCreatedBy())) {
+            throw new BizException(403, "无权访问该文件");
+        }
     }
 
     @Override
@@ -363,6 +375,12 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     }
 
     private String buildObjectName(String filename, String category) {
+        RuntimeSettings settings = RuntimeSettingsHolder.get();
+        int maxCategoryLen = Math.max(1, settings.getInt("STORAGE_UPLOAD_CATEGORY_MAX_LENGTH", 64));
+        String safeCategory = StringUtils.hasText(category) ? category.trim() : "uploads";
+        if (safeCategory.length() > maxCategoryLen) {
+            throw new BizException(400, "Upload category exceeds max length");
+        }
         String safeName = filename.replace("\\", "/");
         int slash = safeName.lastIndexOf('/');
         if (slash >= 0) {
@@ -372,7 +390,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         String suffix = dot >= 0 ? safeName.substring(dot).toLowerCase(Locale.ROOT) : "";
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         return "%s/%04d/%02d/%02d/%s%s".formatted(
-                category,
+                safeCategory,
                 now.getYear(),
                 now.getMonthValue(),
                 now.getDayOfMonth(),

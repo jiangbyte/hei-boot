@@ -77,6 +77,8 @@ management:
 
 # 生产：勿部署 app/xxl-job。执行器指向外部 XXL-JOB Admin
 hei:
+  codegen:
+    enabled: false
   logging:
     json: ${LOG_JSON:true}
   security:
@@ -85,7 +87,7 @@ hei:
     expose-druid: false
     # 仅在可信反向代理会改写 X-Forwarded-For / X-Real-IP 时开启
     trust-forwarded-headers: ${HEI_SECURITY_TRUST_FORWARDED_HEADERS:true}
-    # 边缘终止 TLS 时设置（如 31536000）。若 API 仅在内部网格走 HTTP，保持 0
+    # 边缘终止 TLS 时设置（如 31536000）。若 API 仅在内部网格走 HTTP，保持 0；优先在 Ingress 配 HSTS
     hsts-max-age-seconds: ${HEI_SECURITY_HSTS_MAX_AGE:0}
     hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
     hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
@@ -93,8 +95,8 @@ hei:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
   xxl-job:
-    enabled: ${XXL_JOB_ENABLED:true}
-    access-token: ${XXL_JOB_ACCESS_TOKEN}
+    enabled: ${XXL_JOB_ENABLED:false}
+    access-token: ${XXL_JOB_ACCESS_TOKEN:}
     admin:
       addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://xxl-job-admin.example.com/xxl-job-admin}
     executor:

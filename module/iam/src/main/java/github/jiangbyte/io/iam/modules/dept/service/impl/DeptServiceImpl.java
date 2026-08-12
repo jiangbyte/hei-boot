@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.dept.convert.SysDeptConvert;
 import github.jiangbyte.io.iam.modules.dept.entity.SysDept;
 import github.jiangbyte.io.iam.modules.dept.mapper.SysDeptMapper;
@@ -59,6 +60,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
         if (dept == null) {
             throw new BizException(404, "Dept not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(dept.getCreatedBy(), dept.getId(), "iam:dept:page");
         deptConvert.update(param, dept);
         this.updateById(dept);
     }
@@ -69,6 +71,11 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
         List<String> ids = param.getIds();
         if (ids == null || ids.isEmpty()) {
             return;
+        }
+        List<SysDept> depts = this.listByIds(ids);
+        DataScopeConstraint scope = dataScopeResolver.resolve("iam:dept:page");
+        for (SysDept dept : depts) {
+            dataScopeResolver.assertOwnerOrDeptAccessible(dept.getCreatedBy(), dept.getId(), scope);
         }
         relationService.deleteByTargetIds(IamRelationTypes.TARGET_DEPT, ids);
         this.removeByIds(ids);
@@ -81,6 +88,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
         if (dept == null) {
             throw new BizException(404, "Dept not found");
         }
+        dataScopeResolver.assertOwnerOrDeptAccessible(dept.getCreatedBy(), dept.getId(), "iam:dept:page");
         return dept;
     }
 

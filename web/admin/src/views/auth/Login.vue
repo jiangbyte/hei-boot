@@ -1,7 +1,7 @@
 <!-- Author: Charlie -->
 
 <script setup lang="ts">
-import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
+import type { FormItemInst, FormItemRule } from 'naive-ui'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CaptchaInput from '@/components/common/CaptchaInput.vue'
@@ -18,7 +18,10 @@ type LoginType = 'ACCOUNT' | 'EMAIL' | 'PHONE'
 
 const route = useRoute()
 const authStore = useAuthStore()
-const formRef = ref<FormInst | null>(null)
+const identityItemRef = ref<FormItemInst | null>(null)
+const passwordItemRef = ref<FormItemInst | null>(null)
+const otpItemRef = ref<FormItemInst | null>(null)
+const captchaItemRef = ref<FormItemInst | null>(null)
 const captchaRef = ref<InstanceType<typeof CaptchaInput> | null>(null)
 const loading = ref(false)
 const sendingCode = ref(false)
@@ -35,6 +38,16 @@ const options = reactive({
   allow_phone: true,
   allow_otp: true,
 })
+
+type OauthProviderOption = {
+  provider: string
+  label: string
+  enabled: boolean
+  web_oauth: boolean
+}
+
+const oauthProviders = ref<OauthProviderOption[]>([])
+const oauthLoading = ref<string | null>(null)
 
 const sendCodeLabel = computed(() =>
   otpCooldown.value > 0 ? `${otpCooldown.value}s 后重发` : '发送验证码',
@@ -85,6 +98,44 @@ const otpAvailable = computed(
   () => options.allow_otp && (activeType.value === 'EMAIL' || activeType.value === 'PHONE'),
 )
 
+const identityRule: FormItemRule = {
+  trigger: ['input', 'blur'],
+  validator() {
+    const text = form[activeField.value].trim()
+    if (!text) {
+      return new Error(`请输入${currentLogin.value?.label || '账号'}`)
+    }
+    if (activeType.value === 'EMAIL' && !isValidEmail(text)) {
+      return new Error('请输入有效邮箱')
+    }
+    return true
+  },
+}
+
+const passwordRule: FormItemRule = {
+  trigger: ['input', 'blur'],
+  validator() {
+    if (!form.password) return new Error('请输入密码')
+    return true
+  },
+}
+
+const otpRule: FormItemRule = {
+  trigger: ['input', 'blur'],
+  validator() {
+    if (!form.otp_code.trim()) return new Error('请输入登录验证码')
+    return true
+  },
+}
+
+const captchaRule: FormItemRule = {
+  trigger: ['input', 'blur'],
+  validator() {
+    if (!form.captcha_value.trim()) return new Error('请输入验证码')
+    return true
+  },
+}
+
 onMounted(async () => {
   try {
     const res = await authApi.authOptions()
@@ -95,6 +146,15 @@ onMounted(async () => {
     options.allow_otp = wireBool(data.allow_otp ?? true)
     if (data.copyright_text) copyright.value = data.copyright_text
     copyrightUrl.value = data.copyright_url || ''
+    const providers = Array.isArray(data.oauth_providers) ? data.oauth_providers : []
+    oauthProviders.value = providers
+      .map((item: any) => ({
+        provider: String(item.provider || ''),
+        label: String(item.label || item.provider || ''),
+        enabled: wireBool(item.enabled ?? false),
+        web_oauth: wireBool(item.web_oauth ?? true),
+      }))
+      .filter((item: OauthProviderOption) => item.provider && item.enabled && item.web_oauth)
     if (!loginTypes.value.some((item) => item.key === activeType.value)) {
       activeType.value = loginTypes.value[0]?.key || 'ACCOUNT'
     }
@@ -109,42 +169,22 @@ onUnmounted(() => {
 
 watch(activeType, () => {
   if (!otpAvailable.value) loginMode.value = 'PASSWORD'
+  identityItemRef.value?.restoreValidation()
 })
 
-function validateLoginIdentity(_rule: FormItemRule, value: string) {
-  const text = String(value ?? '').trim()
-  if (!text) {
-    return new Error(`请输入${currentLogin.value?.label || '账号'}`)
+watch(loginMode, () => {
+  passwordItemRef.value?.restoreValidation()
+  otpItemRef.value?.restoreValidation()
+})
+
+async function validateFields(items: Array<FormItemInst | null | undefined>) {
+  try {
+    await Promise.all(items.filter(Boolean).map((item) => item!.validate()))
+    return true
+  } catch {
+    return false
   }
-  if (activeType.value === 'EMAIL' && !isValidEmail(text)) {
-    return new Error('请输入有效邮箱')
-  }
-  return true
 }
-
-const rules = computed<FormRules>(() => {
-  const next: FormRules = {
-    [activeField.value]: [
-      {
-        validator: validateLoginIdentity,
-        trigger: ['input', 'blur'],
-      },
-    ],
-    captcha_value: [
-      {
-        required: true,
-        message: '请输入验证码',
-        trigger: ['input', 'blur'],
-      },
-    ],
-  }
-  if (loginMode.value === 'OTP') {
-    next.otp_code = [{ required: true, message: '请输入登录验证码', trigger: ['input', 'blur'] }]
-  } else {
-    next.password = [{ required: true, message: '请输入密码', trigger: ['input', 'blur'] }]
-  }
-  return next
-})
 
 async function handleSendCode() {
   if (otpCooldown.value > 0 || sendingCode.value) return
@@ -171,7 +211,6 @@ async function handleSendCode() {
     })
     window.$message.success('验证码已发送，请查收后填写')
     startOtpCooldown()
-    // 发送成功会消耗图形验证码，需刷新供登录提交使用
     await captchaRef.value?.refresh()
   } catch {
     await captchaRef.value?.refresh()
@@ -180,12 +219,32 @@ async function handleSendCode() {
   }
 }
 
-async function handleSubmit() {
+async function handleOauthLogin(provider: string) {
+  if (oauthLoading.value) return
+  oauthLoading.value = provider
   try {
-    await formRef.value?.validate()
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
+    const res = await authApi.oauthAuthorize(provider, {
+      intent: 'LOGIN',
+      redirect,
+    })
+    const url = res?.data?.authorize_url
+    if (!url) {
+      window.$message.error('无法发起三方登录')
+      return
+    }
+    window.location.href = String(url)
   } catch {
-    return
+    // 全局错误提示；管理端未绑定时会在回调页提示
+  } finally {
+    oauthLoading.value = null
   }
+}
+
+async function handleSubmit() {
+  const credentialItem = loginMode.value === 'PASSWORD' ? passwordItemRef.value : otpItemRef.value
+  const ok = await validateFields([identityItemRef.value, credentialItem, captchaItemRef.value])
+  if (!ok) return
 
   loading.value = true
   try {
@@ -229,16 +288,13 @@ async function handleSubmit() {
     :copyright="copyright"
     :copyright-url="copyrightUrl"
   >
-    <n-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      size="large"
+    <form
+      class="auth-form"
       @submit.prevent="handleSubmit"
     >
       <n-tabs
         v-model:value="activeType"
-        type="segment"
+        type="line"
         size="large"
         class="auth-login-tabs"
       >
@@ -250,7 +306,11 @@ async function handleSubmit() {
         />
       </n-tabs>
 
-      <n-form-item :path="activeField">
+      <n-form-item
+        ref="identityItemRef"
+        :show-label="false"
+        :rule="identityRule"
+      >
         <n-input
           v-model:value="form[activeField]"
           size="large"
@@ -259,28 +319,11 @@ async function handleSubmit() {
         />
       </n-form-item>
 
-      <div
-        v-if="otpAvailable"
-        class="auth-mode-row"
-      >
-        <n-radio-group
-          v-model:value="loginMode"
-          size="large"
-        >
-          <n-radio-button
-            value="PASSWORD"
-            label="密码登录"
-          />
-          <n-radio-button
-            value="OTP"
-            label="验证码登录"
-          />
-        </n-radio-group>
-      </div>
-
       <n-form-item
         v-if="loginMode === 'PASSWORD'"
-        path="password"
+        ref="passwordItemRef"
+        :show-label="false"
+        :rule="passwordRule"
       >
         <n-input
           v-model:value="form.password"
@@ -292,11 +335,14 @@ async function handleSubmit() {
       </n-form-item>
       <n-form-item
         v-else
-        path="otp_code"
+        ref="otpItemRef"
+        :show-label="false"
+        :rule="otpRule"
       >
         <div class="auth-otp-row">
           <n-input
             v-model:value="form.otp_code"
+            class="auth-otp-row__input"
             size="large"
             placeholder="请输入登录验证码"
           />
@@ -310,7 +356,12 @@ async function handleSubmit() {
           </n-button>
         </div>
       </n-form-item>
-      <n-form-item path="captcha_value">
+
+      <n-form-item
+        ref="captchaItemRef"
+        :show-label="false"
+        :rule="captchaRule"
+      >
         <CaptchaInput
           ref="captchaRef"
           v-model:captcha-id="form.captcha_id"
@@ -318,6 +369,7 @@ async function handleSubmit() {
           size="large"
         />
       </n-form-item>
+
       <div class="auth-form-row">
         <n-checkbox
           v-model:checked="form.remember"
@@ -325,10 +377,25 @@ async function handleSubmit() {
         >
           记住我
         </n-checkbox>
-        <RouterLink to="/auth/forgot-password">
-          忘记密码？
-        </RouterLink>
+        <div class="auth-form-row__links">
+          <button
+            v-if="otpAvailable"
+            type="button"
+            class="auth-mode-link"
+            @click="loginMode = loginMode === 'PASSWORD' ? 'OTP' : 'PASSWORD'"
+          >
+            {{ loginMode === 'PASSWORD' ? '验证码登录' : '密码登录' }}
+          </button>
+          <span
+            v-if="otpAvailable"
+            class="auth-form-row__sep"
+          >·</span>
+          <RouterLink to="/auth/forgot-password">
+            忘记密码？
+          </RouterLink>
+        </div>
       </div>
+
       <n-button
         class="auth-submit"
         type="primary"
@@ -339,23 +406,83 @@ async function handleSubmit() {
       >
         登录
       </n-button>
-    </n-form>
+
+      <div
+        v-if="oauthProviders.length"
+        class="auth-oauth"
+      >
+        <div class="auth-oauth__divider">
+          <span>其他登录方式</span>
+        </div>
+        <div class="auth-oauth__row">
+          <n-button
+            v-for="item in oauthProviders"
+            :key="item.provider"
+            size="medium"
+            :loading="oauthLoading === item.provider"
+            :disabled="Boolean(oauthLoading)"
+            @click="handleOauthLogin(item.provider)"
+          >
+            {{ item.label }}
+          </n-button>
+        </div>
+        <p class="auth-oauth__hint">
+          管理端需先用密码登录并在用户中心绑定三方账号
+        </p>
+      </div>
+
+      <p class="auth-form-foot">
+        登录遇到问题？请联系系统管理员
+      </p>
+    </form>
   </AuthLayout>
 </template>
 
 <style scoped>
-.auth-login-tabs :deep(.n-tabs-pane-wrapper) {
-  overflow: visible;
+.auth-login-tabs {
+  margin-bottom: 16px;
 }
 
-.auth-mode-row {
-  margin: 0 0 12px;
+.auth-login-tabs :deep(.n-tabs-nav) {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.auth-login-tabs :deep(.n-tabs-nav-scroll-content),
+.auth-login-tabs :deep(.n-tabs-wrapper) {
+  display: flex;
+  width: 100%;
+}
+
+.auth-login-tabs :deep(.n-tabs-tab-wrapper) {
+  flex: 1;
+}
+
+.auth-login-tabs :deep(.n-tabs-tab) {
+  width: 100%;
+  justify-content: center;
+}
+
+/* 仅作身份切换：隐藏空 pane，避免多出占位高度 */
+.auth-login-tabs :deep(.n-tabs-pane-wrapper),
+.auth-login-tabs :deep(.n-tab-pane) {
+  display: none !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
 }
 
 .auth-otp-row {
   display: flex;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
+}
+
+.auth-otp-row__input {
+  flex: 1;
+  min-width: 0;
 }
 
 .auth-form-row {
@@ -363,8 +490,34 @@ async function handleSubmit() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 16px;
   font-size: 14px;
+}
+
+.auth-form-row__links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.auth-form-row__sep {
+  color: var(--n-text-color-3, #9ca3af);
+  line-height: 1;
+}
+
+.auth-mode-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: var(--n-text-color-3, #9ca3af);
+  line-height: inherit;
+}
+
+.auth-mode-link:hover {
+  color: var(--n-primary-color, #1677ff);
 }
 
 .auth-form-row a {
@@ -377,5 +530,41 @@ async function handleSubmit() {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+.auth-oauth {
+  margin-top: 18px;
+}
+
+.auth-oauth__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: var(--n-text-color-3, #9ca3af);
+  font-size: 12px;
+}
+
+.auth-oauth__divider::before,
+.auth-oauth__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--n-border-color, #e5e7eb);
+}
+
+.auth-oauth__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.auth-oauth__hint {
+  margin: 10px 0 0;
+  text-align: center;
+  color: var(--n-text-color-3, #9ca3af);
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>
