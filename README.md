@@ -5,49 +5,70 @@
 ![Maven](https://img.shields.io/badge/Maven-Multi--Module-C71A36?logo=apachemaven&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
-![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.x-blue)
-![Sa-Token](https://img.shields.io/badge/Sa--Token-1.45.x-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-HEI Boot 是 HEI 项目的 Spring Boot 后端模板，使用 JDK 21、Spring Boot 4、Maven 多模块和
-PostgreSQL 构建。采用常见的 Java 多模块分层与 Sa-Token / MyBatis-Plus 生态组件，目标是为中后台、
-门户和通用业务系统提供一套**开源可改的一体化脚手架**（非黑盒平台）：源码全在仓库内，一般挂业务、改配置即可跑；复杂场景可直接改 `common/*`。
+HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端 / 门户 / UniApp 前端**同仓维护。一般挂业务、改配置即可跑；复杂场景可直接改 `common/*`。
 
-当前仓库包含后端与前端（`web/admin` / `web/portal` / `web/admin-uniapp`）。
-Java 字段保持驼峰命名，对外 JSON 字段统一 `snake_case`。
-HTTP JSON 线格式仅允许字符串 / 对象 / 数组：`boolean` 与数字一律以字符串收发
-（见 `StringlyTypedJacksonModule`），避免前端大整型溢出与类型不一致。
+- 后端：JDK 21 · Spring Boot 4.1 · Maven 多模块 · PostgreSQL · Redis · Sa-Token · MyBatis-Plus · JustAuth
+- 前端：`web/admin`（Vue 3 / Naive UI）· `web/portal`（React / Ant Design）· `web/admin-uniapp`（uni-app）
+- 约定：Java 驼峰；对外 JSON 字段 `snake_case`；标量（含 boolean / 数字）以**字符串**收发（`StringlyTypedJacksonModule`）
 
-文档索引见 [docs/README.md](docs/README.md)。
+文档索引：[docs/README.md](docs/README.md)
 
-> **请注意：** 生产仍需自行加固密钥、外部 XXL-JOB、对象存储与高可用配置后再上线。已内置生产 profile
-> 收紧（关闭文档/Actuator 匿名暴露、文件上传白名单、Redis Stream 审计、CI 与后端镜像）；上线前仍请核对密钥轮换、TLS/HSTS（优先 Ingress）、网络隔离与压测。
-> `hei.security.trust-forwarded-headers` 仅在可信反向代理后开启。
+> **生产注意：** 首次上线后务必轮换 seed 超管密码与密钥；关闭文档/Actuator 公网暴露；仅在可信反向代理后开启 `hei.security.trust-forwarded-headers`。HSTS 优先在 Ingress 配置。
 
 ## 架构
 
-可运行应用只有两个：
+可运行后端应用只有两个：
 
 | 应用 | 路径 | 说明 |
 |------|------|------|
-| Admin API + Executor | `app/admin` | 业务 API；内嵌 XXL-JOB Executor（`hei-boot-admin`） |
+| Admin API + Executor | `app/admin` | 业务 API；内嵌 XXL-JOB Executor（`hei-boot-admin`）；Flyway 权威源 |
 | XXL-JOB Admin | `app/xxl-job` | **仅本地调试**；生产不要部署，改连外部 Admin |
 
-业务模块由 `app/admin` **显式依赖**装配；新增业务模块时登记 reactor 后，在 `app/admin/pom.xml` 增加依赖即可。
-样板 `module/biz` 放在 Maven profile `with-biz`（默认开启）；生产打包请排除：`mvn -pl app/admin -am -P'!with-biz' package`。
+业务由 `app/admin` **显式依赖**装配。样板 `module/biz` 在 Maven profile `with-biz`（默认开启）；生产打包排除：
+
+```bash
+mvn -pl app/admin -am -P'!with-biz' package -DskipTests
+```
+
+### 模块一览
+
+| 层 | 内容 |
+|----|------|
+| `common/*` | web / mybatis / redis / satoken / security / log / oss / job / notify / doc … |
+| `module-api/*` | 跨模块窄接口（auth / iam / sys / user） |
+| `module/*` | auth · iam · sys · user · message · dashboard · biz（样板） |
+| `web/*` | 独立前端工程，无 `web/packages` 共享层 |
 
 ## 功能概览
 
-- 基于 JDK 21、Spring Boot 4.1.x、Spring Framework 7、Maven 多模块。
-- Sa-Token 双端登录（ADMIN / PORTAL），会话持久化到 Redis。
-- IAM/RBAC、用户中心、系统（字典/Banner/文件/审计）、消息（公告/通知/反馈）。
-- Redis Stream 操作审计异步落库；可选关闭消费者 `hei.log.audit.consume-enabled=false`。
-- XXL-JOB：账号注销清理、Banner 状态同步、审计量级告警。
-- MyBatis-Plus、Druid 连接池、动态数据源、Flyway；Actuator + Micrometer/Prometheus；Knife4j（`/doc.html`）。
+**认证（`module/auth`）**
+
+- 双端登录：ADMIN / PORTAL（Sa-Token + Redis 会话）
+- 账号 / 邮箱 / 手机号；密码与 OTP；图形验证码；忘记 / 重置密码
+- 三方登录（JustAuth）：GitHub、Gitee、微信开放平台；门户另有微信小程序 code 登录
+- 绑定表 `auth_account_oauth_binding`（Flyway `V5`）；系统配置可开关各 Provider
+
+**业务能力**
+
+- IAM / RBAC、用户中心、在线会话
+- 系统：字典、配置、Banner、文件、弱口令、审计、代码生成
+- 消息：公告、通知、反馈（即时通讯已移除）
+- Dashboard；Redis Stream 操作审计异步落库
+- XXL-JOB：注销清理、Banner 状态同步、审计量级告警
+
+**前端**
+
+| 工程 | 端口（默认） | 说明 |
+|------|--------------|------|
+| [web/admin](web/admin/README.md) | 5173 | 管理端：动态路由、IAM、系统、消息、OAuth 入口 |
+| [web/portal](web/portal/README.md) | 5174 | 门户：全页登录/注册/找回密码、公告、反馈、个人中心 |
+| [web/admin-uniapp](web/admin-uniapp/README.md) | — | 管理端 H5 / 小程序 |
 
 ## 运行要求
 
-- JDK 21、Maven 3.9+
+- JDK 21、Maven 3.9+、pnpm（前端）
 - PostgreSQL、Redis
 - 本地 XXL-JOB Admin 另需 MySQL（见 docker-compose）
 
@@ -59,55 +80,212 @@ HTTP JSON 线格式仅允许字符串 / 对象 / 数组：`boolean` 与数字一
 docker compose -f script/docker/docker-compose.yml up -d
 ```
 
-详情见 [script/docker/README.md](script/docker/README.md)。
+详情：[script/docker/README.md](script/docker/README.md)
 
-### 2. 本地启动顺序
+### 2. 后端
 
 ```bash
-# 1) infra（上一步）
-# 2) 本地 XXL-JOB Admin（仅本地）
+# 本地 XXL-JOB Admin（仅本地）
 mvn -pl app/xxl-job -am spring-boot:run
 
-# 3) 管理端（含 Executor）
+# 管理端 API（含 Executor）
 mvn -pl app/admin -am spring-boot:run
 ```
 
-默认地址：
-
 ```text
-Admin API:        http://127.0.0.1:8000
-XXL-JOB Admin:    http://127.0.0.1:9004/xxl-job-admin   (admin / 123456)
-API docs (Knife4j): http://127.0.0.1:8000/doc.html
+Admin API:          http://127.0.0.1:8000
+Knife4j:            http://127.0.0.1:8000/doc.html
 Actuator health:    http://127.0.0.1:8000/actuator/health
+XXL-JOB Admin:      http://127.0.0.1:9004/xxl-job-admin   (admin / 123456)
 ```
 
-### 消息模块
+默认库：`jdbc:postgresql://127.0.0.1:5432/hei_boot`（`hei` / `hei`）
 
-`module/message` 提供公告、通知、反馈（REST）。即时通讯（Netty IM / 会话 / 好友 / 群）已移除。
+### 3. 前端
+
+```bash
+cd web/admin && pnpm install && pnpm dev     # http://127.0.0.1:5173
+cd web/portal && pnpm install && pnpm dev    # http://127.0.0.1:5174
+```
+
+`VITE_API_URL` 留空时走同源 `/api`，由 Vite 代理到 `http://127.0.0.1:8000`。
 
 ### 默认账号
 
-| 账号 | 密码 | 说明 |
-|------|------|------|
-| `superadmin` | `123456` | Flyway seed 超管（ADMIN）；**生产首次启动后必须改密** |
+| 端 | 地址 | 账号 | 密码 |
+|----|------|------|------|
+| Admin | http://localhost:5173 | `superadmin` | `123456` |
+| Portal | http://localhost:5174 | `user` | `123456` |
 
-### 会话 Cookie / Header（对齐 fastapi Web）
+管理端 `superadmin` 由 Flyway seed；**生产首次启动后必须改密**。登录需图形验证码（哈希缓存在 Docker Redis，key 形如 `captcha:{id}`，TTL 约 5 分钟）。
 
-- **双通道**：`token-name=Authorization`；`is-read-header=true` 始终开启；Cookie 由 `SA_TOKEN_IS_READ_COOKIE` 开关（对应
-  fastapi `AUTH__SESSION_COOKIE_ENABLED`）。
-- Cookie 开：HttpOnly `Authorization` Cookie，Path 按端隔离为 `/api/vN/{admin|portal}`；登录 JSON 仍返回 `token`。
-- Cookie 关：不写/不读 Cookie，仅认 opaque `Authorization` 头（非 Bearer）；Web 需本地存 token（fastapi admin/portal 已支持）。
-- 生产 Cookie：`SA_TOKEN_IS_READ_COOKIE=true`、`SA_TOKEN_COOKIE_SECURE=true`、`SameSite=Lax`（同源 nginx / Vite 代理）。
-- **CSRF**：不自研 CSRF Filter；依赖 Sa-Token Cookie 的 `sameSite` / `httpOnly` / `secure`（或关闭 Cookie 仅用 Header）。
-- **CORS**：Sa-Token `SaStrategy.corsHandle`；默认放行本地 5173/5174/5163；`hei.security.cors-allowed-origins: ["*"]`
-  时通配且关闭 credentials。
+### 界面预览
 
-### 生产部署
+**Portal**
 
-- **不要部署** `app/xxl-job`。
-- Kubernetes 参考 Chart：[deploy/helm/hei-boot](deploy/helm/hei-boot/)（需自行配置镜像与密钥；Service 端口 **8000**）。
-- 生产镜像 / 包排除样板业务：`mvn -pl app/admin -am -P'!with-biz' -DskipTests package`（Dockerfile 已使用该 profile）。
-- 将 Executor 指向外部 Admin（可选；默认 `XXL_JOB_ENABLED=false`）：
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/portal-login.png" alt="Portal 登录" /></td>
+    <td width="50%"><img src="docs/images/portal-home.png" alt="Portal 首页" /></td>
+  </tr>
+  <tr>
+    <td align="center">登录</td>
+    <td align="center">首页</td>
+  </tr>
+</table>
+
+**Admin · 登录 / 工作台**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-login.png" alt="Admin 登录" /></td>
+    <td width="50%"><img src="docs/images/admin-dashboard.png" alt="Admin 运营工作台" /></td>
+  </tr>
+  <tr>
+    <td align="center">登录</td>
+    <td align="center">运营工作台</td>
+  </tr>
+</table>
+
+**Admin · 组织权限（IAM）**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-iam-account.png" alt="账号管理" /></td>
+    <td width="50%"><img src="docs/images/admin-iam-role.png" alt="角色管理" /></td>
+  </tr>
+  <tr>
+    <td align="center">账号管理</td>
+    <td align="center">角色管理</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-iam-dept.png" alt="部门管理" /></td>
+    <td><img src="docs/images/admin-iam-group.png" alt="用户组管理" /></td>
+  </tr>
+  <tr>
+    <td align="center">部门管理</td>
+    <td align="center">用户组管理</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-iam-position.png" alt="岗位管理" /></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">岗位管理</td>
+    <td></td>
+  </tr>
+</table>
+
+**Admin · 资源授权**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-iam-resource.png" alt="资源管理" /></td>
+    <td width="50%"><img src="docs/images/admin-iam-resource-module.png" alt="资源模块" /></td>
+  </tr>
+  <tr>
+    <td align="center">资源管理</td>
+    <td align="center">资源模块</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-iam-client-resource.png" alt="客户端资源" /></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">客户端资源</td>
+    <td></td>
+  </tr>
+</table>
+
+**Admin · 内容运营**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-message-notice.png" alt="通知消息" /></td>
+    <td width="50%"><img src="docs/images/admin-message-feedback.png" alt="反馈管理" /></td>
+  </tr>
+  <tr>
+    <td align="center">通知消息</td>
+    <td align="center">反馈管理</td>
+  </tr>
+</table>
+
+**Admin · 系统运维**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-sys-config.png" alt="系统配置" /></td>
+    <td width="50%"><img src="docs/images/admin-sys-dict.png" alt="字典管理" /></td>
+  </tr>
+  <tr>
+    <td align="center">系统配置</td>
+    <td align="center">字典管理</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-sys-file.png" alt="文件管理" /></td>
+    <td><img src="docs/images/admin-sys-banner.png" alt="展示图 Banner" /></td>
+  </tr>
+  <tr>
+    <td align="center">文件管理</td>
+    <td align="center">展示图 / Banner</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-sys-session.png" alt="在线会话" /></td>
+    <td><img src="docs/images/admin-sys-audit.png" alt="操作审计" /></td>
+  </tr>
+  <tr>
+    <td align="center">在线会话</td>
+    <td align="center">操作审计</td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/admin-sys-login-log.png" alt="登录日志" /></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center">登录日志</td>
+    <td></td>
+  </tr>
+</table>
+
+**Admin · 开发工具 / 业务示例**
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-sys-codegen.png" alt="代码生成" /></td>
+    <td width="50%"><img src="docs/images/admin-biz-order.png" alt="业务示例 订单" /></td>
+  </tr>
+  <tr>
+    <td align="center">代码生成</td>
+    <td align="center">业务示例 · 订单</td>
+  </tr>
+</table>
+
+## 主要 API 前缀
+
+| 前缀 | 用途 |
+|------|------|
+| `/api/v1/admin/**` | 管理端 |
+| `/api/v1/portal/**` | 门户端 |
+| `/api/v1/files/**` | 公开读文件（可配置） |
+| `/api/*/internal/**` | 集群内部（勿对公网暴露） |
+| `/actuator/**` | 健康与指标（勿对公网暴露） |
+| `/doc.html`、`/v3/api-docs` | OpenAPI / Knife4j |
+
+常用：`/api/v1/admin/login`、`/captcha`、`/oauth/**`、`/iam/**`、`/sys/**`、`/user-center/**`、`/message/**`。
+
+## 会话与安全（摘要）
+
+- **双通道**：`token-name=Authorization`；始终可读 Header；Cookie 由 `SA_TOKEN_IS_READ_COOKIE` 开关。
+- Cookie 开：HttpOnly `Authorization`，Path 按端隔离为 `/api/vN/{admin|portal}`；登录 JSON 仍返回 `token`。
+- Cookie 关：仅认 opaque `Authorization` 头（非 Bearer）。
+- 生产 Cookie：`SA_TOKEN_IS_READ_COOKIE=true`、`SA_TOKEN_COOKIE_SECURE=true`、`SameSite=Lax`。
+- CORS：默认放行本地 5173 / 5174 / 5163；`hei.security.cors-allowed-origins: ["*"]` 时通配且关闭 credentials。
+
+## 生产部署
+
+- **不要部署** `app/xxl-job`；Executor 按需指向外部 Admin（默认 `XXL_JOB_ENABLED=false`）。
+- Kubernetes 参考：[deploy/helm/hei-boot](deploy/helm/hei-boot/)（Service 端口 **8000**）。
+- 生产包排除样板业务：`mvn -pl app/admin -am -P'!with-biz' -DskipTests package`。
 
 ```bash
 export XXL_JOB_ENABLED=true
@@ -115,148 +293,59 @@ export XXL_JOB_ADMIN_ADDRESSES=http://xxl-job-admin.example.com/xxl-job-admin
 export XXL_JOB_ACCESS_TOKEN=your_token
 ```
 
-`application-prod.yml` 中 `hei.xxl-job.admin.addresses` 默认占位为
-`${XXL_JOB_ADMIN_ADDRESSES:http://xxl-job-admin.example.com/xxl-job-admin}`。
-
-#### 生产必填环境变量
+### 生产必填环境变量
 
 | 变量 | 说明 |
 |------|------|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 主库（也可用 `DB_WRITE_*` / `DB_READ_*` 读写分离） |
-| `REDIS_HOST`（及可选 `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`） | 会话与 Redis Stream 审计 |
-| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值，生产必填） |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 主库（也可用 `DB_WRITE_*` / `DB_READ_*`） |
+| `REDIS_HOST`（及可选 port / password / database） | 会话与 Redis Stream 审计 |
+| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值） |
 
-可选：
+可选：`XXL_JOB_*`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`HEI_VAULT_*`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
 
-| 变量 | 说明 |
-|------|------|
-| `XXL_JOB_ENABLED` | 默认 `false`；接外部 Admin 时设 `true` |
-| `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN` | 启用 XXL 时必填 |
-| `XXL_JOB_EXECUTOR_APPNAME` / `XXL_JOB_EXECUTOR_PORT` 等 | 执行器覆盖项 |
+## 二次开发
 
-安全提示：仅在可信 Ingress/反向代理后开启 `HEI_SECURITY_TRUST_FORWARDED_HEADERS`；HSTS 优先在 Ingress 配置（Chart 已带注解样例）。Seed 超管密码见上，首次上线后立即轮换。
-## 主要 API 前缀
+1. 在 `module/` 新增业务：`@AutoConfiguration` + `@ComponentScan` + `AutoConfiguration.imports`；跨模块契约放 `module-api/`。
+2. 登记 reactor（`module/pom.xml`），根 `pom.xml` `dependencyManagement` 增加版本条目。
+3. 在 `app/admin/pom.xml` **显式依赖**该模块（样板 `biz` 走 `with-biz`；自有业务放主 dependencies）。
+4. 库表 / 菜单种子：仅在 `app/admin/src/main/resources/db/migration/` **追加** `V{n}__*.sql`（业务建议高序号如 `V100__`）。**勿改**已发布的 `V1`–`V5`。
+5. 配置改 `application-*.yml` 或环境变量（如 `hei.security.ignore-urls`）。
 
-| 前缀 | 用途 |
-|------|------|
-| `/api/v1/admin/**` | 管理端 |
-| `/api/v1/portal/**` | 门户端 |
-| `/api/v1/files/**` | 公开 CDN 式读文件（匿名可读，可配置） |
-| `/api/*/internal/**` | 集群内部接口（勿对公网暴露） |
-| `/actuator/**` | 健康与指标（勿对公网暴露） |
-| `/swagger-ui/**`、`/v3/api-docs` | OpenAPI |
+会话、过滤器、安全装配等在 `common/*`，允许直接改源码；跟上游合并时自行解决冲突。
 
-常用管理端子路径示例：`/api/v1/admin/login`、`/captcha`、`/iam/**`、`/sys/**`、`/user-center/**`、`/message/**`。
+## XXL-JOB 任务
 
-## 二次开发（社区）
-
-本仓库是一体化脚手架：业务在 `module/*`，框架在 `common/*`，可运行壳在 `app/admin`。
-
-### 一般情况：挂业务、改配置
-
-按下列 checklist 即可（可参考现成样板 [`module/biz`](module/biz)）：
-
-1. 在 `module/` 下新增业务模块：提供 `@AutoConfiguration` + `@ComponentScan`，并注册
-   `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`。
-   跨模块契约时再在 `module-api/` 增加窄接口。
-2. 在 `module/pom.xml`（及必要时 `module-api/pom.xml`）登记 reactor 子模块。
-3. 在根 `pom.xml` 的 `dependencyManagement` 增加该模块版本条目（`${revision}`）。
-4. 在 `app/admin/pom.xml` **显式增加**对该业务模块的依赖（样板 `biz` 走 `with-biz` profile；自有业务模块放主 `dependencies`）。
-5. **库表 / 菜单权限种子**：只在 `app/admin/src/main/resources/db/migration/` **追加**
-   `V{n}__*.sql`（建议业务用较高序号，如 `V100__biz_xxx.sql`）。**勿改**已发布的 `V1` / `V2`。
-6. **配置**：改 `app/admin/src/main/resources/application-*.yml` 或环境变量即可
-  （例如 `hei.security.ignore-urls` 放行匿名路径）。
-
-### 复杂场景：改框架
-
-会话（Sa-Token）、过滤器、安全装配、MyBatis 等均在 `common/*`，**允许且欢迎直接改源码**，不是锁死黑盒。
-业务侧尽量只动自己的 `module`；改过 `common` 后跟上游合并时冲突需自行解决。
-
-### 跟上游升级
-
-1. 先合入上游对 `common/`、`app/admin` 壳与共享低序号 migration 的变更。
-2. 再合入自己的业务模块与高序号 `V{n}` 脚本。
-3. 跑 Flyway / 本地冒烟，确认权限注解与菜单种子仍匹配。
-
-## XXL-JOB 任务注册
-
-Executor AppName：`hei-boot-admin`（与 `hei.xxl-job.executor.appname` 一致）。
+Executor AppName：`hei-boot-admin`。
 
 | Handler | 模块 | 作用 |
 |---------|------|------|
-| `accountPurgeCancelledJob` | iam | 清理超过保留期的注销账号（默认 15 天，可用 job 参数覆盖） |
-| `bannerStatusJob` | sys | 按 `start_at` / `end_at` 启用或停用 Banner |
-| `auditAlertJob` | sys | 审计量超阈值写入 `sys_alert_log` |
+| `accountPurgeCancelledJob` | iam | 清理超保留期注销账号 |
+| `bannerStatusJob` | sys | 按时间启用 / 停用 Banner |
+| `auditAlertJob` | sys | 审计量超阈值写入告警 |
 
-本地 PostgreSQL 初始化会执行 `app/xxl-job/.../tables_xxl_job.sql` 与 `script/sql/postgres/xxl_job_hei_seed.sql`（与业务共用 `hei_boot`）。也可在 XXL-JOB Admin UI 手动新增执行器与上述三个 Bean 任务，然后启动调度。
+本地初始化见 `script/sql/postgres/` 与 docker 说明。
 
 ## Redis Stream 审计
 
-- 生产者：`OperationAuditAspect` → `RedisAuditEventPublisher`（`hei.log.audit.stream-key`）
-- 消费者：`RedisAuditEventConsumer`（`hei.log.audit.consume-enabled`，默认 true）
-- 开发/生产通过 `HEI_LOG_AUDIT_*` 环境变量注入（兼容旧名 `HEI_MQ_AUDIT_CONSUME_ENABLED`）
+- 生产：`OperationAuditAspect` → Redis Stream（`hei.log.audit.stream-key`）
+- 消费：`RedisAuditEventConsumer`（`hei.log.audit.consume-enabled`，默认 true）
 
-## 配置
+## 配置与日志
 
-配置文件位于 `app/admin/src/main/resources`：
+配置目录：`app/admin/src/main/resources`
 
-- `application.yml`：通用配置
-- `application-dev.yml`：默认开发环境
-- `application-local.yml`：本机调试
-- `application-prod.yml`：生产模板
-
-常用环境变量：
-
-- `SPRING_PROFILES_ACTIVE`：激活配置，默认 `dev`
-- `DB_WRITE_*` / `DB_READ_*` / `DB_*`：数据源（生产必填，见上表）
-- `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE`（生产必填 host）
-- `HEI_CONFIG_CRYPTO_KEY`：配置加解密密钥（生产必填）
-- `XXL_JOB_ENABLED` / `XXL_JOB_ADMIN_ADDRESSES` / `XXL_JOB_ACCESS_TOKEN`（可选）
-- `HEI_LOG_AUDIT_CONSUME_ENABLED`：是否启用审计消费者（Redis Stream）
-- `HEI_VAULT_ENABLED` / `VAULT_ADDR` / `VAULT_TOKEN`（或 AppRole）：可选密钥注入
-- `LOG_JSON`：日志 JSON/键值开关（local/dev 默认键值，prod 默认 JSON）
-- `hei.codegen.enabled`：代码生成 API；prod 默认 `false`
-
-### 日志（SLF4J + Logback，对齐 hei-fastapi）
-
-- 技术栈：Spring Boot structured logging + MDC（`common-web` / `common-log`）
-- 控制台 / 滚动文件：`./logs/hei-boot-admin.log`（可用 `LOGGING_FILE_NAME` 覆盖）
-- 滚动策略：50MB / 保留 30 天 / 总上限 3GB（`LOGGING_MAX_FILE_SIZE` / `LOGGING_MAX_HISTORY` / `LOGGING_TOTAL_SIZE_CAP`）
-- 格式开关：`hei.logging.json` / 环境变量 `LOG_JSON`（**默认 `true`** → Logstash JSON；`false` → 键值可读格式）
-- 每请求访问日志：logger `access`，消息 `http.access`（含 `status_code`、`duration_ms`）
-- MDC 字段（snake_case）：`request_id`、`trace_id`、`span_id`、`method`、`path`、`client_ip`、`user_agent`、`account_id`、
-  `account_type`；JSON 另含 `service` / `service_version` / `environment`
-- Profile：
-    - `local`：业务包 `debug`，并可看 MyBatis SQL（`LOGGING_LEVEL_IBATIS`）；默认 JSON
-    - `dev`：业务包 `info`；默认 JSON
-    - `prod`：业务包 `warn`；默认 JSON
-
-常用环境变量：`LOG_JSON`、`LOGGING_LEVEL_HEI`、`LOGGING_LEVEL_ROOT`、`LOGGING_FILE_NAME`、`LOGGING_LEVEL_ACCESS`
-
-默认本地库：
-
-```text
-jdbc:postgresql://127.0.0.1:5432/hei_boot
-username: hei
-password: hei
-```
+- `application.yml` / `application-dev.yml` / `application-local.yml` / `application-prod.yml`
+- Profile：`SPRING_PROFILES_ACTIVE`（默认 `dev`）
+- 日志：`./logs/hei-boot-admin.log`；`LOG_JSON` 控制 JSON / 键值；访问日志 logger `access`
+- 代码生成：`hei.codegen.enabled`（prod 默认 `false`）
 
 ## 常用命令
 
 ```bash
-# 编译 admin 及其依赖（含默认 with-biz 样板）
 mvn -pl app/admin -am package -DskipTests
-
-# 生产包：排除样板 module/biz
 mvn -pl app/admin -am -P'!with-biz' package -DskipTests
-
-# 编译本地 XXL-JOB Admin
 mvn -pl app/xxl-job -am package -DskipTests
-
-# 运行不依赖基础设施的单元测试
 mvn -pl app/admin -am test
-
-# 启动 admin（默认 http://127.0.0.1:8000）
 mvn -pl app/admin -am spring-boot:run
 ```
 
@@ -265,58 +354,37 @@ mvn -pl app/admin -am spring-boot:run
 ```text
 hei-boot
 ├── app
-│   ├── admin                  # 管理端 API + XXL-JOB Executor + Flyway
+│   ├── admin                  # API + XXL Executor + Flyway
 │   └── xxl-job                # 本地-only XXL-JOB Admin
-├── common                     # 通用能力（job / satoken / log / security …）
+├── common                     # 通用能力
 ├── module-api                 # 跨模块窄接口
-├── module                     # auth / iam / sys / user / message / dashboard / biz（样板）
-├── web                        # admin / portal / admin-uniapp（各自独立，无 packages 层）
+├── module                     # auth / iam / sys / user / message / dashboard / biz
+├── web                        # admin / portal / admin-uniapp
 ├── docs                       # 文档索引
 ├── deploy/helm                # K8s 参考 Chart
 └── script
-    ├── docker                 # compose + 说明
-    ├── sql                    # 说明与 XXL seed（Flyway 权威在 app/admin）
+    ├── docker                 # compose
+    ├── sql                    # XXL seed 等（业务迁移权威在 app/admin）
     ├── perf                   # k6
     └── security               # ZAP baseline
 ```
 
-## 模型与 Controller 约定
+## 模型与开发约定
 
-- ID 使用 `String`，时间使用 `OffsetDateTime`；JSON 结构化字段用 `Map`/`List`。
-- 库字段与对外 JSON 使用下划线（Jackson `SNAKE_CASE`）；Java 驼峰 + Lombok。
-- **入参**：模块 `param` 包下 `*Param`（通用 `IdParam`/`IdsParam`）。
-- **出参**：优先返回 **entity**；字段差大或聚合时用模块 `result` 包下 `*Result`。
-- 不引入软删标记 unless 业务表本身需要。
-
-### 实体继承（单继承）
-
-| 基类           | 用途                                           |
-|--------------|----------------------------------------------|
-| `BaseEntity` | 业务表基类：`id` + `createdAt/By` + `updatedAt/By` |
-
-表无完整审计列时，在 `@TableName(excludeProperty = {...})` 中排除多余字段（如 `MsgNoticeRead`、审计日志/outbox）。
-
-审计字段由 MyBatis-Plus `HeiMetaObjectHandler` 自动填充。
-
-## 开发约定
-
-- Maven artifact 不加 `hei-` 前缀，保持 `auth`、`iam`、`common-core` 这类短名称。
-- 包名统一使用 `github.jiangbyte.io`；业务实现布局为 `github.jiangbyte.io.{module}.modules.{feature}.{layer}`。
-- 领域 Service：`XxxService extends IService<Entity>`（接口）+ `service/impl/XxxServiceImpl extends ServiceImpl<Mapper, Entity>`；无单一主实体的编排服务可不挂 `IService`。Controller / 同模块协作 / `*ApiProvider` 只注入接口。
-- `module-api` 只放跨模块窄接口与必要的跨模块值对象（如 `FileInfo`、`AccountInfo`）；不放 entity / HTTP `param`/`result`。
-- 跨模块实现用 `*ApiProvider`（`@Service`）委托本模块 `*Service`；Controller 只依赖本模块 Service。消费者 Maven 只依赖对方 `*-api`，不依赖对方 impl。
-- 权限注解使用 Sa-Token 官方 `@SaCheckPermission` / `@SaCheckLogin`（`type = StpKit.TYPE_ADMIN|PORTAL`）。
-- API 文档：Knife4j，`http://127.0.0.1:8000/doc.html`。
-- 关联 id 回显优先 Dromara easy-trans（`@Trans` / `TransPojo`）。
-- Mapper Join 优先 MyBatis-Plus-Join；读库路由用 `@ReadDataSource`。
-- 新增业务模块：见上文「二次开发（社区）」checklist（reactor → `dependencyManagement` → **`app/admin` 显式依赖** → 追加 Flyway）。
+- ID：`String`；时间：`OffsetDateTime`；入参 `*Param`；出参优先 entity，必要时 `*Result`。
+- 业务表基类：`BaseEntity`（`id` + 审计四字段）；无完整列时用 `@TableName(excludeProperty=…)`。
+- Artifact 短名（`auth`、`common-core`）；包名 `github.jiangbyte.io`。
+- 领域 Service：`XxxService` + `XxxServiceImpl`；跨模块用 `*ApiProvider`，消费者只依赖 `*-api`。
+- 权限：`@SaCheckPermission` / `@SaCheckLogin`（`StpKit.TYPE_ADMIN|PORTAL`）。
+- 关联回显：easy-trans；Join：MyBatis-Plus-Join；读库：`@ReadDataSource`。
 
 ## 代码贡献
 
-欢迎提交 Issue、讨论和 Pull Request。由于当前项目仍在模板与模型迁移阶段，贡献代码时请优先保证
-结构稳定和模型一致性。
+欢迎 Issue 与 PR。提交前请确认：
 
-建议流程：
+- Controller 入参 / 出参约定与 `snake_case` 字符串线格式
+- 模块边界：`app` / `common` / `module-api` / `module` / `web/*`
+- 兼容 JDK 21、Spring Boot 4、Jakarta；敏感配置走环境变量；文档随行为同步
 
 ```bash
 git checkout -b feature/your-change
@@ -324,15 +392,6 @@ mvn clean package -DskipTests
 git commit -m "feat: describe your change"
 ```
 
-提交 PR 前请确认：
-
-- Controller：入参 `*Param`，出参优先 entity，必要时 `result` 包 `*Result`。
-- JSON 对外字段保持 `snake_case`；线格式标量为字符串（见 stringly Jackson）。
-- 新增模块遵守 `app`、`common`、`module-api`、`module`、`web/*` 边界；前端不建 `web/packages`。
-- 公共能力优先 `common/*`，跨模块窄接口优先 `module-api/*`。
-- 不引入与 Spring Boot 4、JDK 21、Jakarta 生态不兼容的依赖。
-- 配置项提供本地默认值，生产敏感配置走环境变量；文档与脚本随行为同步更新。
-
 ## 开源协议
 
-本项目使用 [MIT License](LICENSE) 开源协议。
+[MIT License](LICENSE)

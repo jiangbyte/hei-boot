@@ -14,12 +14,13 @@
 | Admin 前端 | [web/admin/README.md](../web/admin/README.md) |
 | Portal 前端 | [web/portal/README.md](../web/portal/README.md) |
 | Admin UniApp | [web/admin-uniapp/README.md](../web/admin-uniapp/README.md) |
+| 界面截图 | [docs/images/](./images/) |
 | IAM 字典待补 | [iam-dict-todo.md](./iam-dict-todo.md) |
 
 ## 职责边界（简）
 
-- **`app/admin`**：可运行业务 API + 内嵌 XXL-JOB Executor；Flyway 权威源。
+- **`app/admin`**：可运行业务 API + 内嵌 XXL-JOB Executor；Flyway 权威源（含 OAuth 绑定 `V5`）。
 - **`app/xxl-job`**：仅本地调试的 XXL-JOB Admin。
-- **`module/*` / `module-api/*`**：业务实现与跨模块窄接口；样板业务在 `module/biz`，生产打包用 `-P'!with-biz'` 排除。
+- **`module/*` / `module-api/*`**：业务实现与跨模块窄接口；`module/auth` 含登录 / OTP / 找回密码 / JustAuth OAuth；样板业务在 `module/biz`，生产打包用 `-P'!with-biz'` 排除。
 - **`web/admin` / `web/portal` / `web/admin-uniapp`**：各自独立前端工程（无 `web/packages` 共享层）。
 - **`script/`**：本地脚本与辅助资产；**`deploy/`**：部署参考（Helm）。
