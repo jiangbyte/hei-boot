@@ -10,6 +10,8 @@ import github.jiangbyte.io.sys.modules.audit.entity.SysOperationAuditLog;
 import github.jiangbyte.io.sys.modules.audit.mapper.SysOperationAuditLogMapper;
 import github.jiangbyte.io.sys.modules.audit.param.SysAuditPageParam;
 import github.jiangbyte.io.sys.modules.audit.service.AuditService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -22,6 +24,7 @@ import java.time.ZoneOffset;
  *
  * Author: Charlie
  */
+@Slf4j
 @Service
 public class AuditServiceImpl extends ServiceImpl<SysOperationAuditLogMapper, SysOperationAuditLog> implements AuditService {
 
@@ -56,25 +59,39 @@ public class AuditServiceImpl extends ServiceImpl<SysOperationAuditLogMapper, Sy
         if (event == null) {
             return;
         }
+        // request_id 非空时幂等：已存在则跳过（配合唯一索引；并发冲突吞掉 DuplicateKeyException）
+        if (StringUtils.hasText(event.getRequestId())) {
+            Long exists = this.getBaseMapper().selectCount(Wrappers.<SysOperationAuditLog>lambdaQuery()
+                    .eq(SysOperationAuditLog::getRequestId, event.getRequestId()));
+            if (exists != null && exists > 0) {
+                log.debug("Skip duplicate audit event, requestId={}", event.getRequestId());
+                return;
+            }
+        }
         // 映射事件字段并落库
-        SysOperationAuditLog log = new SysOperationAuditLog();
-        log.setModule(buildModule(event.getResourceType()));
-        log.setResourceType(event.getResourceType());
-        log.setAction(event.getAction());
-        log.setSummary((event.getMethod() == null ? "" : event.getMethod()) + " "
+        SysOperationAuditLog auditLog = new SysOperationAuditLog();
+        auditLog.setModule(buildModule(event.getResourceType()));
+        auditLog.setResourceType(event.getResourceType());
+        auditLog.setAction(event.getAction());
+        auditLog.setSummary((event.getMethod() == null ? "" : event.getMethod()) + " "
                 + (event.getPath() == null ? "" : event.getPath()));
         boolean success = event.getStatusCode() == null || event.getStatusCode() < 400;
-        log.setSuccess(success);
-        log.setErrorMessage(success || event.getStatusCode() == null ? null : String.valueOf(event.getStatusCode()));
-        log.setAccountId(event.getAccountId());
-        log.setAccountType(event.getAccountType());
-        log.setRequestId(event.getRequestId());
-        log.setIp(event.getIp());
-        log.setUserAgent(event.getUserAgent());
-        log.setCreatedAt(event.getOccurredAt() == null
+        auditLog.setSuccess(success);
+        auditLog.setErrorMessage(success || event.getStatusCode() == null ? null : String.valueOf(event.getStatusCode()));
+        auditLog.setAccountId(event.getAccountId());
+        auditLog.setAccountType(event.getAccountType());
+        auditLog.setRequestId(event.getRequestId());
+        auditLog.setIp(event.getIp());
+        auditLog.setUserAgent(event.getUserAgent());
+        auditLog.setCreatedAt(event.getOccurredAt() == null
                 ? OffsetDateTime.now()
                 : OffsetDateTime.ofInstant(event.getOccurredAt(), ZoneOffset.UTC));
-        this.save(log);
+        try {
+            this.save(auditLog);
+        } catch (DataIntegrityViolationException ex) {
+            // Unique index on request_id (Flyway V6) / concurrent insert races
+            log.debug("Ignore duplicate audit insert, requestId={}", event.getRequestId());
+        }
     }
 
     private static String buildModule(String resourceType) {

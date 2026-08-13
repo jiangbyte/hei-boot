@@ -45,12 +45,14 @@ public class PortalAuthController {
 
     /** 获取图形验证码。 */
     @GetMapping("/v1/portal/captcha")
+    @RateLimit(key = "portal:captcha", permits = 30, windowSeconds = 60)
     public ApiResponse<CaptchaResult> captcha(@RequestParam(value = "format", defaultValue = "svg") String format) {
         return ApiResponse.ok(authService.captcha(format));
     }
 
     /** 获取密码传输 RSA 公钥。 */
     @GetMapping("/v1/portal/password-key")
+    @RateLimit(key = "portal:password-key", permits = 30, windowSeconds = 60)
     public ApiResponse<PasswordKeyResult> passwordKey() {
         return ApiResponse.ok(authService.passwordKey());
     }

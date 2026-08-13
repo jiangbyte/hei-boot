@@ -55,6 +55,13 @@ public class PortalOauthController {
         response.sendRedirect(location);
     }
 
+    @PostMapping("/v1/portal/oauth/exchange")
+    @RateLimit(key = "portal:oauth-exchange", permits = 30, windowSeconds = 60)
+    public ApiResponse<LoginResult> exchange(
+            @Valid @RequestBody github.jiangbyte.io.auth.modules.oauth.param.OauthExchangeParam request) {
+        return ApiResponse.ok(authOauthService.exchange(request.getCode()));
+    }
+
     @PostMapping("/v1/portal/oauth/wechat-mp/login")
     @RateLimit(key = "portal:oauth-wechat-mp", permits = 30, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "oauth_wechat_mp_login")

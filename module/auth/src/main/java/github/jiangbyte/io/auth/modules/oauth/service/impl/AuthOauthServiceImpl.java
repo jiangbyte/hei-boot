@@ -6,6 +6,7 @@ import github.jiangbyte.io.auth.modules.oauth.result.OauthAuthorizeResult;
 import github.jiangbyte.io.auth.modules.oauth.result.OauthBindingResult;
 import github.jiangbyte.io.auth.modules.oauth.service.AuthOauthService;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
+import github.jiangbyte.io.auth.modules.oauth.support.OauthExchangeStore;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthProvider;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthStatePayload;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthStateStore;
@@ -47,6 +48,7 @@ public class AuthOauthServiceImpl implements AuthOauthService {
 
     private final OauthClientFacade oauthClientFacade;
     private final OauthStateStore oauthStateStore;
+    private final OauthExchangeStore oauthExchangeStore;
     private final AccountOauthApi accountOauthApi;
     private final AccountApi accountApi;
     private final AuthService authService;
@@ -115,6 +117,11 @@ public class AuthOauthServiceImpl implements AuthOauthService {
         } catch (Exception ex) {
             return failRedirect(frontend, "三方登录失败");
         }
+    }
+
+    @Override
+    public LoginResult exchange(String code) {
+        return oauthExchangeStore.consume(code);
     }
 
     @Override
@@ -348,22 +355,8 @@ public class AuthOauthServiceImpl implements AuthOauthService {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(frontend)
                 .queryParam("oauth_status", "ok")
                 .queryParam("oauth_action", action);
-        if (login != null) {
-            if (StringUtils.hasText(login.getToken())) {
-                builder.queryParam("token", login.getToken());
-            }
-            if (login.getPasswordExpired() != null) {
-                builder.queryParam("password_expired", login.getPasswordExpired());
-            }
-            if (login.getForceBindEmail() != null) {
-                builder.queryParam("force_bind_email", login.getForceBindEmail());
-            }
-            if (login.getForceBindPhone() != null) {
-                builder.queryParam("force_bind_phone", login.getForceBindPhone());
-            }
-            if (login.getExpiresIn() != null) {
-                builder.queryParam("expires_in", login.getExpiresIn());
-            }
+        if (login != null && StringUtils.hasText(login.getToken())) {
+            builder.queryParam("oauth_code", oauthExchangeStore.save(login));
         }
         if (StringUtils.hasText(redirect)) {
             builder.queryParam("redirect", redirect);

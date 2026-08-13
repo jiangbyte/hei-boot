@@ -270,13 +270,24 @@ public class NoticeServiceImpl extends ServiceImpl<MsgNoticeMapper, MsgNotice> i
     @Transactional
     @Override
     public void markAllRead() {
-        // 查询全部可见已发布 ID 并批量标记已读
         LoginUser user = MessageAuthSupport.requireUser();
         String accountType = MessageAuthSupport.accountType(user);
         String accountId = user.getAccountId();
-        List<String> publishedIds = getBaseMapper().listVisiblePublishedIds(
-                accountType, accountId, null, OffsetDateTime.now());
-        markReadInternal(publishedIds, accountType, accountId);
+        OffsetDateTime now = OffsetDateTime.now();
+        final int batchSize = 500;
+        int offset = 0;
+        while (true) {
+            List<String> publishedIds = getBaseMapper().listVisiblePublishedIdsPage(
+                    accountType, accountId, null, now, offset, batchSize);
+            if (publishedIds == null || publishedIds.isEmpty()) {
+                break;
+            }
+            markReadInternal(publishedIds, accountType, accountId);
+            if (publishedIds.size() < batchSize) {
+                break;
+            }
+            offset += batchSize;
+        }
     }
 
     private Page<MsgNotice> pagePublished(

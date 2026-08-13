@@ -4,15 +4,16 @@ import github.jiangbyte.io.common.core.trace.TraceIdHolder;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.common.log.audit.AuditEventPublisher;
+import github.jiangbyte.io.common.log.audit.AuditOutboxWriter;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.common.web.log.RequestLogMdc;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -20,15 +21,22 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.Instant;
 
 /**
- * 操作审计切面：拦截 @OperationAudit，组装审计消息并经 AuditEventPublisher 发布。
+ * 操作审计切面：拦截 @OperationAudit，组装审计消息并经 outbox 或 AuditEventPublisher 发布。
  *
  * Author: Charlie
  */
 @Aspect
-@RequiredArgsConstructor
 public class OperationAuditAspect {
 
     private final AuditEventPublisher auditEventPublisher;
+    private final ObjectProvider<AuditOutboxWriter> auditOutboxWriter;
+
+    public OperationAuditAspect(
+            AuditEventPublisher auditEventPublisher,
+            ObjectProvider<AuditOutboxWriter> auditOutboxWriter) {
+        this.auditEventPublisher = auditEventPublisher;
+        this.auditOutboxWriter = auditOutboxWriter;
+    }
 
     /** 记录并发布操作审计事件。 */
     @Around("@annotation(operationAudit)")
@@ -60,7 +68,13 @@ public class OperationAuditAspect {
                 .userAgent(request != null ? request.getHeader("User-Agent") : null)
                 .occurredAt(Instant.now())
                 .build();
-        auditEventPublisher.publish(message);
+
+        AuditOutboxWriter writer = auditOutboxWriter.getIfAvailable();
+        if (writer != null) {
+            writer.write(message);
+        } else {
+            auditEventPublisher.publish(message);
+        }
     }
 
     private HttpServletRequest currentRequest() {

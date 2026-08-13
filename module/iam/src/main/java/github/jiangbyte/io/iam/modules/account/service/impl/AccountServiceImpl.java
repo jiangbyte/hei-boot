@@ -12,6 +12,7 @@ import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -233,6 +234,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Override
     @Transactional
     public void cancelAccount(String accountId, String cancelledBy, String cancelReason) {
+        DataSourceSticky.mark();
         // 校验账号存在且未注销
         SysAccount account = getBaseMapper().selectById(accountId);
         if (account == null) {
@@ -262,9 +264,9 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         account.setLatestLoginAddress(null);
         account.setLatestLoginDevice(null);
         this.updateById(account);
-        // 清理侧车数据与会话，再发注销通知
-        cleanupAccountSideData(List.of(accountId));
+        // 保留期内不清侧车数据（防标识抢注）；仅踢会话并通知
         clearAccountSessions(account);
+        LoginHelper.logoutAccount(accountId);
         accountLifecycleNotifier.notifyCancelled(
                 account.getCancelNotifyEmail(),
                 account.getCancelNotifyPhone(),
@@ -376,12 +378,16 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Override
     @Transactional
     public void update(SysAccountEditParam param) {
+        DataSourceSticky.mark();
         // 加载账号并校验状态、登录身份与账号标识唯一
         SysAccount account = getBaseMapper().selectById(param.getId());
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
+        if ("CANCELLED".equalsIgnoreCase(account.getAccountStatus())) {
+            throw new BizException("已注销账号不允许通过管理端修改");
+        }
         if ("CANCELLED".equalsIgnoreCase(param.getAccountStatus())) {
             throw new BizException("注销状态不允许通过管理端设置");
         }
@@ -400,6 +406,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (existingAccount != null && !account.getId().equals(existingAccount.getAccountId())) {
             throw new BizException("Account identifier already exists");
         }
+        String previousStatus = account.getAccountStatus();
         // 合并字段、可选改密后落库
         accountConvert.update(param, account);
         if (!StringUtils.hasText(param.getAccountType())) {
@@ -423,6 +430,13 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
         upsertProfile(account, param.getName(), param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
+        String nextStatus = account.getAccountStatus();
+        if (StringUtils.hasText(nextStatus)
+                && !"ENABLED".equalsIgnoreCase(nextStatus)
+                && (previousStatus == null || "ENABLED".equalsIgnoreCase(previousStatus)
+                        || !previousStatus.equalsIgnoreCase(nextStatus))) {
+            LoginHelper.logoutAccount(account.getId());
+        }
     }
 
     private String resolveCreatePassword(String password, String passwordKeyId) {
@@ -468,6 +482,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         int days = retentionDays > 0 ? retentionDays : 15;
         OffsetDateTime cutoff = OffsetDateTime.now().minusDays(days);
         List<SysAccount> expired = getBaseMapper().selectList(Wrappers.<SysAccount>lambdaQuery()
+                .eq(SysAccount::getAccountStatus, "CANCELLED")
                 .isNotNull(SysAccount::getCancelledAt)
                 .le(SysAccount::getCancelledAt, cutoff)
                 .and(w -> w.isNull(SysAccount::getLatestLoginTime)
@@ -476,11 +491,16 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (expired.isEmpty()) {
             return 0;
         }
-        // 走统一删除链路后发清理通知
+        // 保留期结束后清侧车并物理删除，再发清理通知
         List<String> ids = expired.stream().map(SysAccount::getId).toList();
-        IdsParam param = new IdsParam();
-        param.setIds(ids);
-        delete(param);
+        for (List<String> batch : BatchPartition.partition(ids)) {
+            cleanupAccountSideData(batch);
+            this.removeByIds(batch);
+        }
+        for (SysAccount account : expired) {
+            clearAccountSessions(account);
+            LoginHelper.logoutAccount(account.getId());
+        }
         OffsetDateTime purgedAt = OffsetDateTime.now();
         for (SysAccount account : expired) {
             accountLifecycleNotifier.notifyPurged(
@@ -801,6 +821,9 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             }
         }
 
+        Map<String, List<SysAccountOauthBinding>> oauthByAccount = accountOauthService.listByAccountIds(ids).stream()
+                .collect(Collectors.groupingBy(SysAccountOauthBinding::getAccountId));
+
         // 合并身份字段与档案到结果
         for (SysAccount account : accounts) {
             SysAccountResult result = accountConvert.toResult(account);
@@ -830,7 +853,8 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             result.setEmailLoginEnabled(identityLoginEnabled(emailIdentity));
             result.setPhoneLoginEnabled(identityLoginEnabled(phoneIdentity));
             result.setIdentities(accountConvert.toIdentityResultList(identities));
-            result.setOauthBindings(toOauthBindingResults(accountOauthService.listByAccount(account.getId())));
+            result.setOauthBindings(toOauthBindingResults(
+                    oauthByAccount.getOrDefault(account.getId(), List.of())));
 
             String type = StringUtils.hasText(account.getAccountType())
                     ? account.getAccountType().trim().toUpperCase(Locale.ROOT)
@@ -849,8 +873,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             } else if (AccountType.PORTAL.name().equals(type)) {
                 PortalUserProfileInfo profile = portalProfiles.get(account.getId());
                 if (profile != null) {
-                    result.setName(profile.getName());
-                    result.setNickname(profile.getNickname());
+                    result.setName(profile.getName());                    result.setNickname(profile.getNickname());
                     result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
                     result.setSignature(profile.getSignature());
                     result.setPhone(profile.getPhone());

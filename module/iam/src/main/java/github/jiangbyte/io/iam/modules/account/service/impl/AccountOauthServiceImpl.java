@@ -12,6 +12,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -58,6 +60,31 @@ public class AccountOauthServiceImpl implements AccountOauthService {
         return bindingMapper.selectList(Wrappers.<SysAccountOauthBinding>lambdaQuery()
                 .eq(SysAccountOauthBinding::getAccountId, accountId)
                 .orderByAsc(SysAccountOauthBinding::getProvider));
+    }
+
+    @Override
+    public List<SysAccountOauthBinding> listByAccountIds(Collection<String> accountIds) {
+        if (CollectionUtils.isEmpty(accountIds)) {
+            return List.of();
+        }
+        List<String> ids = accountIds.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        List<SysAccountOauthBinding> all = new ArrayList<>();
+        int batchSize = 500;
+        for (int i = 0; i < ids.size(); i += batchSize) {
+            List<String> batch = ids.subList(i, Math.min(i + batchSize, ids.size()));
+            all.addAll(bindingMapper.selectList(Wrappers.<SysAccountOauthBinding>lambdaQuery()
+                    .in(SysAccountOauthBinding::getAccountId, batch)
+                    .orderByAsc(SysAccountOauthBinding::getAccountId)
+                    .orderByAsc(SysAccountOauthBinding::getProvider)));
+        }
+        return all;
     }
 
     @Override

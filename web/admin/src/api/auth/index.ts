@@ -104,6 +104,12 @@ export function oauthAuthorize(provider: string, params?: { intent?: string; red
   })
 }
 
+export function oauthExchange(data: { code: string }) {
+  return http.post<any>(`${authPrefix}/oauth/exchange`, data, {
+    public: true,
+  })
+}
+
 export function oauthBindings() {
   return http.get<any>(`${authPrefix}/oauth/bindings`)
 }

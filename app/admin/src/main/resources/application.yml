@@ -105,6 +105,7 @@ hei:
       - /api/v1/admin/reset-password
       - /api/v1/admin/oauth/*/authorize
       - /api/v1/admin/oauth/*/callback
+      - /api/v1/admin/oauth/exchange
       - /api/v1/admin/public/**
       - /api/v1/portal/captcha
       - /api/v1/portal/password-key
@@ -116,6 +117,7 @@ hei:
       - /api/v1/portal/reset-password
       - /api/v1/portal/oauth/*/authorize
       - /api/v1/portal/oauth/*/callback
+      - /api/v1/portal/oauth/exchange
       - /api/v1/portal/oauth/wechat-mp/login
       - /api/v1/portal/public/**
       # 门户匿名可读（对齐 hei-fastapi auth_whitelist._builtin_portal_public_paths）
@@ -145,9 +147,16 @@ hei:
       async-enabled: ${HEI_LOG_AUDIT_ASYNC_ENABLED:true}
       stream-key: ${HEI_LOG_AUDIT_STREAM_KEY:hei:audit:stream}
       group-name: ${HEI_LOG_AUDIT_GROUP_NAME:hei-audit-group}
-      max-len: ${HEI_LOG_AUDIT_MAX_LEN:10000}
+      max-len: ${HEI_LOG_AUDIT_MAX_LEN:100000}
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+      trim-enabled: ${HEI_LOG_AUDIT_TRIM_ENABLED:false}
       trim-interval-ms: ${HEI_LOG_AUDIT_TRIM_INTERVAL_MS:60000}
+      reclaim-idle-ms: ${HEI_LOG_AUDIT_RECLAIM_IDLE_MS:60000}
+      reclaim-interval-ms: ${HEI_LOG_AUDIT_RECLAIM_INTERVAL_MS:30000}
+      outbox-relay-interval-ms: ${HEI_LOG_AUDIT_OUTBOX_RELAY_INTERVAL_MS:2000}
+      outbox-relay-batch-size: ${HEI_LOG_AUDIT_OUTBOX_RELAY_BATCH_SIZE:50}
+      outbox-max-attempts: ${HEI_LOG_AUDIT_OUTBOX_MAX_ATTEMPTS:10}
+      outbox-claim-stale-ms: ${HEI_LOG_AUDIT_OUTBOX_CLAIM_STALE_MS:120000}
   observability:
     tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
     # OTLP 指标推送（OtlpMeterRegistry）。默认关闭——本地无 collector；可用 Prometheus 抓取。

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Result, Spin, message } from 'antd'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { oauthExchange } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { clearToken, setToken } from '@/utils/session'
 import { clearAuthStorage } from '@/utils/storage'
@@ -12,7 +13,7 @@ import { refreshDict, syncDictTree } from '@/utils/dict'
 import { PortalAuthShell } from './PortalAuthShell'
 
 /**
- * OAuth 前端回调页：接收后端 302 的 query，写 token 并完成会话。
+ * OAuth 前端回调页：用 oauth_code 兑换 token，再完成会话。
  */
 export function OAuthCallbackPage() {
   const [searchParams] = useSearchParams()
@@ -27,7 +28,9 @@ export function OAuthCallbackPage() {
       const status = searchParams.get('oauth_status')
       const action = searchParams.get('oauth_action') || ''
       const rawMessage = searchParams.get('oauth_message')
-      const token = searchParams.get('token')
+      const oauthCode = searchParams.get('oauth_code')
+      // 兼容旧版 URL token（过渡期）
+      const legacyToken = searchParams.get('token')
       const redirect = searchParams.get('redirect')
 
       if (status !== 'ok') {
@@ -48,10 +51,29 @@ export function OAuthCallbackPage() {
       }
 
       try {
-        if (token) {
+        let passwordExpired = false
+        let forceBindEmail = false
+        let forceBindPhone = false
+
+        if (oauthCode) {
+          const { data } = await oauthExchange({ code: oauthCode })
+          const token = data?.token
+          if (!token) {
+            throw new Error('兑换登录凭证失败')
+          }
           clearToken()
           clearAuthStorage()
-          setToken(token, true)
+          setToken(String(token), true)
+          passwordExpired = wireBool(data?.password_expired ?? false)
+          forceBindEmail = wireBool(data?.force_bind_email ?? false)
+          forceBindPhone = wireBool(data?.force_bind_phone ?? false)
+        } else if (legacyToken) {
+          clearToken()
+          clearAuthStorage()
+          setToken(legacyToken, true)
+          passwordExpired = wireBool(searchParams.get('password_expired') ?? false)
+          forceBindEmail = wireBool(searchParams.get('force_bind_email') ?? false)
+          forceBindPhone = wireBool(searchParams.get('force_bind_phone') ?? false)
         }
 
         if (action === 'bound') {
@@ -61,9 +83,6 @@ export function OAuthCallbackPage() {
           return
         }
 
-        const passwordExpired = wireBool(searchParams.get('password_expired') ?? false)
-        const forceBindEmail = wireBool(searchParams.get('force_bind_email') ?? false)
-        const forceBindPhone = wireBool(searchParams.get('force_bind_phone') ?? false)
         if (passwordExpired) {
           message.warning('密码已过期，请先修改密码')
         } else if (forceBindEmail || forceBindPhone) {

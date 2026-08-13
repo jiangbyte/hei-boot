@@ -4,11 +4,15 @@ import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import github.jiangbyte.io.common.mybatis.datasource.DataSourceRoutingAspect;
+import github.jiangbyte.io.common.mybatis.datasource.DataSourceStickyClearFilter;
 import github.jiangbyte.io.common.mybatis.handler.HeiMetaObjectHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.Ordered;
 
 /**
  * MyBatis-Plus 自动配置：注册元对象填充、分页与数据源路由等基础设施 Bean。
@@ -38,5 +42,18 @@ public class MybatisAutoConfiguration {
     @ConditionalOnMissingBean
     public DataSourceRoutingAspect dataSourceRoutingAspect() {
         return new DataSourceRoutingAspect();
+    }
+
+    /** 请求结束清理写后粘主标记。 */
+    @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnMissingBean(name = "dataSourceStickyClearFilter")
+    public FilterRegistrationBean<DataSourceStickyClearFilter> dataSourceStickyClearFilter() {
+        FilterRegistrationBean<DataSourceStickyClearFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new DataSourceStickyClearFilter());
+        registration.addUrlPatterns("/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
+        registration.setName("dataSourceStickyClearFilter");
+        return registration;
     }
 }

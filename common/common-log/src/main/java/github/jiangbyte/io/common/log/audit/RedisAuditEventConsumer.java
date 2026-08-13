@@ -5,8 +5,11 @@ import github.jiangbyte.io.common.log.config.HeiLogProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.PendingMessage;
+import org.springframework.data.redis.connection.stream.PendingMessages;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamOffset;
@@ -16,6 +19,7 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,7 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 基于 Redis Stream 的审计事件消费者。
  * <p>
  * 使用 XREADGROUP 消费，支持消费者组实现多实例消费。
- * 通过定时 XTRIM 防止消息堆积。
+ * 长度控制优先依赖 XADD MAXLEN ~；定时 XTRIM 默认关闭，避免误伤未 ACK 消息。
+ * 通过 XPENDING + XCLAIM 回收超时 pending 消息。
  * </p>
  *
  * Author: Charlie
@@ -39,6 +44,7 @@ public class RedisAuditEventConsumer {
 
     private StreamMessageListenerContainer<String, MapRecord<String, String, String>> container;
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private volatile String consumerName = "consumer-unknown";
 
     public RedisAuditEventConsumer(
             StringRedisTemplate redisTemplate,
@@ -65,7 +71,7 @@ public class RedisAuditEventConsumer {
 
         String streamKey = auditProps.getStreamKey();
         String groupName = auditProps.getGroupName();
-        String consumerName = "consumer-" + getLocalHostName();
+        consumerName = "consumer-" + getLocalHostName();
 
         try {
             // 创建消费者组（如果不存在）
@@ -105,11 +111,11 @@ public class RedisAuditEventConsumer {
     }
 
     /**
-     * 定时清理堆积消息（作为兜底，与 MAXLEN 配合）
+     * 可选的软裁剪：默认关闭。开启时仅做近似 XTRIM，主要仍依赖 XADD MAXLEN。
      */
     @Scheduled(fixedDelayString = "${hei.log.audit.trim-interval-ms:60000}")
     public void trimStream() {
-        if (!running.get()) {
+        if (!running.get() || !auditProps.isTrimEnabled()) {
             return;
         }
 
@@ -117,14 +123,70 @@ public class RedisAuditEventConsumer {
         int maxLen = auditProps.getMaxLen();
 
         try {
-            // XTRIM 裁剪到 maxLen 条
             Long trimmed = redisTemplate.opsForStream().trim(streamKey, maxLen, true);
             if (trimmed != null && trimmed > 0) {
-                log.info("Trimmed {} old messages from stream {}", trimmed, streamKey);
+                log.debug("Soft-trimmed {} approximate messages from stream {}", trimmed, streamKey);
             }
         } catch (Exception e) {
             log.warn("Failed to trim stream {}", streamKey, e);
         }
+    }
+
+    /**
+     * 回收超时 pending：XPENDING + XCLAIM 后重新处理。
+     */
+    @Scheduled(fixedDelayString = "${hei.log.audit.reclaim-interval-ms:30000}")
+    public void reclaimPending() {
+        if (!running.get()) {
+            return;
+        }
+
+        String streamKey = auditProps.getStreamKey();
+        String groupName = auditProps.getGroupName();
+        Duration minIdle = Duration.ofMillis(Math.max(1000L, auditProps.getReclaimIdleMs()));
+
+        try {
+            PendingMessages pending = redisTemplate.opsForStream()
+                    .pending(streamKey, groupName, Range.unbounded(), 100);
+            if (pending == null || pending.isEmpty()) {
+                return;
+            }
+
+            List<RecordId> staleIds = new ArrayList<>();
+            for (PendingMessage message : pending) {
+                if (message.getElapsedTimeSinceLastDelivery() != null
+                        && message.getElapsedTimeSinceLastDelivery().compareTo(minIdle) >= 0) {
+                    staleIds.add(message.getId());
+                }
+            }
+            if (staleIds.isEmpty()) {
+                return;
+            }
+
+            List<MapRecord<String, Object, Object>> claimed = redisTemplate.opsForStream()
+                    .claim(streamKey, groupName, consumerName, minIdle, staleIds.toArray(RecordId[]::new));
+            if (claimed == null || claimed.isEmpty()) {
+                return;
+            }
+
+            log.info("Reclaimed {} pending audit messages, stream={}, group={}",
+                    claimed.size(), streamKey, groupName);
+            for (MapRecord<String, Object, Object> record : claimed) {
+                handleClaimedMessage(record);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to reclaim pending audit messages, stream={}", streamKey, e);
+        }
+    }
+
+    private void handleClaimedMessage(MapRecord<String, Object, Object> record) {
+        Object raw = record.getValue() != null ? record.getValue().get("data") : null;
+        String json = raw != null ? String.valueOf(raw) : null;
+        MapRecord<String, String, String> normalized = StreamRecords.newRecord()
+                .in(record.getStream())
+                .withId(record.getId())
+                .ofMap(Map.of("data", json != null ? json : "{}"));
+        handleMessage(normalized);
     }
 
     private void handleMessage(MapRecord<String, String, String> record) {
@@ -133,6 +195,9 @@ public class RedisAuditEventConsumer {
 
         try {
             AuditEventMessage message = objectMapper.readValue(json, AuditEventMessage.class);
+            if (message.getMessageId() == null || message.getMessageId().isBlank()) {
+                message.setMessageId(recordId);
+            }
             log.debug("Received audit event, recordId={}, messageId={}", recordId, message.getMessageId());
 
             // 调用所有处理器持久化；任一失败则不 ACK

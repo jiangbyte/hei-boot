@@ -7,6 +7,7 @@ import github.jiangbyte.io.iam.modules.account.service.AccountOauthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -33,6 +34,11 @@ public class AccountOauthApiProvider implements AccountOauthApi {
     @Override
     public List<AccountOauthBindingInfo> listByAccount(String accountId) {
         return accountOauthService.listByAccount(accountId).stream().map(this::toInfo).toList();
+    }
+
+    @Override
+    public List<AccountOauthBindingInfo> listByAccountIds(Collection<String> accountIds) {
+        return accountOauthService.listByAccountIds(accountIds).stream().map(this::toInfo).toList();
     }
 
     @Override

@@ -523,29 +523,28 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
     }
 
     private List<SysResource> listVisibleResources(String moduleClient) {
-        // 1. 取登录态权限标记与资源 id
+        // 1. 取登录态权限标记；资源 id 不存会话，按需回源授权
         var loginUser = LoginHelper.currentUser()
                 .orElseThrow(() -> new BizException(401, "未登录"));
         boolean superAdmin = loginUser.getRoles() != null
                 && loginUser.getRoles().contains(IamRelationTypes.SUPER_ADMIN);
         boolean allPerms = loginUser.getPermissions() != null
                 && loginUser.getPermissions().contains("*:*:*");
-        List<String> resourceIds = loginUser.getResourceIds();
-        // 2. Session 不足时回源账号授权
-        if ((!superAdmin && !allPerms) && (resourceIds == null || resourceIds.isEmpty())) {
+        List<String> resourceIds = null;
+        if (!superAdmin && !allPerms) {
             AccountAuthorization auth = relationService.getAccountAuthorization(loginUser.getAccountId());
             superAdmin = auth.getRoleCodes().contains(IamRelationTypes.SUPER_ADMIN);
             allPerms = auth.getPermissionKeys().contains("*:*:*");
             resourceIds = auth.getResourceIds();
         }
-        // 3. 超管/全权限返回客户端全部启用资源
+        // 2. 超管/全权限返回客户端全部启用资源
         if (superAdmin || allPerms) {
             return listEnabledResourcesByClient(moduleClient);
         }
         if (resourceIds == null || resourceIds.isEmpty()) {
             return List.of();
         }
-        // 4. 普通账号按授权 id 补齐祖先后返回
+        // 3. 普通账号按授权 id 补齐祖先后返回
         return listResourcesByIdsWithParents(resourceIds, moduleClient);
     }
 

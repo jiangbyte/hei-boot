@@ -1,5 +1,6 @@
 package github.jiangbyte.io.iam.account;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -19,6 +20,9 @@ public interface AccountOauthApi {
 
     /** 列出账号全部三方绑定。 */
     List<AccountOauthBindingInfo> listByAccount(String accountId);
+
+    /** 按账号 ID 批量列出三方绑定。 */
+    List<AccountOauthBindingInfo> listByAccountIds(Collection<String> accountIds);
 
     /** 绑定数量。 */
     int countByAccount(String accountId);

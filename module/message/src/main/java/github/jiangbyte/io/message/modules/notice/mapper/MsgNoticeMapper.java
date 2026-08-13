@@ -99,6 +99,43 @@ public interface MsgNoticeMapper extends BaseMapper<MsgNotice> {
               <if test="kind != null and kind != ''">
               AND n.kind = #{kind}
               </if>
+            ORDER BY n.id
+            LIMIT #{limit} OFFSET #{offset}
+            </script>
+            """)
+    List<String> listVisiblePublishedIdsPage(
+            @Param("accountType") String accountType,
+            @Param("accountId") String accountId,
+            @Param("kind") String kind,
+            @Param("now") OffsetDateTime now,
+            @Param("offset") int offset,
+            @Param("limit") int limit);
+
+    @Select("""
+            <script>
+            SELECT n.id
+            FROM msg_notice n
+            WHERE n.status = 'PUBLISHED'
+              AND (n.kind &lt;&gt; 'ANNOUNCEMENT' OR n.expire_at IS NULL OR n.expire_at &gt; #{now})
+              AND (
+                    (
+                        n.target_scope IN ('ALL', 'ACCOUNT_TYPE')
+                        AND (
+                            n.target_account_types IS NULL
+                            OR jsonb_array_length(COALESCE(n.target_account_types::jsonb, '[]'::jsonb)) = 0
+                            OR jsonb_exists(n.target_account_types::jsonb, #{accountType})
+                        )
+                    )
+                    <if test="accountId != null and accountId != ''">
+                    OR (
+                        n.target_scope = 'SPECIFIC'
+                        AND jsonb_exists(n.target_account_ids::jsonb, #{accountId})
+                    )
+                    </if>
+              )
+              <if test="kind != null and kind != ''">
+              AND n.kind = #{kind}
+              </if>
             </script>
             """)
     List<String> listVisiblePublishedIds(

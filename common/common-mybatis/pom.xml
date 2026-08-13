@@ -16,6 +16,11 @@
         <dependency><groupId>org.dromara</groupId><artifactId>easy-trans-spring-boot-starter</artifactId></dependency>
         <dependency><groupId>org.dromara</groupId><artifactId>easy-trans-mybatis-plus-extend</artifactId></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-autoconfigure</artifactId></dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <!-- Used by PostgresJacksonTypeHandler (PGobject); provided by app runtime -->
         <dependency>
             <groupId>org.postgresql</groupId>

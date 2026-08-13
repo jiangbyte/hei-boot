@@ -56,6 +56,13 @@ public class AdminOauthController {
         response.sendRedirect(location);
     }
 
+    @PostMapping("/v1/admin/oauth/exchange")
+    @RateLimit(key = "admin:oauth-exchange", permits = 30, windowSeconds = 60)
+    public ApiResponse<github.jiangbyte.io.auth.modules.login.result.LoginResult> exchange(
+            @Valid @RequestBody github.jiangbyte.io.auth.modules.oauth.param.OauthExchangeParam request) {
+        return ApiResponse.ok(authOauthService.exchange(request.getCode()));
+    }
+
     @GetMapping("/v1/admin/oauth/bindings")
     public ApiResponse<List<OauthBindingResult>> bindings() {
         return ApiResponse.ok(authOauthService.listCurrentBindings());

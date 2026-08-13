@@ -16,8 +16,11 @@ public interface AuthOauthService {
 
     OauthAuthorizeResult authorize(AccountType accountType, String provider, String intent, String redirect);
 
-    /** 处理网页回调；返回前端跳转 URL（已带 token/错误 query）。 */
+    /** 处理网页回调；返回前端跳转 URL（带 oauth_code，不含 token）。 */
     String handleCallback(AccountType accountType, String provider, String code, String state);
+
+    /** 用一次性 oauth_code 兑换登录结果。 */
+    LoginResult exchange(String code);
 
     LoginResult loginWechatMp(AccountType accountType, String code);
 

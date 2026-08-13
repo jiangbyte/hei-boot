@@ -25,13 +25,40 @@ public class HeiLogProperties {
         /** 消费者组名称 */
         private String groupName = "hei-audit-group";
 
-        /** 消息堆积上限，超过则修剪 */
-        private int maxLen = 10000;
+        /**
+         * Stream 近似长度上限（XADD MAXLEN ~）。
+         * 默认提高以避免裁剪未 ACK 消息；主要依赖 publisher 侧 MAXLEN，而非定时 XTRIM。
+         */
+        private int maxLen = 100000;
 
         /** 是否启用消费（处理消息落库） */
         private boolean consumeEnabled = true;
 
-        /** 定时修剪间隔（毫秒） */
+        /**
+         * 是否启用消费者定时 XTRIM。
+         * 默认关闭：避免误伤未 ACK 消息；长度控制交给 XADD MAXLEN ~。
+         */
+        private boolean trimEnabled = false;
+
+        /** 定时修剪间隔（毫秒）；仅当 trimEnabled=true 时生效 */
         private long trimIntervalMs = 60000;
+
+        /** Pending 消息空闲超过该毫秒数后 XCLAIM 重投（默认 60s） */
+        private long reclaimIdleMs = 60000;
+
+        /** Pending reclaim 扫描间隔（毫秒） */
+        private long reclaimIntervalMs = 30000;
+
+        /** Outbox 单次 relay 批量大小 */
+        private int outboxRelayBatchSize = 50;
+
+        /** Outbox 最大投递次数，超出进死信 */
+        private int outboxMaxAttempts = 10;
+
+        /** Outbox relay 间隔（毫秒） */
+        private long outboxRelayIntervalMs = 2000;
+
+        /** Outbox CLAIMED 超时后重新认领（毫秒） */
+        private long outboxClaimStaleMs = 120000;
     }
 }

@@ -3,6 +3,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { oauthExchange } from '@/api/auth'
 import { useAuthStore } from '@/stores'
 import { clearToken, setToken } from '@/utils/session'
 import { getSafeRedirect } from '@/utils/validate'
@@ -25,7 +26,9 @@ async function handleCallback() {
   const status = String(route.query.oauth_status || '')
   const action = String(route.query.oauth_action || '')
   const rawMessage = typeof route.query.oauth_message === 'string' ? route.query.oauth_message : ''
-  const token = typeof route.query.token === 'string' ? route.query.token : ''
+  const oauthCode = typeof route.query.oauth_code === 'string' ? route.query.oauth_code : ''
+  // 兼容旧版 URL token（过渡期）
+  const legacyToken = typeof route.query.token === 'string' ? route.query.token : ''
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
 
   if (status !== 'ok') {
@@ -40,7 +43,6 @@ async function handleCallback() {
     error.value = msg
     tip.value = msg
     window.$message?.error?.(msg)
-    // 管理端未绑定三方时引导密码登录后再绑
     window.setTimeout(() => {
       void router.replace({
         path: '/auth/login',
@@ -51,10 +53,29 @@ async function handleCallback() {
   }
 
   try {
-    if (token) {
+    let passwordExpired = false
+    let forceBindEmail = false
+    let forceBindPhone = false
+
+    if (oauthCode) {
+      const { data } = await oauthExchange({ code: oauthCode })
+      const token = data?.token
+      if (!token) {
+        throw new Error('兑换登录凭证失败')
+      }
       clearToken()
-      setToken(token, true)
+      setToken(String(token), true)
       authStore.sessionChecked = true
+      passwordExpired = wireBool(data?.password_expired ?? false)
+      forceBindEmail = wireBool(data?.force_bind_email ?? false)
+      forceBindPhone = wireBool(data?.force_bind_phone ?? false)
+    } else if (legacyToken) {
+      clearToken()
+      setToken(legacyToken, true)
+      authStore.sessionChecked = true
+      passwordExpired = wireBool(String(route.query.password_expired ?? false))
+      forceBindEmail = wireBool(String(route.query.force_bind_email ?? false))
+      forceBindPhone = wireBool(String(route.query.force_bind_phone ?? false))
     }
 
     if (action === 'bound') {
@@ -65,9 +86,6 @@ async function handleCallback() {
       return
     }
 
-    const passwordExpired = wireBool(String(route.query.password_expired ?? false))
-    const forceBindEmail = wireBool(String(route.query.force_bind_email ?? false))
-    const forceBindPhone = wireBool(String(route.query.force_bind_phone ?? false))
     if (passwordExpired) {
       window.$message?.warning?.('密码已过期，请先修改密码')
     } else if (forceBindEmail || forceBindPhone) {

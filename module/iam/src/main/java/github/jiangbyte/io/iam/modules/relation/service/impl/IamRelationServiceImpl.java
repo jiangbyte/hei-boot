@@ -2,11 +2,13 @@ package github.jiangbyte.io.iam.modules.relation.service.impl;
 
 import github.jiangbyte.io.iam.modules.relation.service.IamRelationService;
 
+import com.baomidou.lock.annotation.Lock4j;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccount;
@@ -580,7 +582,9 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:account:' + #accountId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceAccountRoles(String accountId, List<String> roleIds) {
+        DataSourceSticky.mark();
         assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-角色
         String accountType = resolveAccountType(accountId);
@@ -605,7 +609,9 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:account:' + #accountId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceAccountGroups(String accountId, List<String> groupIds) {
+        DataSourceSticky.mark();
         assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-用户组
         String accountType = resolveAccountType(accountId);
@@ -630,7 +636,9 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:account:' + #accountId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceAccountDepts(String accountId, List<SysDeptGrantResult> grantInfoList) {
+        DataSourceSticky.mark();
         assertAccountAccessibleIfLoggedIn(accountId);
         // 先删后插：替换账号-部门
         String accountType = resolveAccountType(accountId);
@@ -657,8 +665,10 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:' + #subjectType + ':' + #subjectId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceSubjectResourceGrants(
             String subjectType, String subjectId, List<SysResourceGrantResult> grants, String accountType) {
+        DataSourceSticky.mark();
         // 先删后插：替换主体资源授予
         String resolvedType = normalizeAccountType(accountType);
         deleteSubjectRelations(subjectType, subjectId, IamRelationTypes.SUBJECT_RESOURCE_GRANT, resolvedType);
@@ -737,8 +747,10 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:client:' + #subjectType + ':' + #subjectId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceSubjectClientResourceGrants(
             String subjectType, String subjectId, List<SysResourceGrantResult> grants, String accountType) {
+        DataSourceSticky.mark();
         // 先删后插：替换主体客户端资源授予（流程同后台资源）
         String resolvedType = normalizeAccountType(accountType);
         deleteSubjectRelations(subjectType, subjectId, IamRelationTypes.SUBJECT_CLIENT_RESOURCE_GRANT, resolvedType);
@@ -853,87 +865,129 @@ public class IamRelationServiceImpl extends ServiceImpl<SysIamRelationMapper, Sy
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:role:' + #roleId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceRoleUsers(String roleId, List<String> accountIds) {
+        DataSourceSticky.mark();
         SysRole role = roleMapper.selectById(roleId);
         if (role == null) {
             throw new BizException(404, "Role not found");
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
+        Set<String> affected = new HashSet<>(listSubjectIdsByTarget(
+                IamRelationTypes.ACCOUNT_ROLE, IamRelationTypes.TARGET_ROLE, roleId));
+        if (accountIds != null) {
+            accountIds.stream().filter(StringUtils::hasText).forEach(affected::add);
+        }
         // 先按角色目标删光 ACCOUNT_ROLE，再按账号类型批量重建
         getBaseMapper().delete(Wrappers.<SysIamRelation>lambdaQuery()
                 .eq(SysIamRelation::getRelationType, IamRelationTypes.ACCOUNT_ROLE)
                 .eq(SysIamRelation::getTargetType, IamRelationTypes.TARGET_ROLE)
                 .eq(SysIamRelation::getTargetId, roleId));
-        if (CollectionUtils.isEmpty(accountIds)) {
-            return;
-        }
-        Map<String, String> accountTypeMap = loadAccountTypeMap(accountIds);
-        List<SysIamRelation> relations = new ArrayList<>();
-        for (String accountId : accountIds.stream().distinct().toList()) {
-            String accountType = accountTypeMap.get(accountId);
-            if (!StringUtils.hasText(accountType)) {
-                throw new BizException("Account not found: " + accountId);
+        if (!CollectionUtils.isEmpty(accountIds)) {
+            Map<String, String> accountTypeMap = loadAccountTypeMap(accountIds);
+            List<SysIamRelation> relations = new ArrayList<>();
+            for (String accountId : accountIds.stream().distinct().toList()) {
+                String accountType = accountTypeMap.get(accountId);
+                if (!StringUtils.hasText(accountType)) {
+                    throw new BizException("Account not found: " + accountId);
+                }
+                relations.add(newRelation(
+                        IamRelationTypes.SUBJECT_ACCOUNT,
+                        accountId,
+                        accountType,
+                        IamRelationTypes.ACCOUNT_ROLE,
+                        IamRelationTypes.TARGET_ROLE,
+                        roleId));
             }
-            relations.add(newRelation(
-                    IamRelationTypes.SUBJECT_ACCOUNT,
-                    accountId,
-                    accountType,
-                    IamRelationTypes.ACCOUNT_ROLE,
-                    IamRelationTypes.TARGET_ROLE,
-                    roleId));
+            saveRelations(relations);
         }
-        saveRelations(relations);
+        logoutAccounts(affected);
     }
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:group:' + #groupId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceGroupUsers(String groupId, List<String> accountIds) {
+        DataSourceSticky.mark();
+        Set<String> affected = new HashSet<>(listSubjectIdsByTarget(
+                IamRelationTypes.ACCOUNT_GROUP, IamRelationTypes.TARGET_GROUP, groupId));
+        if (accountIds != null) {
+            accountIds.stream().filter(StringUtils::hasText).forEach(affected::add);
+        }
         // 先按组目标删光 ACCOUNT_GROUP，再按账号类型批量重建
         getBaseMapper().delete(Wrappers.<SysIamRelation>lambdaQuery()
                 .eq(SysIamRelation::getRelationType, IamRelationTypes.ACCOUNT_GROUP)
                 .eq(SysIamRelation::getTargetType, IamRelationTypes.TARGET_GROUP)
                 .eq(SysIamRelation::getTargetId, groupId));
-        if (CollectionUtils.isEmpty(accountIds)) {
-            return;
-        }
-        Map<String, String> accountTypeMap = loadAccountTypeMap(accountIds);
-        List<SysIamRelation> relations = new ArrayList<>();
-        for (String accountId : accountIds.stream().distinct().toList()) {
-            String accountType = accountTypeMap.get(accountId);
-            if (!StringUtils.hasText(accountType)) {
-                throw new BizException("Account not found: " + accountId);
+        if (!CollectionUtils.isEmpty(accountIds)) {
+            Map<String, String> accountTypeMap = loadAccountTypeMap(accountIds);
+            List<SysIamRelation> relations = new ArrayList<>();
+            for (String accountId : accountIds.stream().distinct().toList()) {
+                String accountType = accountTypeMap.get(accountId);
+                if (!StringUtils.hasText(accountType)) {
+                    throw new BizException("Account not found: " + accountId);
+                }
+                relations.add(newRelation(
+                        IamRelationTypes.SUBJECT_ACCOUNT,
+                        accountId,
+                        accountType,
+                        IamRelationTypes.ACCOUNT_GROUP,
+                        IamRelationTypes.TARGET_GROUP,
+                        groupId));
             }
-            relations.add(newRelation(
-                    IamRelationTypes.SUBJECT_ACCOUNT,
-                    accountId,
-                    accountType,
-                    IamRelationTypes.ACCOUNT_GROUP,
-                    IamRelationTypes.TARGET_GROUP,
-                    groupId));
+            saveRelations(relations);
         }
-        saveRelations(relations);
+        logoutAccounts(affected);
     }
 
     @Override
     @Transactional
+    @Lock4j(keys = {"'iam:rel:group-roles:' + #groupId"}, expire = 30000, acquireTimeout = 5000)
     public void replaceGroupRoles(String groupId, List<String> roleIds, String accountType) {
+        DataSourceSticky.mark();
         String resolvedType = normalizeAccountType(accountType);
+        Set<String> affected = new HashSet<>(listSubjectIdsByTarget(
+                IamRelationTypes.ACCOUNT_GROUP, IamRelationTypes.TARGET_GROUP, groupId));
         deleteSubjectRelations(IamRelationTypes.SUBJECT_GROUP, groupId, IamRelationTypes.GROUP_ROLE, resolvedType);
-        if (CollectionUtils.isEmpty(roleIds)) {
+        if (!CollectionUtils.isEmpty(roleIds)) {
+            List<SysIamRelation> relations = new ArrayList<>();
+            for (String roleId : roleIds.stream().distinct().toList()) {
+                relations.add(newRelation(
+                        IamRelationTypes.SUBJECT_GROUP,
+                        groupId,
+                        resolvedType,
+                        IamRelationTypes.GROUP_ROLE,
+                        IamRelationTypes.TARGET_ROLE,
+                        roleId));
+            }
+            saveRelations(relations);
+        }
+        logoutAccounts(affected);
+    }
+
+    private List<String> listSubjectIdsByTarget(String relationType, String targetType, String targetId) {
+        return getBaseMapper().selectList(Wrappers.<SysIamRelation>lambdaQuery()
+                        .eq(SysIamRelation::getRelationType, relationType)
+                        .eq(SysIamRelation::getTargetType, targetType)
+                        .eq(SysIamRelation::getTargetId, targetId)
+                        .eq(SysIamRelation::getSubjectType, IamRelationTypes.SUBJECT_ACCOUNT))
+                .stream()
+                .map(SysIamRelation::getSubjectId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
+    private static void logoutAccounts(Collection<String> accountIds) {
+        if (accountIds == null || accountIds.isEmpty()) {
             return;
         }
-        List<SysIamRelation> relations = new ArrayList<>();
-        for (String roleId : roleIds.stream().distinct().toList()) {
-            relations.add(newRelation(
-                    IamRelationTypes.SUBJECT_GROUP,
-                    groupId,
-                    resolvedType,
-                    IamRelationTypes.GROUP_ROLE,
-                    IamRelationTypes.TARGET_ROLE,
-                    roleId));
+        for (String accountId : accountIds) {
+            if (StringUtils.hasText(accountId)) {
+                LoginHelper.logoutAccount(accountId);
+            }
         }
-        saveRelations(relations);
     }
 
     @Override

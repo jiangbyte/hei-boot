@@ -44,6 +44,12 @@ import java.util.Locale;
 @RequestMapping("/api")
 public class AdminSessionController {
 
+    /** 过滤扫描硬顶，避免全量 hydrate。 */
+    private static final int SCAN_HARD_CAP = 5000;
+    private static final int SCAN_BATCH = 200;
+    /** 分析指标扫描上限（近似值）。 */
+    private static final int ANALYSIS_SCAN_CAP = 5000;
+
     /** 汇总在线账号/Token 数量及近一小时新增等分析指标（轻量：不读 LoginUser）。 */
     @GetMapping("/v1/admin/auth/sessions/analysis")
     @SaCheckPermission(value = "auth:session:analysis", type = StpKit.TYPE_ADMIN)
@@ -60,41 +66,76 @@ public class AdminSessionController {
         return ApiResponse.ok(result);
     }
 
-    /** 分页查询在线会话，支持账号类型、账号、IP、关键字过滤。 */
+    /**
+     * 分页查询在线会话。无过滤时按 Sa-Token 分页检索并仅 hydrate 当前页；
+     * 有过滤时有限向前扫描（硬顶 {@link #SCAN_HARD_CAP}），total 为扫描范围内匹配数（可能近似）。
+     */
     @GetMapping("/v1/admin/auth/sessions/page")
     @SaCheckPermission(value = "auth:session:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SessionAccountResult>> page(@Valid @ModelAttribute SessionPageParam query) {
-        List<SessionAccountResult> items = collectSessions(query.getAccountType());
-        // 按查询条件内存过滤后再分页
-        if (StringUtils.hasText(query.getAccountId())) {
-            items = items.stream().filter(item -> query.getAccountId().equals(item.getAccountId())).toList();
+        int current = Math.max(1, query.getCurrent());
+        int size = Math.max(1, Math.min(query.getSize(), 200));
+        boolean filtered = StringUtils.hasText(query.getAccountId())
+                || StringUtils.hasText(query.getAccount())
+                || StringUtils.hasText(query.getIp())
+                || StringUtils.hasText(query.getKeyword());
+
+        List<LogicSource> sources = resolveSources(query.getAccountType());
+        if (sources.isEmpty()) {
+            Page<SessionAccountResult> empty = new Page<>(current, size, 0);
+            empty.setRecords(List.of());
+            return ApiResponse.ok(empty);
         }
-        if (StringUtils.hasText(query.getAccount())) {
-            String keyword = query.getAccount().toLowerCase(Locale.ROOT);
-            items = items.stream()
-                    .filter(item -> containsIgnoreCase(item.getAccount(), keyword)
-                            || containsIgnoreCase(item.getName(), keyword)
-                            || containsIgnoreCase(item.getNickname(), keyword))
-                    .toList();
+
+        if (!filtered && sources.size() == 1) {
+            return ApiResponse.ok(pageSingleSource(sources.getFirst(), current, size));
         }
-        if (StringUtils.hasText(query.getIp())) {
-            String ip = query.getIp();
-            items = items.stream()
-                    .filter(item -> item.getTokens().stream()
-                            .anyMatch(token -> token.getClientIp() != null && token.getClientIp().contains(ip)))
-                    .toList();
+
+        // 多端合并或带过滤：有限扫描后内存过滤/分页
+        List<SessionAccountResult> matched = new ArrayList<>();
+        int scanned = 0;
+        boolean hasMore = false;
+        for (LogicSource source : sources) {
+            int offset = 0;
+            while (scanned < SCAN_HARD_CAP) {
+                int batch = Math.min(SCAN_BATCH, SCAN_HARD_CAP - scanned);
+                List<String> sessionIds = source.stpLogic().searchSessionId("", offset, batch, false);
+                if (sessionIds == null || sessionIds.isEmpty()) {
+                    break;
+                }
+                for (String sessionId : sessionIds) {
+                    SessionAccountResult item = hydrateSession(source.stpLogic(), sessionId, source.accountType());
+                    if (item == null) {
+                        continue;
+                    }
+                    if (matchesFilter(item, query)) {
+                        matched.add(item);
+                    }
+                }
+                scanned += sessionIds.size();
+                offset += sessionIds.size();
+                if (sessionIds.size() < batch) {
+                    break;
+                }
+                if (scanned >= SCAN_HARD_CAP) {
+                    hasMore = true;
+                    break;
+                }
+            }
+            if (hasMore) {
+                break;
+            }
         }
-        if (StringUtils.hasText(query.getKeyword())) {
-            String keyword = query.getKeyword().toLowerCase(Locale.ROOT);
-            items = items.stream()
-                    .filter(item -> containsIgnoreCase(item.getAccount(), keyword)
-                            || containsIgnoreCase(item.getAccountId(), keyword))
-                    .toList();
+
+        int from = Math.max(0, (current - 1) * size);
+        int to = Math.min(matched.size(), from + size);
+        List<SessionAccountResult> records = from >= matched.size() ? List.of() : matched.subList(from, to);
+        // total 为扫描窗口内匹配数；触顶时前端可视为近似
+        long total = matched.size();
+        if (hasMore) {
+            total = Math.max(total, (long) current * size + (records.size() < size ? 0 : 1));
         }
-        int from = Math.max(0, (query.getCurrent() - 1) * query.getSize());
-        int to = Math.min(items.size(), from + query.getSize());
-        List<SessionAccountResult> records = from >= items.size() ? List.of() : items.subList(from, to);
-        Page<SessionAccountResult> page = new Page<>(query.getCurrent(), query.getSize(), items.size());
+        Page<SessionAccountResult> page = new Page<>(current, size, total);
         page.setRecords(records);
         return ApiResponse.ok(page);
     }
@@ -135,89 +176,150 @@ public class AdminSessionController {
         return ApiResponse.ok();
     }
 
-    /** 从 ADMIN/PORTAL StpLogic 收集在线账号会话。 */
-    private List<SessionAccountResult> collectSessions(String accountType) {
-        List<SessionAccountResult> items = new ArrayList<>();
+    private Page<SessionAccountResult> pageSingleSource(LogicSource source, int current, int size) {
+        int start = (current - 1) * size;
+        List<String> sessionIds = source.stpLogic().searchSessionId("", start, size, false);
+        if (sessionIds == null) {
+            sessionIds = List.of();
+        }
+        List<SessionAccountResult> records = new ArrayList<>(sessionIds.size());
+        for (String sessionId : sessionIds) {
+            SessionAccountResult item = hydrateSession(source.stpLogic(), sessionId, source.accountType());
+            if (item != null) {
+                records.add(item);
+            }
+        }
+        // 探测是否还有下一页，用于近似 total
+        long total = start + records.size();
+        if (sessionIds.size() >= size) {
+            List<String> probe = source.stpLogic().searchSessionId("", start + size, 1, false);
+            if (probe != null && !probe.isEmpty()) {
+                total = start + size + 1;
+            }
+        }
+        Page<SessionAccountResult> page = new Page<>(current, size, total);
+        page.setRecords(records);
+        return page;
+    }
+
+    private List<LogicSource> resolveSources(String accountType) {
+        List<LogicSource> sources = new ArrayList<>(2);
         if (!StringUtils.hasText(accountType) || AccountType.ADMIN.name().equalsIgnoreCase(accountType)) {
-            items.addAll(fromLogic(StpKit.ADMIN, AccountType.ADMIN.name()));
+            sources.add(new LogicSource(StpKit.ADMIN, AccountType.ADMIN.name()));
         }
         if (!StringUtils.hasText(accountType) || AccountType.PORTAL.name().equalsIgnoreCase(accountType)) {
-            items.addAll(fromLogic(StpKit.PORTAL, AccountType.PORTAL.name()));
+            sources.add(new LogicSource(StpKit.PORTAL, AccountType.PORTAL.name()));
         }
-        return items;
+        return sources;
     }
 
-    private List<SessionAccountResult> fromLogic(StpLogic stpLogic, String accountType) {
-        List<String> sessionIds = stpLogic.searchSessionId("", 0, -1, false);
-        List<SessionAccountResult> items = new ArrayList<>();
-        for (String sessionId : sessionIds) {
-            SaSession accountSession = stpLogic.getSessionBySessionId(sessionId);
-            Object loginId = accountSession == null ? null : accountSession.getLoginId();
-            if (loginId == null) {
-                continue;
-            }
-            String accountId = String.valueOf(loginId);
-            TokenBundle bundle = listTokens(stpLogic, accountId, accountType);
-            List<SessionTokenResult> tokens = bundle.tokens();
-            SessionAccountResult item = new SessionAccountResult();
-            item.setAccountId(accountId);
-            item.setAccountType(accountType);
-            item.setTokenCount(tokens.size());
-            item.setTokens(tokens);
-            if (!tokens.isEmpty()) {
-                SessionTokenResult latest = tokens.getFirst();
-                item.setClientIp(latest.getClientIp());
-                item.setDeviceLabel(latest.getDeviceLabel());
-                item.setLatestLoginIp(latest.getClientIp());
-                item.setLatestLoginTime(latest.getLoginAt());
-                item.setLatestActiveAt(latest.getLastActiveAt() != null ? latest.getLastActiveAt() : latest.getLoginAt());
-                item.setFirstLoginAt(tokens.stream()
-                        .map(SessionTokenResult::getLoginAt)
-                        .filter(StringUtils::hasText)
-                        .min(String::compareTo)
-                        .orElse(null));
-            }
-            String account = bundle.account();
-            if (!StringUtils.hasText(account) && accountSession != null) {
-                Object user = accountSession.get(LoginHelper.LOGIN_USER_KEY);
-                if (user instanceof LoginUser loginUser && StringUtils.hasText(loginUser.getAccount())) {
-                    account = loginUser.getAccount();
-                }
-            }
-            item.setAccount(StringUtils.hasText(account) ? account : accountId);
-            items.add(item);
+    private SessionAccountResult hydrateSession(StpLogic stpLogic, String sessionId, String accountType) {
+        SaSession accountSession = stpLogic.getSessionBySessionId(sessionId);
+        Object loginId = accountSession == null ? null : accountSession.getLoginId();
+        if (loginId == null) {
+            return null;
         }
-        return items;
+        String accountId = String.valueOf(loginId);
+        TokenBundle bundle = listTokens(stpLogic, accountId, accountType);
+        List<SessionTokenResult> tokens = bundle.tokens();
+        SessionAccountResult item = new SessionAccountResult();
+        item.setAccountId(accountId);
+        item.setAccountType(accountType);
+        item.setTokenCount(tokens.size());
+        item.setTokens(tokens);
+        if (!tokens.isEmpty()) {
+            SessionTokenResult latest = tokens.getFirst();
+            item.setClientIp(latest.getClientIp());
+            item.setDeviceLabel(latest.getDeviceLabel());
+            item.setLatestLoginIp(latest.getClientIp());
+            item.setLatestLoginTime(latest.getLoginAt());
+            item.setLatestActiveAt(latest.getLastActiveAt() != null ? latest.getLastActiveAt() : latest.getLoginAt());
+            item.setFirstLoginAt(tokens.stream()
+                    .map(SessionTokenResult::getLoginAt)
+                    .filter(StringUtils::hasText)
+                    .min(String::compareTo)
+                    .orElse(null));
+        }
+        String account = bundle.account();
+        if (!StringUtils.hasText(account) && accountSession != null) {
+            Object user = accountSession.get(LoginHelper.LOGIN_USER_KEY);
+            if (user instanceof LoginUser loginUser && StringUtils.hasText(loginUser.getAccount())) {
+                account = loginUser.getAccount();
+            }
+        }
+        item.setAccount(StringUtils.hasText(account) ? account : accountId);
+        return item;
     }
 
-    /** 分析用轻量扫描：只读 session/token 元数据，不拉 LoginUser。 */
+    private boolean matchesFilter(SessionAccountResult item, SessionPageParam query) {
+        if (StringUtils.hasText(query.getAccountId()) && !query.getAccountId().equals(item.getAccountId())) {
+            return false;
+        }
+        if (StringUtils.hasText(query.getAccount())) {
+            String keyword = query.getAccount().toLowerCase(Locale.ROOT);
+            if (!(containsIgnoreCase(item.getAccount(), keyword)
+                    || containsIgnoreCase(item.getName(), keyword)
+                    || containsIgnoreCase(item.getNickname(), keyword))) {
+                return false;
+            }
+        }
+        if (StringUtils.hasText(query.getIp())) {
+            String ip = query.getIp();
+            boolean hit = item.getTokens() != null && item.getTokens().stream()
+                    .anyMatch(token -> token.getClientIp() != null && token.getClientIp().contains(ip));
+            if (!hit) {
+                return false;
+            }
+        }
+        if (StringUtils.hasText(query.getKeyword())) {
+            String keyword = query.getKeyword().toLowerCase(Locale.ROOT);
+            if (!(containsIgnoreCase(item.getAccount(), keyword)
+                    || containsIgnoreCase(item.getAccountId(), keyword))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** 分析用轻量扫描：只读 session/token 元数据，不拉 LoginUser；硬顶避免全量。 */
     private AnalysisAccumulator analyzeLogic(StpLogic stpLogic) {
         AnalysisAccumulator acc = new AnalysisAccumulator();
         OffsetDateTime oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1);
-        List<String> sessionIds = stpLogic.searchSessionId("", 0, -1, false);
-        for (String sessionId : sessionIds) {
-            SaSession accountSession = stpLogic.getSessionBySessionId(sessionId);
-            Object loginId = accountSession == null ? null : accountSession.getLoginId();
-            if (loginId == null) {
-                continue;
+        int offset = 0;
+        while (offset < ANALYSIS_SCAN_CAP) {
+            int batch = Math.min(SCAN_BATCH, ANALYSIS_SCAN_CAP - offset);
+            List<String> sessionIds = stpLogic.searchSessionId("", offset, batch, false);
+            if (sessionIds == null || sessionIds.isEmpty()) {
+                break;
             }
-            acc.accountCount++;
-            List<String> tokenValues = stpLogic.getTokenValueListByLoginId(String.valueOf(loginId));
-            int count = tokenValues == null ? 0 : tokenValues.size();
-            acc.tokenCount += count;
-            acc.maxToken = Math.max(acc.maxToken, count);
-            if (tokenValues == null) {
-                continue;
-            }
-            for (String token : tokenValues) {
-                SaSession session = stpLogic.getTokenSessionByToken(token);
-                if (session == null) {
+            for (String sessionId : sessionIds) {
+                SaSession accountSession = stpLogic.getSessionBySessionId(sessionId);
+                Object loginId = accountSession == null ? null : accountSession.getLoginId();
+                if (loginId == null) {
                     continue;
                 }
-                OffsetDateTime loginAt = parseTime(formatEpoch(session.getCreateTime()));
-                if (loginAt != null && !loginAt.isBefore(oneHourAgo)) {
-                    acc.oneHourNew++;
+                acc.accountCount++;
+                List<String> tokenValues = stpLogic.getTokenValueListByLoginId(String.valueOf(loginId));
+                int count = tokenValues == null ? 0 : tokenValues.size();
+                acc.tokenCount += count;
+                acc.maxToken = Math.max(acc.maxToken, count);
+                if (tokenValues == null) {
+                    continue;
                 }
+                for (String token : tokenValues) {
+                    SaSession session = stpLogic.getTokenSessionByToken(token);
+                    if (session == null) {
+                        continue;
+                    }
+                    OffsetDateTime loginAt = parseTime(formatEpoch(session.getCreateTime()));
+                    if (loginAt != null && !loginAt.isBefore(oneHourAgo)) {
+                        acc.oneHourNew++;
+                    }
+                }
+            }
+            offset += sessionIds.size();
+            if (sessionIds.size() < batch) {
+                break;
             }
         }
         return acc;
@@ -291,6 +393,9 @@ public class AdminSessionController {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    private record LogicSource(StpLogic stpLogic, String accountType) {
     }
 
     private record TokenBundle(List<SessionTokenResult> tokens, String account) {

@@ -20,6 +20,7 @@ import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthProvider;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.sms.SmsSenderFacade;
 import cn.dev33.satoken.stp.StpLogic;
@@ -46,6 +47,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -405,8 +407,8 @@ public class AuthServiceImpl implements AuthService {
         user.setRoleIds(authorization.getRoleIds());
         user.setDeptIds(authorization.getDeptIds());
         user.setGroupIds(authorization.getGroupIds());
-        user.setResourceIds(authorization.getResourceIds());
-        user.setButtonCodes(authorization.getButtonCodes());
+        user.setResourceIds(List.of());
+        user.setButtonCodes(List.of());
         user.setPermissionGrants(PermissionGrantInfo.toLoginGrants(authorization.getPermissionGrants()));
         user.setPasswordExpired(passwordExpired);
 
@@ -615,8 +617,9 @@ public class AuthServiceImpl implements AuthService {
         loginUser.setRoleIds(authorization.getRoleIds());
         loginUser.setDeptIds(authorization.getDeptIds());
         loginUser.setGroupIds(authorization.getGroupIds());
-        loginUser.setResourceIds(authorization.getResourceIds());
-        loginUser.setButtonCodes(authorization.getButtonCodes());
+        // 菜单/按钮资源不进会话，按需走资源 API / 授权回源
+        loginUser.setResourceIds(List.of());
+        loginUser.setButtonCodes(List.of());
         loginUser.setPermissionGrants(PermissionGrantInfo.toLoginGrants(authorization.getPermissionGrants()));
         loginUser.setRememberMe(rememberMe == null || rememberMe);
         loginUser.setPasswordExpired(passwordExpired);
@@ -626,6 +629,7 @@ public class AuthServiceImpl implements AuthService {
             loginUser.setUserAgent(httpRequest.getHeader("User-Agent"));
             loginUser.setDeviceLabel(deviceLabel(httpRequest.getHeader("User-Agent")));
         }
+        DataSourceSticky.mark();
         LoginHelper.login(loginUser, resolveTokenTtlSeconds());
 
         accountApi.updateLoginMeta(
