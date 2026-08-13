@@ -58,23 +58,19 @@ spring:
   flyway:
     enabled: true
 
-# 仅本地用的 XXL-JOB Admin 位于 app/xxl-job（勿部署到生产）
+# SnailJob Server 本地用 docker-compose.snailjob.yml（勿嵌入业务进程）
 hei:
   logging:
     json: false
   # 与 hei-fastapi/.env 的 APP__CONFIG_CRYPTO_KEY 保持一致（仅开发）
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
-  xxl-job:
-    enabled: true
-    access-token: ${XXL_JOB_ACCESS_TOKEN:default_token}
-    admin:
-      addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://127.0.0.1:9004/xxl-job-admin}
-    executor:
-      appname: hei-boot-admin
-      port: ${XXL_JOB_EXECUTOR_PORT:9999}
-      logpath: ./logs/xxl-job
-      logretentiondays: 30
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
+
+snail-job:
+  enabled: ${SNAIL_JOB_ENABLED:true}
+  server:
+    host: ${SNAIL_JOB_SERVER_HOST:127.0.0.1}
+    port: ${SNAIL_JOB_SERVER_PORT:17888}

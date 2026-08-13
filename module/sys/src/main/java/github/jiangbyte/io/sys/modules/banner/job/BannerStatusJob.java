@@ -1,8 +1,10 @@
 package github.jiangbyte.io.sys.modules.banner.job;
 
+import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
+import com.aizuda.snailjob.client.job.core.dto.JobArgs;
+import com.aizuda.snailjob.common.log.SnailJobLog;
+import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.job.core.handler.annotation.XxlJob;
 import github.jiangbyte.io.sys.modules.banner.entity.SysBanner;
 import github.jiangbyte.io.sys.modules.banner.mapper.SysBannerMapper;
 import org.springframework.stereotype.Component;
@@ -21,8 +23,8 @@ public class BannerStatusJob {
 
     private final SysBannerMapper bannerMapper;
 
-    @XxlJob("bannerStatusJob")
-    public void execute() {
+    @JobExecutor(name = "bannerStatusJob")
+    public ExecuteResult jobExecute(JobArgs jobArgs) {
         OffsetDateTime now = OffsetDateTime.now();
         int expired = bannerMapper.update(null, Wrappers.<SysBanner>lambdaUpdate()
                 .set(SysBanner::getStatus, "DISABLED")
@@ -31,7 +33,6 @@ public class BannerStatusJob {
                 .isNotNull(SysBanner::getEndAt)
                 .lt(SysBanner::getEndAt, now));
 
-        // 组装查询条件
         int activated = bannerMapper.update(null, Wrappers.<SysBanner>lambdaUpdate()
                 .set(SysBanner::getStatus, "ENABLED")
                 .set(SysBanner::getUpdatedAt, now)
@@ -40,7 +41,7 @@ public class BannerStatusJob {
                 .le(SysBanner::getStartAt, now)
                 .and(w -> w.isNull(SysBanner::getEndAt).or().ge(SysBanner::getEndAt, now)));
 
-        XxlJobHelper.log("Banner status sync: expired={}, activated={}", expired, activated);
-        XxlJobHelper.handleSuccess("expired=" + expired + ",activated=" + activated);
+        SnailJobLog.REMOTE.info("Banner status sync: expired={}, activated={}", expired, activated);
+        return ExecuteResult.success("expired=" + expired + ",activated=" + activated);
     }
 }

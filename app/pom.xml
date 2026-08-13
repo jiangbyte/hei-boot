@@ -11,6 +11,5 @@
 
     <modules>
         <module>admin</module>
-        <module>xxl-job</module>
     </modules>
 </project>

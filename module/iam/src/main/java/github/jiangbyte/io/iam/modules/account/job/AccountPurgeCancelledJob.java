@@ -1,7 +1,9 @@
 package github.jiangbyte.io.iam.modules.account.job;
 
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.job.core.handler.annotation.XxlJob;
+import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
+import com.aizuda.snailjob.client.job.core.dto.JobArgs;
+import com.aizuda.snailjob.common.log.SnailJobLog;
+import com.aizuda.snailjob.model.dto.ExecuteResult;
 import github.jiangbyte.io.iam.modules.account.service.AccountService;
 import github.jiangbyte.io.sys.config.ConfigApi;
 import org.springframework.stereotype.Component;
@@ -20,23 +22,21 @@ public class AccountPurgeCancelledJob {
     private final AccountService accountService;
     private final ConfigApi configApi;
 
-    @XxlJob("accountPurgeCancelledJob")
-    /** 执行过期已取消账号清理。 */
-    public void execute() {
-        int retentionDays = resolveRetentionDays();
+    @JobExecutor(name = "accountPurgeCancelledJob")
+    public ExecuteResult jobExecute(JobArgs jobArgs) {
+        int retentionDays = resolveRetentionDays(jobArgs);
         int purged = accountService.purgeExpiredCancelledAccounts(retentionDays);
-        XxlJobHelper.log("Purged {} cancelled account(s) with retentionDays={}", purged, retentionDays);
-        XxlJobHelper.handleSuccess("purged=" + purged);
+        SnailJobLog.REMOTE.info("Purged {} cancelled account(s) with retentionDays={}", purged, retentionDays);
+        return ExecuteResult.success("purged=" + purged);
     }
 
-    /** 解析保留天数配置。 */
-    private int resolveRetentionDays() {
-        String param = XxlJobHelper.getJobParam();
-        if (StringUtils.hasText(param)) {
+    private int resolveRetentionDays(JobArgs jobArgs) {
+        Object param = jobArgs == null ? null : jobArgs.getJobParams();
+        if (param != null && StringUtils.hasText(String.valueOf(param))) {
             try {
-                return Integer.parseInt(param.trim());
+                return Integer.parseInt(String.valueOf(param).trim());
             } catch (NumberFormatException ignored) {
-                XxlJobHelper.log("Invalid job param '{}', fallback to ACCOUNT_CANCEL_RETENTION_DAYS", param);
+                SnailJobLog.REMOTE.info("Invalid job param '{}', fallback to ACCOUNT_CANCEL_RETENTION_DAYS", param);
             }
         }
         return configApi.getInt("ACCOUNT_CANCEL_RETENTION_DAYS", 15);

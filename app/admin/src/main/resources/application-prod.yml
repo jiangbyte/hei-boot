@@ -75,7 +75,7 @@ management:
     health:
       show-details: never
 
-# 生产：勿部署 app/xxl-job。执行器指向外部 XXL-JOB Admin
+# 生产：外接 SnailJob Server；默认关闭客户端
 hei:
   codegen:
     enabled: false
@@ -94,16 +94,6 @@ hei:
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
-  xxl-job:
-    enabled: ${XXL_JOB_ENABLED:false}
-    access-token: ${XXL_JOB_ACCESS_TOKEN:}
-    admin:
-      addresses: ${XXL_JOB_ADMIN_ADDRESSES:http://xxl-job-admin.example.com/xxl-job-admin}
-    executor:
-      appname: ${XXL_JOB_EXECUTOR_APPNAME:hei-boot-admin}
-      port: ${XXL_JOB_EXECUTOR_PORT:9999}
-      logpath: ${XXL_JOB_EXECUTOR_LOGPATH:./logs/xxl-job}
-      logretentiondays: ${XXL_JOB_LOG_RETENTION_DAYS:30}
   observability:
     tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
     metrics-otlp-enabled: ${HEI_OBSERVABILITY_METRICS_OTLP_ENABLED:false}
@@ -119,3 +109,12 @@ hei:
     kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
     namespace: ${VAULT_NAMESPACE:}
     fail-fast: ${HEI_VAULT_FAIL_FAST:true}
+
+snail-job:
+  enabled: ${SNAIL_JOB_ENABLED:false}
+  namespace: ${SNAIL_JOB_NAMESPACE:764d604ec6fc45f68cd92514c40e9e1a}
+  group: ${SNAIL_JOB_GROUP:hei_boot_admin}
+  token: ${SNAIL_JOB_TOKEN:}
+  server:
+    host: ${SNAIL_JOB_SERVER_HOST:}
+    port: ${SNAIL_JOB_SERVER_PORT:17888}

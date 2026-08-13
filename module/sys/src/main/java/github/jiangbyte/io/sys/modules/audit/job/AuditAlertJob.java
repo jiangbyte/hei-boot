@@ -1,8 +1,10 @@
 package github.jiangbyte.io.sys.modules.audit.job;
 
+import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
+import com.aizuda.snailjob.client.job.core.dto.JobArgs;
+import com.aizuda.snailjob.common.log.SnailJobLog;
+import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.job.core.handler.annotation.XxlJob;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.push.PushSenderFacade;
 import github.jiangbyte.io.sys.config.RuntimeSettings;
@@ -39,13 +41,12 @@ public class AuditAlertJob {
     private final MailSenderFacade mailSenderFacade;
     private final AuditAlertTestSender auditAlertTestSender;
 
-    @XxlJob("auditAlertJob")
-    public void execute() {
+    @JobExecutor(name = "auditAlertJob")
+    public ExecuteResult jobExecute(JobArgs jobArgs) {
         RuntimeSettings settings = RuntimeSettingsHolder.get();
         if (!settings.getBoolean("AUDIT_ALERT_ENABLED", true)) {
-            XxlJobHelper.log("Audit alert disabled via AUDIT_ALERT_ENABLED=false");
-            XxlJobHelper.handleSuccess("disabled");
-            return;
+            SnailJobLog.REMOTE.info("Audit alert disabled via AUDIT_ALERT_ENABLED=false");
+            return ExecuteResult.success("disabled");
         }
 
         int fired = 0;
@@ -54,10 +55,10 @@ public class AuditAlertJob {
                 fired++;
             }
         } else {
-            XxlJobHelper.log("RULE_BRUTE_FORCE disabled, skip volume check");
+            SnailJobLog.REMOTE.info("RULE_BRUTE_FORCE disabled, skip volume check");
         }
 
-        XxlJobHelper.handleSuccess("done fired=" + fired);
+        return ExecuteResult.success("done fired=" + fired);
     }
 
     /**
@@ -73,12 +74,11 @@ public class AuditAlertJob {
         Long count = auditLogMapper.selectCount(Wrappers.<SysOperationAuditLog>lambdaQuery()
                 .ge(SysOperationAuditLog::getCreatedAt, since));
         long volume = count == null ? 0L : count;
-        XxlJobHelper.log("Audit volume in last {}s: {}, threshold={}", windowSeconds, volume, threshold);
+        SnailJobLog.REMOTE.info("Audit volume in last {}s: {}, threshold={}", windowSeconds, volume, threshold);
         if (volume < threshold) {
             return false;
         }
 
-        // 与 UI/seed 对齐：冷却读 AUDIT_ALERT_ALERT_COOLDOWN_SECONDS
         int cooldownSeconds = Math.max(
                 windowSeconds,
                 settings.getInt("AUDIT_ALERT_ALERT_COOLDOWN_SECONDS", 1800));
@@ -87,7 +87,7 @@ public class AuditAlertJob {
                 .eq(SysAlertLog::getRuleName, RULE_BRUTE_FORCE)
                 .ge(SysAlertLog::getCreatedAt, cooldownSince));
         if (recentAlerts != null && recentAlerts > 0) {
-            XxlJobHelper.log(
+            SnailJobLog.REMOTE.info(
                     "Audit alert suppressed: cooldown={}s, recent={}",
                     cooldownSeconds,
                     recentAlerts);
@@ -112,7 +112,7 @@ public class AuditAlertJob {
         alert.setNotifiedVia(notified.isEmpty() ? "sys_alert_log" : String.join(",", notified));
         alert.setCreatedAt(OffsetDateTime.now());
         alertLogMapper.insert(alert);
-        XxlJobHelper.log("Wrote sys_alert_log id={}", alert.getId());
+        SnailJobLog.REMOTE.info("Wrote sys_alert_log id={}", alert.getId());
         return true;
     }
 
@@ -123,7 +123,7 @@ public class AuditAlertJob {
                 pushSenderFacade.send("审计告警", summary);
                 notified.add("push");
             } catch (Exception ex) {
-                XxlJobHelper.log("Push notify failed: {}", ex.getMessage());
+                SnailJobLog.REMOTE.info("Push notify failed: {}", ex.getMessage());
             }
         }
         if (settings.getBoolean("AUDIT_ALERT_NOTIFY_EMAIL", true)) {
@@ -133,10 +133,10 @@ public class AuditAlertJob {
                     mailSenderFacade.send(to, "审计告警", summary);
                     notified.add("email");
                 } catch (Exception ex) {
-                    XxlJobHelper.log("Email notify failed: {}", ex.getMessage());
+                    SnailJobLog.REMOTE.info("Email notify failed: {}", ex.getMessage());
                 }
             } else {
-                XxlJobHelper.log("Email notify skipped: AUDIT_ALERT_NOTIFY_EMAIL_TO empty");
+                SnailJobLog.REMOTE.info("Email notify skipped: AUDIT_ALERT_NOTIFY_EMAIL_TO empty");
             }
         }
         if (settings.getBoolean("AUDIT_ALERT_NOTIFY_CUSTOM_WEBHOOK", false)) {
@@ -146,7 +146,7 @@ public class AuditAlertJob {
                     auditAlertTestSender.testWebhook(webhook, settings.get("AUDIT_ALERT_WEBHOOK_SECRET", ""));
                     notified.add("webhook");
                 } catch (Exception ex) {
-                    XxlJobHelper.log("Webhook notify failed: {}", ex.getMessage());
+                    SnailJobLog.REMOTE.info("Webhook notify failed: {}", ex.getMessage());
                 }
             }
         }

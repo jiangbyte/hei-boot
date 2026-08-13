@@ -26,6 +26,13 @@ env:
   SA_TOKEN_COOKIE_SECURE: "true"
   HEI_SECURITY_HSTS_MAX_AGE: "31536000"
   HEI_OBSERVABILITY_TRACING_ENABLED: "false"
+  # External SnailJob Server — keep false until Server + token are ready
+  SNAIL_JOB_ENABLED: "false"
+  # SNAIL_JOB_SERVER_HOST: snail-job.example.com
+  # SNAIL_JOB_SERVER_PORT: "17888"
+  # SNAIL_JOB_NAMESPACE: 764d604ec6fc45f68cd92514c40e9e1a
+  # SNAIL_JOB_GROUP: hei_boot_admin
+  # SNAIL_JOB_TOKEN: change-me
 
 resources:
   requests:

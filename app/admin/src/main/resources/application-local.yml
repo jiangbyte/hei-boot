@@ -65,10 +65,12 @@ hei:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
   rate-limit:
     enabled: true
-  xxl-job:
-    enabled: true
-    admin:
-      addresses: http://127.0.0.1:9004/xxl-job-admin
   log:
     audit:
       consume-enabled: true
+
+snail-job:
+  enabled: ${SNAIL_JOB_ENABLED:true}
+  server:
+    host: ${SNAIL_JOB_SERVER_HOST:127.0.0.1}
+    port: ${SNAIL_JOB_SERVER_PORT:17888}

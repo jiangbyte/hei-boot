@@ -35,12 +35,11 @@ HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端
 
 ## 架构
 
-可运行后端应用只有两个：
+可运行后端应用：
 
 | 应用 | 路径 | 说明 |
 |------|------|------|
-| Admin API + Executor | `app/admin` | 业务 API；内嵌 XXL-JOB Executor（`hei-boot-admin`）；Flyway 权威源 |
-| XXL-JOB Admin | `app/xxl-job` | **仅本地调试**；生产不要部署，改连外部 Admin |
+| Admin API + SnailJob 客户端 | `app/admin` | 业务 API；内嵌 SnailJob Executor（group `hei_boot_admin`）；Flyway 权威源 |
 
 业务由 `app/admin` **显式依赖**装配。样板 `module/biz` 在 Maven profile `with-biz`（默认开启）；生产打包排除：
 
@@ -72,7 +71,7 @@ mvn -pl app/admin -am -P'!with-biz' package -DskipTests
 - 系统：字典、配置、Banner、文件、弱口令、审计、代码生成
 - 消息：公告、通知、反馈（即时通讯已移除）
 - Dashboard；Redis Stream 操作审计异步落库
-- XXL-JOB：注销清理、Banner 状态同步、审计量级告警
+- SnailJob：注销清理、Banner 状态同步、审计量级告警
 
 **前端**
 
@@ -86,7 +85,7 @@ mvn -pl app/admin -am -P'!with-biz' package -DskipTests
 
 - JDK 21、Maven 3.9+、pnpm（前端）
 - PostgreSQL、Redis
-- 本地 XXL-JOB Admin 另需 MySQL（见 docker-compose）
+- 本地 SnailJob Server（独立容器，见 `script/docker/docker-compose.snailjob.yml`）
 
 ## 快速启动
 
@@ -101,10 +100,11 @@ docker compose -f script/docker/docker-compose.yml up -d
 ### 2. 后端
 
 ```bash
-# 本地 XXL-JOB Admin（仅本地）
-mvn -pl app/xxl-job -am spring-boot:run
+# SnailJob Server（已有 Postgres 上先建 snail_job + Flyway）
+bash script/docker/snailjob-flyway.sh
+docker compose -f script/docker/docker-compose.snailjob.yml up -d
 
-# 管理端 API（含 Executor）
+# 管理端 API（含 SnailJob 客户端）
 mvn -pl app/admin -am spring-boot:run
 ```
 
@@ -112,7 +112,8 @@ mvn -pl app/admin -am spring-boot:run
 Admin API:          http://127.0.0.1:8000
 Knife4j:            http://127.0.0.1:8000/doc.html
 Actuator health:    http://127.0.0.1:8000/actuator/health
-XXL-JOB Admin:      http://127.0.0.1:9004/xxl-job-admin   (admin / 123456)
+SnailJob Console:   http://127.0.0.1:9189/snail-job   (admin / 123456)
+SnailJob RPC:       17888
 ```
 
 默认库：`jdbc:postgresql://127.0.0.1:5432/hei_boot`（`hei` / `hei`）
@@ -299,14 +300,17 @@ cd web/portal && pnpm install && pnpm dev    # http://127.0.0.1:5174
 
 ## 生产部署
 
-- **不要部署** `app/xxl-job`；Executor 按需指向外部 Admin（默认 `XXL_JOB_ENABLED=false`）。
+- **不要**把 SnailJob Server 打进业务镜像；生产外接调度中心（默认 `SNAIL_JOB_ENABLED=false`）。
 - Kubernetes 参考：[deploy/helm/hei-boot](deploy/helm/hei-boot/)（Service 端口 **8000**）。
 - 生产包排除样板业务：`mvn -pl app/admin -am -P'!with-biz' -DskipTests package`。
 
 ```bash
-export XXL_JOB_ENABLED=true
-export XXL_JOB_ADMIN_ADDRESSES=http://xxl-job-admin.example.com/xxl-job-admin
-export XXL_JOB_ACCESS_TOKEN=your_token
+export SNAIL_JOB_ENABLED=true
+export SNAIL_JOB_SERVER_HOST=snail-job.example.com
+export SNAIL_JOB_SERVER_PORT=17888
+export SNAIL_JOB_NAMESPACE=764d604ec6fc45f68cd92514c40e9e1a
+export SNAIL_JOB_GROUP=hei_boot_admin
+export SNAIL_JOB_TOKEN=your_token
 ```
 
 ### 生产必填环境变量
@@ -317,7 +321,7 @@ export XXL_JOB_ACCESS_TOKEN=your_token
 | `REDIS_HOST`（及可选 port / password / database） | 会话与 Redis Stream 审计 |
 | `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值） |
 
-可选：`XXL_JOB_*`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`HEI_VAULT_*`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
+可选：`SNAIL_JOB_*`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`HEI_VAULT_*`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
 
 ## 二次开发
 
@@ -329,17 +333,18 @@ export XXL_JOB_ACCESS_TOKEN=your_token
 
 会话、过滤器、安全装配等在 `common/*`，允许直接改源码；跟上游合并时自行解决冲突。
 
-## XXL-JOB 任务
+## SnailJob 任务
 
-Executor AppName：`hei-boot-admin`。
+客户端 group：`hei_boot_admin`；namespace：`764d604ec6fc45f68cd92514c40e9e1a`。
 
-| Handler | 模块 | 作用 |
-|---------|------|------|
-| `accountPurgeCancelledJob` | iam | 清理超保留期注销账号 |
-| `bannerStatusJob` | sys | 按时间启用 / 停用 Banner |
-| `auditAlertJob` | sys | 审计量超阈值写入告警 |
+| Executor | 模块 | Cron | 作用 |
+|----------|------|------|------|
+| `accountPurgeCancelledJob` | iam | `0 0 3 * * ?` | 清理超保留期注销账号 |
+| `bannerStatusJob` | sys | `0 */5 * * * ?` | 按时间启用 / 停用 Banner |
+| `auditAlertJob` | sys | `0 */2 * * * ?` | 审计量超阈值写入告警 |
 
-本地初始化见 `script/sql/postgres/` 与 docker 说明。
+本地：`script/sql/postgres/snailjob/` + `script/docker/snailjob-flyway.sh` + `docker-compose.snailjob.yml`。
+曾用过 XXL 的库可执行 `script/sql/postgres/drop_xxl_job.sql`。
 
 ## Redis Stream 审计
 
@@ -360,7 +365,6 @@ Executor AppName：`hei-boot-admin`。
 ```bash
 mvn -pl app/admin -am package -DskipTests
 mvn -pl app/admin -am -P'!with-biz' package -DskipTests
-mvn -pl app/xxl-job -am package -DskipTests
 mvn -pl app/admin -am test
 mvn -pl app/admin -am spring-boot:run
 ```
@@ -370,8 +374,7 @@ mvn -pl app/admin -am spring-boot:run
 ```text
 hei-boot
 ├── app
-│   ├── admin                  # API + XXL Executor + Flyway
-│   └── xxl-job                # 本地-only XXL-JOB Admin
+│   └── admin                  # API + SnailJob client + Flyway
 ├── common                     # 通用能力
 ├── module-api                 # 跨模块窄接口
 ├── module                     # auth / iam / sys / user / message / dashboard / biz
@@ -380,7 +383,7 @@ hei-boot
 ├── deploy/helm                # K8s 参考 Chart
 └── script
     ├── docker                 # compose
-    ├── sql                    # XXL seed 等（业务迁移权威在 app/admin）
+    ├── sql                    # snail_job Flyway / drop_xxl 等（业务迁移权威在 app/admin）
     ├── perf                   # k6
     └── security               # ZAP baseline
 ```
