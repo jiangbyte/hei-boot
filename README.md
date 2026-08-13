@@ -5,7 +5,7 @@
 ![Maven](https://img.shields.io/badge/Maven-Multi--Module-C71A36?logo=apachemaven&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
 HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端 / 门户 / UniApp 前端**同仓维护。一般挂业务、改配置即可跑；复杂场景可直接改 `common/*`。
 
@@ -394,4 +394,4 @@ git commit -m "feat: describe your change"
 
 ## 开源协议
 
-[MIT License](LICENSE)
+本项目使用 [Apache License 2.0](LICENSE) 开源协议。
