@@ -1,7 +1,7 @@
 package github.jiangbyte.io.sys.modules.audit.outbox;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.common.log.config.HeiLogProperties;
 import github.jiangbyte.io.sys.modules.audit.entity.SysOperationAuditOutbox;

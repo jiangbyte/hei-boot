@@ -1,7 +1,8 @@
 package github.jiangbyte.io.common.notify.cloud;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.hutool.core.util.IdUtil;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -17,7 +18,6 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -52,7 +52,7 @@ public final class AliyunRpcClient {
         params.put("SignatureMethod", "HMAC-SHA1");
         params.put("Timestamp", TIMESTAMP.format(Instant.now()));
         params.put("SignatureVersion", "1.0");
-        params.put("SignatureNonce", UUID.randomUUID().toString().replace("-", ""));
+        params.put("SignatureNonce", IdUtil.simpleUUID());
         params.put("Action", action);
         if (businessParams != null) {
             params.putAll(businessParams);

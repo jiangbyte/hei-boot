@@ -1,7 +1,6 @@
 package github.jiangbyte.io.message.modules.notice.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -370,7 +369,6 @@ public class NoticeServiceImpl extends ServiceImpl<MsgNoticeMapper, MsgNotice> i
                 continue;
             }
             MsgNoticeRead read = new MsgNoticeRead();
-            read.setId(IdWorker.getIdStr());
             read.setNoticeId(noticeId);
             read.setAccountType(accountType);
             read.setAccountId(accountId);

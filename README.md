@@ -7,7 +7,8 @@
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue)
 
-HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端 / 门户 / UniApp 前端**同仓维护。一般挂业务、改配置即可跑；复杂场景可直接改 `common/*`。
+HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端 / 门户 / UniApp 前端**同仓维护。一般挂业务、改配置即可跑；复杂场景可直接改
+`common/*`。
 
 - 后端：JDK 21 · Spring Boot 4.1 · Maven 多模块 · PostgreSQL · Redis · Sa-Token · MyBatis-Plus · JustAuth
 - 前端：`web/admin`（Vue 3 / Naive UI）· `web/portal`（React / Ant Design）· `web/admin-uniapp`（uni-app）
@@ -15,17 +16,18 @@ HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端
 
 文档索引：[docs/README.md](docs/README.md)
 
-> **生产注意：** 首次上线后务必轮换 seed 超管密码与密钥；关闭文档/Actuator 公网暴露；仅在可信反向代理后开启 `hei.security.trust-forwarded-headers`。HSTS 优先在 Ingress 配置。
+> **生产注意：** 首次上线后务必轮换 seed 超管密码与密钥；关闭文档/Actuator 公网暴露；仅在可信反向代理后开启
+`hei.security.trust-forwarded-headers`。HSTS 优先在 Ingress 配置。
 
 ## 生产状态
 
 以下姊妹项目均已在本公司项目中投产：
 
-| 项目 | 说明 | 协议 |
-| :--- | :--- | :--- |
-| [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
-| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | MIT |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT |
+| 项目                                                          | 说明                      | 协议                 |
+|:------------------------------------------------------------|:------------------------|:-------------------|
+| [**hei-boot**](https://github.com/jiangbyte/hei-boot)       | Spring Boot 工程化脚手架      | Apache License 2.0 |
+| [**hei-gin**](https://github.com/jiangbyte/hei-gin)         | Go 轻量级后端框架              | MIT                |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | MIT                |
 
 **统一说明：**
 
@@ -37,8 +39,8 @@ HEI Boot 是开源可改的一体化脚手架：**Spring Boot 后端 + 管理端
 
 可运行后端应用：
 
-| 应用 | 路径 | 说明 |
-|------|------|------|
+| 应用                       | 路径          | 说明                                                             |
+|--------------------------|-------------|----------------------------------------------------------------|
 | Admin API + SnailJob 客户端 | `app/admin` | 业务 API；内嵌 SnailJob Executor（group `hei_boot_admin`）；Flyway 权威源 |
 
 业务由 `app/admin` **显式依赖**装配。样板 `module/biz` 在 Maven profile `with-biz`（默认开启）；生产打包排除：
@@ -49,12 +51,12 @@ mvn -pl app/admin -am -P'!with-biz' package -DskipTests
 
 ### 模块一览
 
-| 层 | 内容 |
-|----|------|
-| `common/*` | web / mybatis / redis / satoken / security / log / oss / job / notify / doc … |
-| `module-api/*` | 跨模块窄接口（auth / iam / sys / user） |
-| `module/*` | auth · iam · sys · user · message · dashboard · biz（样板） |
-| `web/*` | 独立前端工程，无 `web/packages` 共享层 |
+| 层              | 内容                                                                            |
+|----------------|-------------------------------------------------------------------------------|
+| `common/*`     | web / mybatis / redis / satoken / security / log / oss / job / notify / doc … |
+| `module-api/*` | 跨模块窄接口（auth / iam / sys / user）                                               |
+| `module/*`     | auth · iam · sys · user · message · dashboard · biz（样板）                       |
+| `web/*`        | 独立前端工程，无 `web/packages` 共享层                                                   |
 
 ## 功能概览
 
@@ -75,11 +77,11 @@ mvn -pl app/admin -am -P'!with-biz' package -DskipTests
 
 **前端**
 
-| 工程 | 端口（默认） | 说明 |
-|------|--------------|------|
-| [web/admin](web/admin/README.md) | 5173 | 管理端：动态路由、IAM、系统、消息、OAuth 入口 |
-| [web/portal](web/portal/README.md) | 5174 | 门户：全页登录/注册/找回密码、公告、反馈、个人中心 |
-| [web/admin-uniapp](web/admin-uniapp/README.md) | — | 管理端 H5 / 小程序 |
+| 工程                                             | 端口（默认） | 说明                          |
+|------------------------------------------------|--------|-----------------------------|
+| [web/admin](web/admin/README.md)               | 5173   | 管理端：动态路由、IAM、系统、消息、OAuth 入口 |
+| [web/portal](web/portal/README.md)             | 5174   | 门户：全页登录/注册/找回密码、公告、反馈、个人中心  |
+| [web/admin-uniapp](web/admin-uniapp/README.md) | —      | 管理端 H5 / 小程序                |
 
 ## 运行要求
 
@@ -129,12 +131,13 @@ cd web/portal && pnpm install && pnpm dev    # http://127.0.0.1:5174
 
 ### 默认账号
 
-| 端 | 地址 | 账号 | 密码 |
-|----|------|------|------|
-| Admin | http://localhost:5173 | `superadmin` | `123456` |
-| Portal | http://localhost:5174 | `user` | `123456` |
+| 端      | 地址                    | 账号           | 密码       |
+|--------|-----------------------|--------------|----------|
+| Admin  | http://localhost:5173 | `superadmin` | `123456` |
+| Portal | http://localhost:5174 | `user`       | `123456` |
 
-管理端 `superadmin` 由 Flyway seed；**生产首次启动后必须改密**。登录需图形验证码（哈希缓存在 Docker Redis，key 形如 `captcha:{id}`，TTL 约 5 分钟）。
+管理端 `superadmin` 由 Flyway seed；**生产首次启动后必须改密**。登录需图形验证码（哈希缓存在 Docker Redis，key 形如
+`captcha:{id}`，TTL 约 5 分钟）。
 
 ### 界面预览
 
@@ -279,13 +282,13 @@ cd web/portal && pnpm install && pnpm dev    # http://127.0.0.1:5174
 
 ## 主要 API 前缀
 
-| 前缀 | 用途 |
-|------|------|
-| `/api/v1/admin/**` | 管理端 |
-| `/api/v1/portal/**` | 门户端 |
-| `/api/v1/files/**` | 公开读文件（可配置） |
-| `/api/*/internal/**` | 集群内部（勿对公网暴露） |
-| `/actuator/**` | 健康与指标（勿对公网暴露） |
+| 前缀                         | 用途                |
+|----------------------------|-------------------|
+| `/api/v1/admin/**`         | 管理端               |
+| `/api/v1/portal/**`        | 门户端               |
+| `/api/v1/files/**`         | 公开读文件（可配置）        |
+| `/api/*/internal/**`       | 集群内部（勿对公网暴露）      |
+| `/actuator/**`             | 健康与指标（勿对公网暴露）     |
 | `/doc.html`、`/v3/api-docs` | OpenAPI / Knife4j |
 
 常用：`/api/v1/admin/login`、`/captcha`、`/oauth/**`、`/iam/**`、`/sys/**`、`/user-center/**`、`/message/**`。
@@ -315,20 +318,22 @@ export SNAIL_JOB_TOKEN=your_token
 
 ### 生产必填环境变量
 
-| 变量 | 说明 |
-|------|------|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 主库（也可用 `DB_WRITE_*` / `DB_READ_*`） |
-| `REDIS_HOST`（及可选 port / password / database） | 会话与 Redis Stream 审计 |
-| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值） |
+| 变量                                           | 说明                                 |
+|----------------------------------------------|------------------------------------|
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD`     | 主库（也可用 `DB_WRITE_*` / `DB_READ_*`） |
+| `REDIS_HOST`（及可选 port / password / database） | 会话与 Redis Stream 审计                |
+| `HEI_CONFIG_CRYPTO_KEY`                      | 敏感配置 Fernet 密钥（无默认值）               |
 
 可选：`SNAIL_JOB_*`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`HEI_VAULT_*`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
 
 ## 二次开发
 
-1. 在 `module/` 新增业务：`@AutoConfiguration` + `@ComponentScan` + `AutoConfiguration.imports`；跨模块契约放 `module-api/`。
+1. 在 `module/` 新增业务：`@AutoConfiguration` + `@ComponentScan` + `AutoConfiguration.imports`；跨模块契约放
+   `module-api/`。
 2. 登记 reactor（`module/pom.xml`），根 `pom.xml` `dependencyManagement` 增加版本条目。
 3. 在 `app/admin/pom.xml` **显式依赖**该模块（样板 `biz` 走 `with-biz`；自有业务放主 dependencies）。
-4. 库表 / 菜单种子：仅在 `app/admin/src/main/resources/db/migration/` **追加** `V{n}__*.sql`（业务建议高序号如 `V100__`）。**勿改**已发布的 `V1`–`V5`。
+4. 库表 / 菜单种子：仅在 `app/admin/src/main/resources/db/migration/` **追加** `V{n}__*.sql`（业务建议高序号如 `V100__`）。*
+   *勿改**已发布的 `V1`–`V5`。
 5. 配置改 `application-*.yml` 或环境变量（如 `hei.security.ignore-urls`）。
 
 会话、过滤器、安全装配等在 `common/*`，允许直接改源码；跟上游合并时自行解决冲突。
@@ -337,11 +342,11 @@ export SNAIL_JOB_TOKEN=your_token
 
 客户端 group：`hei_boot_admin`；namespace：`764d604ec6fc45f68cd92514c40e9e1a`。
 
-| Executor | 模块 | Cron | 作用 |
-|----------|------|------|------|
-| `accountPurgeCancelledJob` | iam | `0 0 3 * * ?` | 清理超保留期注销账号 |
-| `bannerStatusJob` | sys | `0 */5 * * * ?` | 按时间启用 / 停用 Banner |
-| `auditAlertJob` | sys | `0 */2 * * * ?` | 审计量超阈值写入告警 |
+| Executor                   | 模块  | Cron            | 作用                |
+|----------------------------|-----|-----------------|-------------------|
+| `accountPurgeCancelledJob` | iam | `0 0 3 * * ?`   | 清理超保留期注销账号        |
+| `bannerStatusJob`          | sys | `0 */5 * * * ?` | 按时间启用 / 停用 Banner |
+| `auditAlertJob`            | sys | `0 */2 * * * ?` | 审计量超阈值写入告警        |
 
 本地：`script/sql/postgres/snailjob/` + `script/docker/snailjob-flyway.sh` + `docker-compose.snailjob.yml`。
 曾用过 XXL 的库可执行 `script/sql/postgres/drop_xxl_job.sql`。

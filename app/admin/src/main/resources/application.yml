@@ -236,32 +236,6 @@ management:
           endpoint: ${hei.observability.otlp-endpoint}
           transport: http
 
-resilience4j:
-  bulkhead:
-    instances:
-      mail:
-        maxConcurrentCalls: 8
-        maxWaitDuration: 0
-      s3:
-        maxConcurrentCalls: 16
-        maxWaitDuration: 0
-  circuitbreaker:
-    instances:
-      mail:
-        slidingWindowSize: 20
-        minimumNumberOfCalls: 5
-        failureRateThreshold: 50
-        waitDurationInOpenState: 30s
-        permittedNumberOfCallsInHalfOpenState: 3
-        registerHealthIndicator: false
-      s3:
-        slidingWindowSize: 30
-        minimumNumberOfCalls: 8
-        failureRateThreshold: 50
-        waitDurationInOpenState: 20s
-        permittedNumberOfCallsInHalfOpenState: 3
-        registerHealthIndicator: false
-
 springdoc:
   api-docs:
     enabled: true

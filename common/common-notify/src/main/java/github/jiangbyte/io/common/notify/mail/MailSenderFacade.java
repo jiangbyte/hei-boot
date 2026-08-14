@@ -1,7 +1,7 @@
 package github.jiangbyte.io.common.notify.mail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.notify.NotifyConfigSource;
 import github.jiangbyte.io.common.notify.cloud.AliyunRpcClient;

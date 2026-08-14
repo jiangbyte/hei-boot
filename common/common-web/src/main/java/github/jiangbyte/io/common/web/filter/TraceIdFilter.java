@@ -11,8 +11,9 @@ import org.slf4j.MDC;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import cn.hutool.core.util.IdUtil;
+
 import java.io.IOException;
-import java.util.UUID;
 
 /**
  * 链路 TraceId 过滤器：解析/生成 TraceId，写入 MDC 与响应头，请求结束清理。
@@ -51,7 +52,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String requestId = request.getHeader(REQUEST_ID_HEADER);
         if (!StringUtils.hasText(requestId)) {
-            requestId = UUID.randomUUID().toString().replace("-", "");
+            requestId = IdUtil.simpleUUID();
         }
 
         String traceId = request.getHeader(TRACE_ID_HEADER);

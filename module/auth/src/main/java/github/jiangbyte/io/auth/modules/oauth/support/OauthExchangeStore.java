@@ -2,9 +2,10 @@
 
 package github.jiangbyte.io.auth.modules.oauth.support;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.hutool.core.util.IdUtil;
 import github.jiangbyte.io.auth.modules.login.result.LoginResult;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import lombok.Data;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.UUID;
 
 /**
  * OAuth 登录一次性兑换码：避免把 token 放进前端回调 URL。
@@ -33,7 +33,7 @@ public class OauthExchangeStore {
         if (login == null || !StringUtils.hasText(login.getToken())) {
             throw new BizException("登录结果无效");
         }
-        String code = UUID.randomUUID().toString().replace("-", "");
+        String code = IdUtil.simpleUUID();
         Payload payload = new Payload();
         payload.setToken(login.getToken());
         payload.setAccountId(login.getAccountId());
@@ -45,7 +45,7 @@ public class OauthExchangeStore {
         payload.setExpiresIn(login.getExpiresIn());
         try {
             redissonClient.getBucket(key(code)).set(objectMapper.writeValueAsString(payload), TTL);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new BizException(500, "保存 OAuth 兑换码失败");
         }
         return code;

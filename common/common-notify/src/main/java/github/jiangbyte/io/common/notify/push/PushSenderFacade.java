@@ -1,6 +1,6 @@
 package github.jiangbyte.io.common.notify.push;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.notify.NotifyConfigSource;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
 package github.jiangbyte.io.common.core.vault;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.Ordered;
@@ -103,7 +103,7 @@ public class VaultEnvironmentPostProcessor implements EnvironmentPostProcessor, 
         JsonNode data = MAPPER.readTree(resp.body()).path("data").path("data");
         Map<String, Object> out = new LinkedHashMap<>();
         if (data != null && data.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = data.fields();
+            Iterator<Map.Entry<String, JsonNode>> fields = data.properties().iterator();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> e = fields.next();
                 JsonNode v = e.getValue();

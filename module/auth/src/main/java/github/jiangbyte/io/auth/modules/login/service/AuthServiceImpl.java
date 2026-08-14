@@ -24,6 +24,7 @@ import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.sms.SmsSenderFacade;
 import cn.dev33.satoken.stp.StpLogic;
+import cn.hutool.core.util.IdUtil;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.account.AccountApi;
@@ -50,7 +51,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -333,7 +333,7 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
         long ttlSeconds = Math.max(60L, configApi.getLong("AUTH_PASSWORD_RESET_TOKEN_TTL_SECONDS", 600));
-        String token = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        String token = IdUtil.simpleUUID();
         cryptoService.storeResetToken(token, account.getId(), Duration.ofSeconds(ttlSeconds));
         String resetLink = buildPasswordResetLink(token, accountType);
         Map<String, Object> vars = new LinkedHashMap<>();

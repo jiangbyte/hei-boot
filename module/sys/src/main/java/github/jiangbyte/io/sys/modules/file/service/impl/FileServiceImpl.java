@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
+import cn.hutool.core.util.IdUtil;
 
 /**
  * 文件服务实现：对接存储引擎与元数据持久化。
@@ -394,7 +394,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
                 now.getYear(),
                 now.getMonthValue(),
                 now.getDayOfMonth(),
-                UUID.randomUUID().toString().replace("-", ""),
+                IdUtil.simpleUUID(),
                 suffix);
     }
 }

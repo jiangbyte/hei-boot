@@ -4,6 +4,7 @@ package github.jiangbyte.io.auth.modules.login.support;
 
 import github.jiangbyte.io.auth.modules.login.result.CaptchaResult;
 import github.jiangbyte.io.auth.modules.login.result.PasswordKeyResult;
+import cn.hutool.core.util.IdUtil;
 import github.jiangbyte.io.common.core.exception.BizException;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
@@ -22,7 +23,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -48,7 +48,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         for (int i = 0; i < 4; i++) {
             value.append(CAPTCHA_ALPHABET.charAt(secureRandom.nextInt(CAPTCHA_ALPHABET.length())));
         }
-        String captchaId = UUID.randomUUID().toString().replace("-", "");
+        String captchaId = IdUtil.simpleUUID();
         RBucket<String> bucket = redissonClient.getBucket(captchaKey(captchaId));
         bucket.set(sha256Hex(value.toString().toLowerCase()), CAPTCHA_TTL);
 
@@ -92,7 +92,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
             KeyPair keyPair = generator.generateKeyPair();
-            String keyId = UUID.randomUUID().toString().replace("-", "");
+            String keyId = IdUtil.simpleUUID();
             String privatePem = toPem(keyPair.getPrivate().getEncoded());
             String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             redissonClient.getBucket(passwordKey(keyId)).set(privatePem, PASSWORD_KEY_TTL);

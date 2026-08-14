@@ -1,6 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed Aug 12 07:31:56 CST 2026
-337d280228f3659dea32fcd68caf6530c4852f4e@default-2673726-release-BUcxPv-https\://packages.aliyun.com/6a4fbd1b2668ac23536c6981/maven/2673726-release-bucxpv/.lastUpdated=1786491116099
-@default-aliyunmaven-https\://maven.aliyun.com/repository/public/.lastUpdated=1786491115851
-https\://maven.aliyun.com/repository/public/.error=Could not transfer artifact org.springframework.boot\:spring-boot-starter-parent\:pom\:4.1.0 from/to aliyunmaven (https\://maven.aliyun.com/repository/public)\: maven.aliyun.com\: Temporary failure in name resolution
-https\://packages.aliyun.com/6a4fbd1b2668ac23536c6981/maven/2673726-release-bucxpv/.error=Could not transfer artifact org.springframework.boot\:spring-boot-starter-parent\:pom\:4.1.0 from/to 2673726-release-BUcxPv (https\://packages.aliyun.com/6a4fbd1b2668ac23536c6981/maven/2673726-release-bucxpv)\: packages.aliyun.com\: Temporary failure in name resolution

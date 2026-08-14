@@ -1,7 +1,7 @@
 package github.jiangbyte.io.sys.modules.audit.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.common.log.audit.AuditOutboxWriter;
 import github.jiangbyte.io.sys.modules.audit.entity.SysOperationAuditOutbox;
@@ -40,7 +40,7 @@ public class DbAuditOutboxWriter implements AuditOutboxWriter {
             row.setAttempts(0);
             row.setCreatedAt(OffsetDateTime.now());
             outboxMapper.insert(row);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Failed to serialize audit event for outbox", e);
         } catch (Exception e) {
             log.error("Failed to write audit outbox", e);

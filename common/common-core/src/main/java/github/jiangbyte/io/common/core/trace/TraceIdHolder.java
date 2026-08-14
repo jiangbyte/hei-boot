@@ -1,6 +1,6 @@
 package github.jiangbyte.io.common.core.trace;
 
-import java.util.UUID;
+import cn.hutool.core.util.IdUtil;
 
 /**
  * 请求链路 TraceId 的 ThreadLocal 持有器。
@@ -19,7 +19,7 @@ public final class TraceIdHolder {
     public static String get() {
         String traceId = TRACE_ID.get();
         if (traceId == null || traceId.isBlank()) {
-            traceId = UUID.randomUUID().toString().replace("-", "");
+            traceId = IdUtil.simpleUUID();
             TRACE_ID.set(traceId);
         }
         return traceId;

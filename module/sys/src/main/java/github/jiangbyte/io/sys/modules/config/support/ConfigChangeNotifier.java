@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.UUID;
+import cn.hutool.core.util.IdUtil;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class ConfigChangeNotifier {
 
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
-    private final String instanceId = UUID.randomUUID().toString().replace("-", "");
+    private final String instanceId = IdUtil.simpleUUID();
     private final AtomicReference<Consumer<Void>> invalidateHandler = new AtomicReference<>();
 
     private RTopic topic;

@@ -1,6 +1,6 @@
 package github.jiangbyte.io.common.log.audit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.log.config.HeiLogProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

@@ -1,8 +1,6 @@
 package github.jiangbyte.io.common.log.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.log.audit.AuditEventHandler;
 import github.jiangbyte.io.common.log.audit.AuditEventPublisher;
 import github.jiangbyte.io.common.log.audit.RedisAuditEventConsumer;
@@ -33,10 +31,9 @@ public class RedisAuditAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(ObjectMapper.class)
     public ObjectMapper auditObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return mapper;
+        // Jackson 3 databind 内置 java.time 支持（JavaTimeInitializer），默认按 ISO-8601 字符串序列化时间，
+        // 无需注册 JSR-310 模块，也无 WRITE_DATES_AS_TIMESTAMPS 开关
+        return new ObjectMapper();
     }
 
     @Bean
