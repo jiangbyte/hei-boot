@@ -25,7 +25,7 @@ public class HeiLoggingProperties {
     private String service = "";
 
     /** service_version 字段。 */
-    private String serviceVersion = "0.1.0-SNAPSHOT";
+    private String serviceVersion = "1.0.0-beta";
 
     /** 日志 MDC/字段脱敏键名（小写匹配，含连字符/下划线变体）。 */
     private List<String> redactKeys = new ArrayList<>(List.of(

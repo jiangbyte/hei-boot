@@ -25,7 +25,7 @@ public class HeiStructuredLoggingJsonMembersCustomizer implements StructuredLogg
         if (!StringUtils.hasText(service)) {
             service = environment.getProperty("spring.application.name", "hei-boot");
         }
-        String version = environment.getProperty("hei.logging.service-version", "0.1.0-SNAPSHOT");
+        String version = environment.getProperty("hei.logging.service-version", "1.0.0-beta");
         String[] profiles = environment.getActiveProfiles();
         String environmentName = profiles.length > 0
                 ? profiles[0]

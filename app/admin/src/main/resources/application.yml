@@ -141,7 +141,7 @@ hei:
     # true → Logstash JSON；false → 键值控制台（对齐 hei-fastapi LOG_JSON）
     json: ${LOG_JSON:true}
     service: ${HEI_LOGGING_SERVICE:${spring.application.name}}
-    service-version: ${HEI_LOGGING_SERVICE_VERSION:0.1.0-SNAPSHOT}
+    service-version: ${HEI_LOGGING_SERVICE_VERSION:1.0.0-beta}
     redact-keys: ${HEI_LOGGING_REDACT_KEYS:password,secret,cryptoKey,crypto-key,accessKey,access-key,privateKey,private-key,accessToken,refreshToken,idToken,apiToken,authToken}
   log:
     audit:
