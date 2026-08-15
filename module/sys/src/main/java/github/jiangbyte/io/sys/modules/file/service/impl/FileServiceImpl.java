@@ -26,6 +26,7 @@ import github.jiangbyte.io.sys.modules.storage.StorageEngineFactory;
 import github.jiangbyte.io.sys.modules.storage.StorageSettingsResolver;
 import github.jiangbyte.io.sys.modules.storage.StorageSettingsResolverImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ import cn.hutool.core.util.IdUtil;
  *
  * Author: Charlie
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> implements FileService {
@@ -75,7 +77,18 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         for (List<String> batch : BatchPartition.partition(ids)) {
             List<SysFile> files = getBaseMapper().selectByIds(batch);
             for (SysFile file : files) {
-                storageFor(file).delete(file.getObjectName());
+                // object_name 可能存了 URL/路径形式，删除前统一转纯 key
+                String objectKey = fileAccessUrls.toObjectKey(file.getObjectName());
+                if (objectKey == null) {
+                    continue;
+                }
+                // 存储删除失败不阻断元数据清理（残留/存储不可达时仍可删除库记录），仅记录警告
+                try {
+                    storageFor(file).delete(objectKey);
+                } catch (Exception ex) {
+                    log.warn("Failed to delete storage object, skip (id={}, object={}, provider={}): {}",
+                            file.getId(), objectKey, file.getStorageProvider(), ex.getMessage());
+                }
             }
             this.removeByIds(batch);
         }
@@ -133,7 +146,11 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     @Override
     public Resource download(String id) {
         SysFile file = detail(id);
-        return storageFor(file).load(file.getObjectName());
+        String objectKey = fileAccessUrls.toObjectKey(file.getObjectName());
+        if (objectKey == null) {
+            throw new BizException(404, "File not found");
+        }
+        return storageFor(file).load(objectKey);
     }
 
     @Override
@@ -144,7 +161,11 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
                 .eq(SysFile::getObjectName, objectName).last("limit 1"));
         // 始终重新生成访问 URL（fastapi get_url → storage.get_object_url）。
         // 库中 url 可能是已过期的 S3 预签名，不能原样返回。
-        return new SysFileUrlResult(objectName, storageFor(file).publicUrl(objectName));
+        String objectKey = fileAccessUrls.toObjectKey(objectName);
+        if (objectKey == null) {
+            throw new BizException(404, "File not found");
+        }
+        return new SysFileUrlResult(objectKey, storageFor(file).publicUrl(objectKey));
     }
 
     @Override
@@ -157,7 +178,11 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
                 StorageSettingsResolverImpl.KEY_PRESIGN_EXPIRE_SECONDS,
                 StorageSettingsResolverImpl.DEFAULT_PRESIGN_EXPIRE_SECONDS);
         Duration ttl = Duration.ofSeconds(Math.max(1, expireSeconds));
-        return new SysFileUrlResult(objectName, storageFor(file).presignedUrl(objectName, ttl));
+        String objectKey = fileAccessUrls.toObjectKey(objectName);
+        if (objectKey == null) {
+            throw new BizException(404, "File not found");
+        }
+        return new SysFileUrlResult(objectKey, storageFor(file).presignedUrl(objectKey, ttl));
     }
 
     @Override
@@ -190,7 +215,11 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
             // 不存在则抛出业务异常
             throw new BizException(404, "File not found");
         }
-        return storageFor(file).load(file.getObjectName());
+        String objectKey = fileAccessUrls.toObjectKey(file.getObjectName());
+        if (objectKey == null) {
+            throw new BizException(404, "File not found");
+        }
+        return storageFor(file).load(objectKey);
     }
 
     @Override
@@ -205,8 +234,17 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         if (file == null) {
             return;
         }
-        // 删存储后删库
-        storageFor(file).delete(objectName);
+        // 删存储后删库（object_name 可能为 URL/路径形式，统一转纯 key）
+        String objectKey = fileAccessUrls.toObjectKey(objectName);
+        if (objectKey != null) {
+            try {
+                storageFor(file).delete(objectKey);
+            } catch (Exception ex) {
+                // 存储删除失败不阻断元数据清理，仅记录警告
+                log.warn("Failed to delete storage object, skip (object={}, provider={}): {}",
+                        objectKey, file.getStorageProvider(), ex.getMessage());
+            }
+        }
         this.removeById(file.getId());
     }
 
@@ -284,7 +322,11 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         if (file == null || !StringUtils.hasText(file.getObjectName())) {
             return file;
         }
-        String resolved = storageFor(file).publicUrl(file.getObjectName());
+        String objectKey = fileAccessUrls.toObjectKey(file.getObjectName());
+        if (objectKey == null) {
+            return file;
+        }
+        String resolved = storageFor(file).publicUrl(objectKey);
         if (StringUtils.hasText(resolved)) {
             file.setUrl(resolved);
         }

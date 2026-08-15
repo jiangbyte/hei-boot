@@ -11,7 +11,9 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -50,7 +52,7 @@ public class S3StorageService implements StorageService {
         }
     }
 
-    /** 删除 S3 对象。 */
+    /** 删除 S3 对象。S3 删除为幂等操作：对象不存在（NoSuchKey/404）视为已删除。 */
     @Override
     public void delete(String objectKey) {
         try {
@@ -58,8 +60,17 @@ public class S3StorageService implements StorageService {
                     .bucket(properties.getS3().getBucket())
                     .key(objectKey)
                     .build());
+        } catch (NoSuchKeyException exception) {
+            // 对象已不存在：幂等删除成功
+        } catch (S3Exception exception) {
+            if (isNotFound(exception)) {
+                // 404/NoSuchBucket 等：视为对象不存在，删除成功
+                return;
+            }
+            throw new BizException(500, "Failed to delete S3 object: " + describe(exception));
         } catch (RuntimeException exception) {
-            throw new BizException(500, "Failed to delete S3 object");
+            String detail = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+            throw new BizException(500, "Failed to delete S3 object: " + detail);
         }
     }
 
@@ -91,6 +102,34 @@ public class S3StorageService implements StorageService {
             expireSeconds = 3600;
         }
         return presignedUrl(key, Duration.ofSeconds(expireSeconds));
+    }
+
+    private static boolean isNotFound(S3Exception exception) {
+        int status = exception.statusCode();
+        if (status == 404) {
+            return true;
+        }
+        String code = exception.awsErrorDetails() == null
+                ? null
+                : exception.awsErrorDetails().errorCode();
+        return code != null && (code.equalsIgnoreCase("NoSuchKey")
+                || code.equalsIgnoreCase("NoSuchBucket")
+                || code.equalsIgnoreCase("NotFound")
+                || code.equalsIgnoreCase("NoSuchObject"));
+    }
+
+    private static String describe(S3Exception exception) {
+        String code = exception.awsErrorDetails() == null
+                ? null
+                : exception.awsErrorDetails().errorCode();
+        String message = exception.getMessage() == null
+                ? exception.getClass().getSimpleName()
+                : exception.getMessage();
+        return code == null ? message : code + " (" + statusCodeLabel(exception.statusCode()) + "): " + message;
+    }
+
+    private static String statusCodeLabel(int status) {
+        return status == 0 ? "unknown" : String.valueOf(status);
     }
 
     private static String normalizeKey(String objectKey) {

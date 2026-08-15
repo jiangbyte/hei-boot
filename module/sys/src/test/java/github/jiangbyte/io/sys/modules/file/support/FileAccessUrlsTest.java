@@ -51,6 +51,19 @@ class FileAccessUrlsTest {
     }
 
     @Test
+    void toObjectKeyNormalizesAllForms() {
+        // 纯 key 原样
+        assertEquals("uploads/a.png", urls.toObjectKey("uploads/a.png"));
+        // 公开路径前缀剥离
+        assertEquals("uploads/a.png", urls.toObjectKey("/api/v1/files/uploads/a.png"));
+        // 完整 URL：提取 path 并剥离公开前缀
+        assertEquals("uploads/a.png", urls.toObjectKey("http://localhost:8000/api/v1/files/uploads/a.png"));
+        // 空值
+        assertNull(urls.toObjectKey(" "));
+        assertNull(urls.toObjectKey(null));
+    }
+
+    @Test
     void resolveFileUrlMatchesFrontendPublicPath() {
         assertEquals("/api/v1/files/uploads/a.png", urls.resolveFileUrl("uploads/a.png"));
         assertEquals(

@@ -73,6 +73,7 @@ class FileServicePublicDownloadTest {
         file.setObjectName("a/b.png");
         file.setStorageProvider("minio");
         when(fileMapper.selectOne(any(Wrapper.class))).thenReturn(file);
+        when(fileAccessUrls.toObjectKey("a/b.png")).thenReturn("a/b.png");
         when(storageEngineFactory.get("minio")).thenReturn(storageService);
         when(storageService.load("a/b.png")).thenReturn(new ByteArrayResource("ok".getBytes()));
 

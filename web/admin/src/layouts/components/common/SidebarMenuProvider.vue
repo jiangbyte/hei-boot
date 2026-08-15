@@ -48,10 +48,34 @@ const sidebarMenuThemeOverrides: GlobalThemeOverrides = {
 </script>
 
 <template>
-  <n-config-provider
-    :theme="darkTheme"
-    :theme-overrides="sidebarMenuThemeOverrides"
-  >
-    <slot />
-  </n-config-provider>
+  <div class="sidebar-menu-provider">
+    <n-config-provider
+      :theme="darkTheme"
+      :theme-overrides="sidebarMenuThemeOverrides"
+    >
+      <slot />
+    </n-config-provider>
+  </div>
 </template>
+
+<style scoped>
+/*
+ * 撑满 .pro-layout__sidebar（flex column）：
+ *  · 本组件根 div 作为 flex 子级占满；
+ *  · Naive ConfigProvider 不透传 attrs，故 deep 命中其渲染的 .n-config-provider 撑满；
+ *  · 内层 n-scrollbar 由 layouts/index.vue 的 .sidebar-menu-scrollbar 接管 flex:1 滚动。
+ */
+.sidebar-menu-provider {
+  min-height: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-menu-provider :deep(.n-config-provider) {
+  min-height: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+}
+</style>

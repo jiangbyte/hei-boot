@@ -93,6 +93,37 @@ public class FileAccessUrls {
         return origin + path;
     }
 
+    /**
+     * 把任意形式的对象引用转成纯 object key（用于存储引擎删除/加载）：
+     * 支持 纯 key（uploads/2024/01/x.jpg）、/api/v1/files/... 路径、完整 http(s) URL。
+     */
+    public String toObjectKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String raw = value.trim();
+        String pathOnly;
+        try {
+            pathOnly = raw.contains("://") ? URI.create(raw).getPath() : raw;
+        } catch (IllegalArgumentException ex) {
+            pathOnly = raw;
+        }
+        if (pathOnly == null) {
+            return null;
+        }
+        pathOnly = pathOnly.replace('\\', '/');
+        // 去掉公开路径前缀（/api/v1/files/...）
+        String publicPath = defaultPublicPath().replaceAll("/+$", "");
+        String prefix = publicPath + "/";
+        if (pathOnly.startsWith(prefix)) {
+            pathOnly = pathOnly.substring(prefix.length());
+        } else if (pathOnly.equals(publicPath)) {
+            return null;
+        }
+        String key = pathOnly.replaceAll("^/+", "");
+        return StringUtils.hasText(key) ? key : null;
+    }
+
     public String resolveFileUrl(String value) {
         String objectName = normalizeObjectName(value);
         if (!StringUtils.hasText(objectName)) {

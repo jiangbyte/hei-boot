@@ -142,6 +142,7 @@ const showMobileDrawer = ref(false)
   overflow: hidden;
 }
 
+/* 滚动容器：SidebarMenuProvider 已撑满 sidebar，这里让 scrollbar 占满并滚动 */
 .sidebar-menu-scrollbar {
   min-height: 0;
   flex: 1 1 0;
