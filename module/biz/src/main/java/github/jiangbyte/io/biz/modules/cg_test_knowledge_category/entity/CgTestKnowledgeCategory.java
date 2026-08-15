@@ -1,20 +1,21 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity;
 
+/**
+ * KnowledgeCategory实体，对应表 {@code cg_test_knowledge_category}。
+ *
+ * Author: Charlie
+ */
+
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 知识分类实体，对应表 {@code cg_test_knowledge_category}；支持父子层级与状态。
- *
- * Author: Charlie
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "cg_test_knowledge_category", autoResultMap = true)

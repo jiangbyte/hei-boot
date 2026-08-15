@@ -12,39 +12,27 @@ import cn.hutool.core.lang.tree.Tree;
 import java.util.List;
 
 /**
- * 测试目录领域服务：目录 CRUD、分页与按关键字构建树。
+ * CgTestCatalog 服务接口：CRUD与树查询。
  *
  * Author: Charlie
  */
 public interface CgTestCatalogService extends IService<CgTestCatalog> {
 
-    /**
-     * 创建测试目录节点。
-     */
+    /** 创建。 */
     void create(CgTestCatalogAddParam param);
 
-    /**
-     * 更新测试目录；不存在则 404。
-     */
+    /** 更新。 */
     void update(CgTestCatalogEditParam param);
 
-    /**
-     * 按 ID 列表批量删除目录。
-     */
+    /** 批量删除。 */
     void delete(IdsParam param);
 
-    /**
-     * 按 ID 查询目录详情。
-     */
+    /** 查询详情。 */
     CgTestCatalog detail(String id);
 
-    /**
-     * 按编码/名称/分类/状态分页查询目录。
-     */
+    /** 分页查询。 */
     Page<CgTestCatalog> page(CgTestCatalogPageParam param);
 
-    /**
-     * 按关键字查询并构建目录树。
-     */
+    /** 树形查询。 */
     List<Tree<String>> tree(String keyword);
 }

@@ -4,9 +4,10 @@
  * Author: ${plan.author}
  * 生成时间：${generated_at}
  */
+import { API_PREFIX } from '@/constants/api'
 import { http } from '@/utils'
 
-const prefix = '/api/v1/admin${plan.api_prefix}'
+const prefix = `${r"${API_PREFIX}"}${plan.api_prefix}`
 
 export function page(params: any) {
   return http.get<any>(`${r"${prefix}"}/page`, { params })

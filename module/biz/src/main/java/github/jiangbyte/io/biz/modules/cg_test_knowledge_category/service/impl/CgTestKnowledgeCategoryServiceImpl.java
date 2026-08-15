@@ -1,14 +1,11 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
-import github.jiangbyte.io.common.mybatis.datascope.OwnerDeptDataScope;
-import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.convert.CgTestKnowledgeCategoryConvert;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity.CgTestKnowledgeCategory;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.mapper.CgTestKnowledgeCategoryMapper;
@@ -37,7 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * {@link github.jiangbyte.io.biz.modules.cg_test_knowledge_category.service.CgTestKnowledgeCategoryService} 实现：分类与文档持久化、分页与树构建。
+ * KnowledgeCategory服务实现：维护与查询。
  *
  * Author: Charlie
  */
@@ -45,17 +42,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowledgeCategoryMapper, CgTestKnowledgeCategory> implements CgTestKnowledgeCategoryService {
 
-    private static final String PERMISSION_KEY = "biz:cgtestknowledgecategory:page";
-
     private final CgTestKnowledgeCategoryConvert cgTestKnowledgeCategoryConvert;
     private final CgTestKnowledgeDocMapper cgTestKnowledgeDocMapper;
     private final CgTestKnowledgeDocConvert cgTestKnowledgeDocConvert;
-    private final OwnerDeptDataScope ownerDeptDataScope;
 
     @Override
     @Transactional
     public void create(CgTestKnowledgeCategoryAddParam param) {
-        // 参数转实体后保存
+        // 入参转实体并持久化
         CgTestKnowledgeCategory entity = cgTestKnowledgeCategoryConvert.toEntity(param);
         this.save(entity);
     }
@@ -63,13 +57,13 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @Transactional
     public void update(CgTestKnowledgeCategoryEditParam param) {
-        // 加载实体；不存在则 404
-        // 覆盖字段后更新
+        // 按主键加载
         CgTestKnowledgeCategory entity = this.getById(param.getId());
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestKnowledgeCategory not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
+        // 合并编辑入参并更新
         cgTestKnowledgeCategoryConvert.update(param, entity);
         this.updateById(entity);
     }
@@ -77,48 +71,41 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @Transactional
     public void delete(IdsParam param) {
-        // 空列表直接返回；否则按 ID 删除
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
-        List<CgTestKnowledgeCategory> entities = this.listByIds(param.getIds());
-        DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
-        for (CgTestKnowledgeCategory entity : entities) {
-            ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), scope);
-        }
+        // 批量删除
         this.removeByIds(param.getIds());
     }
 
     @Override
     @ReadDataSource
     public CgTestKnowledgeCategory detail(String id) {
-        // 按 ID 查询，不存在则 404
+        // 按主键加载
         CgTestKnowledgeCategory entity = this.getById(id);
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestKnowledgeCategory not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         return entity;
     }
 
     @Override
     @ReadDataSource
     public Page<CgTestKnowledgeCategory> page(CgTestKnowledgeCategoryPageParam param) {
-        // 按编码/名称/状态分页查询
-        LambdaQueryWrapper<CgTestKnowledgeCategory> wrapper = Wrappers.<CgTestKnowledgeCategory>lambdaQuery()
-                .like(StringUtils.hasText(param.getCode()), CgTestKnowledgeCategory::getCode, param.getCode())
-                .like(StringUtils.hasText(param.getName()), CgTestKnowledgeCategory::getName, param.getName())
-                .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestKnowledgeCategory::getStatus, param.getStatus())
-                .orderByDesc(CgTestKnowledgeCategory::getCreatedAt);
-        ownerDeptDataScope.apply(wrapper, PERMISSION_KEY, CgTestKnowledgeCategory::getCreatedBy, CgTestKnowledgeCategory::getOwnerDeptId);
-        return this.page(new Page<>(param.getCurrent(), param.getSize()), wrapper);
+        // 组装条件并分页查询
+        return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
+                Wrappers.<CgTestKnowledgeCategory>lambdaQuery()
+                        .like(StringUtils.hasText(param.getCode()), CgTestKnowledgeCategory::getCode, param.getCode())
+                        .like(StringUtils.hasText(param.getName()), CgTestKnowledgeCategory::getName, param.getName())
+                        .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestKnowledgeCategory::getStatus, param.getStatus())
+                        .orderByDesc(CgTestKnowledgeCategory::getCreatedAt));
     }
 
     @Override
     @ReadDataSource
     public List<Tree<String>> tree(String keyword) {
-        // 按关键字查询分类列表
-        // 缺失父节点时挂到根并构建树
+        // 查询节点列表
         List<CgTestKnowledgeCategory> rows = this.list(Wrappers.<CgTestKnowledgeCategory>lambdaQuery()
                 .like(StringUtils.hasText(keyword), CgTestKnowledgeCategory::getName, keyword)
                 .orderByAsc(CgTestKnowledgeCategory::getCreatedAt));
@@ -126,6 +113,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
             return List.of();
         }
 
+        // 构建树结构
         Set<String> ids = rows.stream().map(CgTestKnowledgeCategory::getId).collect(Collectors.toSet());
         TreeNodeConfig config = new TreeNodeConfig();
         config.setIdKey("id");
@@ -153,7 +141,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @Transactional
     public void childCreate(CgTestKnowledgeDocAddParam param) {
-        // 文档参数转实体后插入
+        // 入参转子实体并插入
         CgTestKnowledgeDoc entity = cgTestKnowledgeDocConvert.toEntity(param);
         cgTestKnowledgeDocMapper.insert(entity);
     }
@@ -161,12 +149,13 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @Transactional
     public void childUpdate(CgTestKnowledgeDocEditParam param) {
-        // 加载文档；不存在则 404
-        // 覆盖字段后更新
+        // 按主键加载子实体
         CgTestKnowledgeDoc entity = cgTestKnowledgeDocMapper.selectById(param.getId());
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestKnowledgeDoc not found");
         }
+        // 合并编辑入参并更新
         cgTestKnowledgeDocConvert.update(param, entity);
         cgTestKnowledgeDocMapper.updateById(entity);
     }
@@ -174,19 +163,20 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @Transactional
     public void childDelete(IdsParam param) {
-        // 空列表直接返回；否则按 ID 删除文档
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
-        cgTestKnowledgeDocMapper.deleteByIds(param.getIds());
+        // 批量删除子实体
+        cgTestKnowledgeDocMapper.deleteBatchIds(param.getIds());
     }
 
     @Override
     @ReadDataSource
     public CgTestKnowledgeDoc childDetail(String id) {
-        // 按 ID 查询文档，不存在则 404
+        // 按主键加载子实体
         CgTestKnowledgeDoc entity = cgTestKnowledgeDocMapper.selectById(id);
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestKnowledgeDoc not found");
         }
         return entity;
@@ -195,7 +185,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
     @Override
     @ReadDataSource
     public Page<CgTestKnowledgeDoc> childPage(CgTestKnowledgeDocPageParam param) {
-        // 按分类 ID 分页查询文档
+        // 按外键分页查询子实体
         return cgTestKnowledgeDocMapper.selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<CgTestKnowledgeDoc>lambdaQuery()
                         .eq(StringUtils.hasText(param.getCategoryId()), CgTestKnowledgeDoc::getCategoryId, param.getCategoryId())

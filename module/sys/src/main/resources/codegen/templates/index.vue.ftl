@@ -11,8 +11,10 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ${api_export_name} } from '@/api'
+<#if plan.gen_type != "TREE">
 import { readPageMeta } from '@/utils/wire'
-import { <#if main.has_table_dict || (sub?? && sub.has_table_dict)>createTagColor, dictTypeColor, dictTypeData, displayValue, </#if>formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+</#if>
+import { <#if main.has_query_dict || (sub?? && sub.has_query_dict)>dictList, </#if><#if main.has_table_dict || (sub?? && sub.has_table_dict)>createTagColor, dictTypeColor, dictTypeData, displayValue, </#if>formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon<#if plan.gen_type == "LEFT_TREE_TABLE">, NInput, NInputGroup</#if><#if main.has_table_tag || (sub?? && sub.has_table_tag)>, NTag</#if> } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -20,26 +22,28 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import ChildModalDetail from './components/children/ChildModalDetail.vue'
 import ChildModalForm from './components/children/ChildModalForm.vue'
 </#if>
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+</#if>
 <#if has_sub && (sub??)>
 const childFormModalRef = ref<any>(null)
 const childDetailModalRef = ref<any>(null)
 </#if>
 const state = reactive({
-<#if plan.gen_type != "TREE">
+<#if plan.gen_type != "TREE" && plan.gen_type != "LEFT_TREE_TABLE">
   rows: [] as any[],
   total: 0,
   loading: false,
-</#if>
-  searchValues: {} as any,
-  checkedRowKeys: [] as string[],
-<#if plan.gen_type != "TREE">
   page: 1,
   pageSize: 20,
+</#if>
+<#if plan.gen_type != "LEFT_TREE_TABLE">
+  searchValues: {} as any,
+  checkedRowKeys: [] as string[],
 </#if>
 <#if has_tree>
   treeRows: [] as any[],
@@ -64,7 +68,9 @@ const state = reactive({
 </#if>
 })
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+</#if>
 <#if plan.gen_type == "LEFT_TREE_TABLE">
 const treeData = computed(() => buildTreeNodes(state.treeRows))
 <#elseif plan.gen_type == "TREE">
@@ -75,6 +81,7 @@ const hasChildCheckedRows = computed(() => state.childCheckedRowKeys.length > 0)
 const canCreateChild = computed(() => Boolean(state.selectedMasterId))
 </#if>
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
   onSubmit(values) {
@@ -98,13 +105,25 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
 <#list main.query_fields as field>
+<#if field.dict_code?? && field.dict_code?has_content>
+  {
+    title: '${field.label}',
+    path: '${field.name}',
+    field: 'select',
+    fieldProps: {
+      options: dictList('${field.dict_code}'),
+    },
+  },
+<#else>
   { title: '${field.label}', path: '${field.name}', field: 'input' },
+</#if>
 <#else>
   { title: '关键词', path: 'keyword', field: 'input' },
 </#list>
 ])
+</#if>
 
-<#if plan.gen_type != "TREE">
+<#if plan.gen_type != "TREE" && plan.gen_type != "LEFT_TREE_TABLE">
 const pagination = computed<PaginationProps>(() => ({
   page: state.page,
   pageSize: state.pageSize,
@@ -141,7 +160,18 @@ const childSearchForm = createProSearchForm<any>({
 
 const childSearchColumns = computed<ProSearchFormColumns<any>>(() => [
 <#list sub.query_fields as field>
+<#if field.dict_code?? && field.dict_code?has_content>
+  {
+    title: '${field.label}',
+    path: '${field.name}',
+    field: 'select',
+    fieldProps: {
+      options: dictList('${field.dict_code}'),
+    },
+  },
+<#else>
   { title: '${field.label}', path: '${field.name}', field: 'input' },
+</#if>
 <#else>
   { title: '关键词', path: 'keyword', field: 'input' },
 </#list>
@@ -166,6 +196,7 @@ const childPagination = computed<PaginationProps>(() => ({
 }))
 </#if>
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   { type: 'selection', fixed: 'left' },
 <#list main.table_fields as field><#if (field?index gte 8)><#break></#if>
@@ -230,6 +261,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
 ])
+</#if>
 <#if has_sub && (sub??)>
 
 const childColumns = computed<ProDataTableColumns<any>>(() => [
@@ -305,7 +337,7 @@ onMounted(() => {
 </#if>
 })
 
-<#if plan.gen_type != "TREE">
+<#if plan.gen_type != "TREE" && plan.gen_type != "LEFT_TREE_TABLE">
 async function fetchPage() {
   state.loading = true
   try {
@@ -413,7 +445,7 @@ function equalsValue(source: unknown, target: unknown) {
 }
 </#if>
 </#if>
-<#if has_sub && (sub??)>
+<#if plan.gen_type == "MASTER_DETAIL" && has_sub && (sub??)>
 
 async function selectMaster(id: string) {
   state.selectedMasterId = id
@@ -424,6 +456,8 @@ async function selectMaster(id: string) {
   state.childPage = 1
   await fetchChildPage()
 }
+</#if>
+<#if has_sub && (sub??)>
 
 async function fetchChildPage() {
   state.childLoading = true
@@ -447,6 +481,7 @@ async function fetchChildPage() {
 }
 </#if>
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
 }
@@ -458,6 +493,7 @@ function openCreateModal() {
 function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
+</#if>
 <#if has_sub && (sub??)>
 
 function openChildDetailModal(id: string) {
@@ -473,9 +509,11 @@ function openChildEditModal(id: string) {
 }
 </#if>
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 function handleCheckedRowKeys(keys: Array<string | number>) {
   state.checkedRowKeys = keys.map(String)
 }
+</#if>
 <#if has_sub && (sub??)>
 
 function handleChildCheckedRowKeys(keys: Array<string | number>) {
@@ -483,6 +521,7 @@ function handleChildCheckedRowKeys(keys: Array<string | number>) {
 }
 </#if>
 
+<#if plan.gen_type != "LEFT_TREE_TABLE">
 function confirmDelete(value: string | string[]) {
   const ids = Array.isArray(value) ? value : [value]
   if (!ids.length) {
@@ -516,6 +555,7 @@ async function deleteRows(ids: string[]) {
   await fetchPage()
 </#if>
 }
+</#if>
 <#if has_sub && (sub??)>
 
 function confirmChildDelete(value: string | string[]) {

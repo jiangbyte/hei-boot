@@ -1,15 +1,17 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.param;
 
+/**
+ * 创建知识文档入参。
+ *
+ * Author: Charlie
+ */
+
 import lombok.Data;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-/**
- * 创建知识文档的请求参数。
- *
- * Author: Charlie
- */
 @Data
 public class CgTestKnowledgeDocAddParam {
     @NotBlank
@@ -29,8 +31,11 @@ public class CgTestKnowledgeDocAddParam {
     @NotBlank
     private String author;
     private OffsetDateTime publishedAt;
+    @NotNull
     private Integer viewCount;
+    @NotNull
     private Integer sort;
+    @NotNull
     private Boolean isTop;
     private java.util.Map<String, Object> settings;
     private java.util.Map<String, Object> extra;

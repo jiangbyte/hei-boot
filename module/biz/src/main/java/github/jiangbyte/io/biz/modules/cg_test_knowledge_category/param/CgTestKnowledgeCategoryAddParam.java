@@ -1,14 +1,16 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.param;
 
-import lombok.Data;
-import java.util.Map;
-import jakarta.validation.constraints.NotBlank;
-
 /**
- * 创建知识分类的请求参数。
+ * 创建KnowledgeCategory入参。
  *
  * Author: Charlie
  */
+
+import lombok.Data;
+import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 @Data
 public class CgTestKnowledgeCategoryAddParam {
     @NotBlank
@@ -19,7 +21,9 @@ public class CgTestKnowledgeCategoryAddParam {
     private String name;
     @NotBlank
     private String status;
+    @NotNull
     private Integer sort;
+    @NotNull
     private Boolean isVisible;
     @NotBlank
     private String description;

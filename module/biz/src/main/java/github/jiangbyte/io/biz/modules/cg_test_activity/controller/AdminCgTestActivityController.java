@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 管理端测试活动 API：活动的创建、更新、删除、详情与分页查询。
+ * 管理端 CgTestActivity API：CRUD。
  *
  * Author: Charlie
  */
@@ -36,7 +36,7 @@ public class AdminCgTestActivityController {
 
     private final CgTestActivityService cgTestActivityService;
 
-    /** 创建测试活动。 */
+    /** 创建。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/create")
     @SaCheckPermission(value = "biz:cgtestactivity:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestactivity", action = "create")
@@ -45,7 +45,7 @@ public class AdminCgTestActivityController {
         return ApiResponse.ok();
     }
 
-    /** 更新测试活动。 */
+    /** 更新。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/update")
     @SaCheckPermission(value = "biz:cgtestactivity:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestactivity", action = "update")
@@ -54,7 +54,7 @@ public class AdminCgTestActivityController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除测试活动。 */
+    /** 批量删除。 */
     @PostMapping("/v1/admin/biz/cg-test-activity/delete")
     @SaCheckPermission(value = "biz:cgtestactivity:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestactivity", action = "delete")
@@ -63,14 +63,14 @@ public class AdminCgTestActivityController {
         return ApiResponse.ok();
     }
 
-    /** 查询测试活动详情。 */
+    /** 查询详情。 */
     @GetMapping("/v1/admin/biz/cg-test-activity/detail")
     @SaCheckPermission(value = "biz:cgtestactivity:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestActivity> detail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestActivityService.detail(param.getId()));
     }
 
-    /** 分页查询测试活动。 */
+    /** 分页查询。 */
     @GetMapping("/v1/admin/biz/cg-test-activity/page")
     @SaCheckPermission(value = "biz:cgtestactivity:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestActivity>> page(@Valid @ModelAttribute CgTestActivityPageParam param) {

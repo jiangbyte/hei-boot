@@ -1,8 +1,18 @@
 package ${basePackage}.entity;
 
+<#if businessName?? && businessName?has_content>
 /**
+ * ${businessName}实体，对应表 {@code ${tableName}}。
+ *
  * Author: ${author}
- **/
+ */
+<#else>
+/**
+ * 实体，对应表 {@code ${tableName}}。
+ *
+ * Author: ${author}
+ */
+</#if>
 
 import com.baomidou.mybatisplus.annotation.TableName;
 <#if hasJson || (hasTree && !isSubEntity)>

@@ -1,14 +1,11 @@
 package github.jiangbyte.io.biz.modules.cg_test_order.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
-import github.jiangbyte.io.common.mybatis.datascope.OwnerDeptDataScope;
-import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.biz.modules.cg_test_order.convert.CgTestOrderConvert;
 import github.jiangbyte.io.biz.modules.cg_test_order.entity.CgTestOrder;
 import github.jiangbyte.io.biz.modules.cg_test_order.mapper.CgTestOrderMapper;
@@ -30,7 +27,7 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 
 /**
- * {@link github.jiangbyte.io.biz.modules.cg_test_order.service.CgTestOrderService} 实现：订单与明细持久化及条件分页查询。
+ * Order服务实现：维护与查询。
  *
  * Author: Charlie
  */
@@ -38,17 +35,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTestOrder> implements CgTestOrderService {
 
-    private static final String PERMISSION_KEY = "biz:cgtestorder:page";
-
     private final CgTestOrderConvert cgTestOrderConvert;
     private final CgTestOrderItemMapper cgTestOrderItemMapper;
     private final CgTestOrderItemConvert cgTestOrderItemConvert;
-    private final OwnerDeptDataScope ownerDeptDataScope;
 
     @Override
     @Transactional
     public void create(CgTestOrderAddParam param) {
-        // 参数转实体后保存
+        // 入参转实体并持久化
         CgTestOrder entity = cgTestOrderConvert.toEntity(param);
         this.save(entity);
     }
@@ -56,13 +50,13 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
     @Override
     @Transactional
     public void update(CgTestOrderEditParam param) {
-        // 加载实体；不存在则 404
-        // 覆盖字段后更新
+        // 按主键加载
         CgTestOrder entity = this.getById(param.getId());
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestOrder not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
+        // 合并编辑入参并更新
         cgTestOrderConvert.update(param, entity);
         this.updateById(entity);
     }
@@ -70,49 +64,43 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
     @Override
     @Transactional
     public void delete(IdsParam param) {
-        // 空列表直接返回；否则按 ID 删除
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
-        List<CgTestOrder> entities = this.listByIds(param.getIds());
-        DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
-        for (CgTestOrder entity : entities) {
-            ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), scope);
-        }
+        // 批量删除
         this.removeByIds(param.getIds());
     }
 
     @Override
     @ReadDataSource
     public CgTestOrder detail(String id) {
-        // 按 ID 查询，不存在则 404
+        // 按主键加载
         CgTestOrder entity = this.getById(id);
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestOrder not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         return entity;
     }
 
     @Override
     @ReadDataSource
     public Page<CgTestOrder> page(CgTestOrderPageParam param) {
-        // 按订单号/客户等条件分页查询
-        LambdaQueryWrapper<CgTestOrder> wrapper = Wrappers.<CgTestOrder>lambdaQuery()
-                .like(StringUtils.hasText(param.getOrderNo()), CgTestOrder::getOrderNo, param.getOrderNo())
-                .like(StringUtils.hasText(param.getName()), CgTestOrder::getName, param.getName())
-                .like(StringUtils.hasText(param.getCustomerName()), CgTestOrder::getCustomerName, param.getCustomerName())
-                .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestOrder::getStatus, param.getStatus())
-                .like(StringUtils.hasText(param.getType()), CgTestOrder::getType, param.getType())
-                .orderByDesc(CgTestOrder::getCreatedAt);
-        ownerDeptDataScope.apply(wrapper, PERMISSION_KEY, CgTestOrder::getCreatedBy, CgTestOrder::getOwnerDeptId);
-        return this.page(new Page<>(param.getCurrent(), param.getSize()), wrapper);
+        // 组装条件并分页查询
+        return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
+                Wrappers.<CgTestOrder>lambdaQuery()
+                        .like(StringUtils.hasText(param.getOrderNo()), CgTestOrder::getOrderNo, param.getOrderNo())
+                        .like(StringUtils.hasText(param.getName()), CgTestOrder::getName, param.getName())
+                        .like(StringUtils.hasText(param.getCustomerName()), CgTestOrder::getCustomerName, param.getCustomerName())
+                        .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestOrder::getStatus, param.getStatus())
+                        .like(StringUtils.hasText(param.getType()), CgTestOrder::getType, param.getType())
+                        .orderByDesc(CgTestOrder::getCreatedAt));
     }
 
     @Override
     @Transactional
     public void childCreate(CgTestOrderItemAddParam param) {
-        // 明细参数转实体后插入
+        // 入参转子实体并插入
         CgTestOrderItem entity = cgTestOrderItemConvert.toEntity(param);
         cgTestOrderItemMapper.insert(entity);
     }
@@ -120,13 +108,13 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
     @Override
     @Transactional
     public void childUpdate(CgTestOrderItemEditParam param) {
-        // 加载明细；不存在则 404
-        // 覆盖字段后更新
+        // 按主键加载子实体
         CgTestOrderItem entity = cgTestOrderItemMapper.selectById(param.getId());
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestOrderItem not found");
         }
-        assertParentOrderAccessible(entity.getOrderId());
+        // 合并编辑入参并更新
         cgTestOrderItemConvert.update(param, entity);
         cgTestOrderItemMapper.updateById(entity);
     }
@@ -134,32 +122,20 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
     @Override
     @Transactional
     public void childDelete(IdsParam param) {
-        // 空列表直接返回；否则按 ID 删除明细
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
-        List<CgTestOrderItem> items = cgTestOrderItemMapper.selectByIds(param.getIds());
-        List<String> orderIds = items.stream()
-                .map(CgTestOrderItem::getOrderId)
-                .filter(StringUtils::hasText)
-                .distinct()
-                .toList();
-        if (!orderIds.isEmpty()) {
-            List<CgTestOrder> orders = this.listByIds(orderIds);
-            DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
-            for (CgTestOrder order : orders) {
-                ownerDeptDataScope.assertAccessible(order.getCreatedBy(), order.getOwnerDeptId(), scope);
-            }
-        }
-        cgTestOrderItemMapper.deleteByIds(param.getIds());
+        // 批量删除子实体
+        cgTestOrderItemMapper.deleteBatchIds(param.getIds());
     }
 
     @Override
     @ReadDataSource
     public CgTestOrderItem childDetail(String id) {
-        // 按 ID 查询明细，不存在则 404
+        // 按主键加载子实体
         CgTestOrderItem entity = cgTestOrderItemMapper.selectById(id);
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestOrderItem not found");
         }
         return entity;
@@ -168,21 +144,10 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
     @Override
     @ReadDataSource
     public Page<CgTestOrderItem> childPage(CgTestOrderItemPageParam param) {
-        // 按订单 ID 分页查询明细
+        // 按外键分页查询子实体
         return cgTestOrderItemMapper.selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<CgTestOrderItem>lambdaQuery()
                         .eq(StringUtils.hasText(param.getOrderId()), CgTestOrderItem::getOrderId, param.getOrderId())
                         .orderByDesc(CgTestOrderItem::getCreatedAt));
-    }
-
-    private void assertParentOrderAccessible(String orderId) {
-        if (!StringUtils.hasText(orderId)) {
-            return;
-        }
-        CgTestOrder order = this.getById(orderId);
-        if (order == null) {
-            throw new BizException(404, "CgTestOrder not found");
-        }
-        ownerDeptDataScope.assertAccessible(order.getCreatedBy(), order.getOwnerDeptId(), PERMISSION_KEY);
     }
 }

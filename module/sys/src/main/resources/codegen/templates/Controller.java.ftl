@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.satoken.StpKit;
 import ${basePackage}.entity.${entityName};
 import ${paramPackage}.${entityName}AddParam;
@@ -47,6 +48,7 @@ public class Admin${entityName}Controller {
     /** 创建。 */
     @PostMapping("/v1/admin${apiPrefix}/create")
     @SaCheckPermission(value = "${permissionPrefix}:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "create")
     public ApiResponse<Void> create(@Valid @RequestBody ${entityName}AddParam param) {
         ${varName}Service.create(param);
         return ApiResponse.ok();
@@ -55,6 +57,7 @@ public class Admin${entityName}Controller {
     /** 更新。 */
     @PostMapping("/v1/admin${apiPrefix}/update")
     @SaCheckPermission(value = "${permissionPrefix}:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "update")
     public ApiResponse<Void> update(@Valid @RequestBody ${entityName}EditParam param) {
         ${varName}Service.update(param);
         return ApiResponse.ok();
@@ -63,6 +66,7 @@ public class Admin${entityName}Controller {
     /** 批量删除。 */
     @PostMapping("/v1/admin${apiPrefix}/delete")
     @SaCheckPermission(value = "${permissionPrefix}:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "delete")
     public ApiResponse<Void> delete(@Valid @RequestBody IdsParam param) {
         ${varName}Service.delete(param);
         return ApiResponse.ok();
@@ -85,7 +89,7 @@ public class Admin${entityName}Controller {
 
     /** 树形查询。 */
     @GetMapping("/v1/admin${apiPrefix}/tree")
-    @SaCheckPermission(value = "${permissionPrefix}:list", type = StpKit.TYPE_ADMIN)
+    @SaCheckPermission(value = "${permissionPrefix}:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {
         return ApiResponse.ok(${varName}Service.tree(keyword));
     }
@@ -95,6 +99,7 @@ public class Admin${entityName}Controller {
     /** 创建子项。 */
     @PostMapping("/v1/admin${apiPrefix}/children/create")
     @SaCheckPermission(value = "${permissionPrefix}:create", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "create")
     public ApiResponse<Void> childCreate(@Valid @RequestBody ${subEntityName}AddParam param) {
         ${varName}Service.childCreate(param);
         return ApiResponse.ok();
@@ -103,6 +108,7 @@ public class Admin${entityName}Controller {
     /** 更新子项。 */
     @PostMapping("/v1/admin${apiPrefix}/children/update")
     @SaCheckPermission(value = "${permissionPrefix}:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "update")
     public ApiResponse<Void> childUpdate(@Valid @RequestBody ${subEntityName}EditParam param) {
         ${varName}Service.childUpdate(param);
         return ApiResponse.ok();
@@ -111,6 +117,7 @@ public class Admin${entityName}Controller {
     /** 删除子项。 */
     @PostMapping("/v1/admin${apiPrefix}/children/delete")
     @SaCheckPermission(value = "${permissionPrefix}:delete", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "${auditResourceType}", action = "delete")
     public ApiResponse<Void> childDelete(@Valid @RequestBody IdsParam param) {
         ${varName}Service.childDelete(param);
         return ApiResponse.ok();

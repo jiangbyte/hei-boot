@@ -41,7 +41,36 @@ class CodegenTemplateEngineTest {
         assertFalse(paths.stream().anyMatch(p -> p.contains("ChildModal")));
         assertFalse(contentContaining(files, "AdminCgTestActivityController.java").contains("/tree"));
         assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("Page<"));
-        assertTrue(contentContaining(files, "web/admin/src/api/").contains("/page"));
+        // 规范对齐：写操作带审计注解
+        assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"create\")"));
+        assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"update\")"));
+        assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"delete\")"));
+        // 规范对齐：分页走 getBaseMapper().selectPage
+        assertTrue(contentContaining(files, "CgTestActivityServiceImpl.java").contains("getBaseMapper().selectPage"));
+        // 前端 api 使用 API_PREFIX 常量（保持 any 约定）
+        String api = contentContaining(files, "web/admin/src/api/");
+        assertTrue(api.contains("API_PREFIX"));
+        assertTrue(api.contains("export function page(params: any)"));
+        assertTrue(api.contains("http.get<any>"));
+        // 前端搜索列：有 dict_code 的查询字段生成 select + dictList（见 dictSearchColumnRender 用例）
+    }
+
+    @Test
+    void dictQueryFieldRendersSelectSearchColumn() {
+        SysCodegenPlan plan = basePlan("TABLE", "cg_test_dict_search", "CgTestDictSearch", "dict-search");
+        List<SysCodegenField> fields = sampleFields("MAIN");
+        for (SysCodegenField field : fields) {
+            if ("status".equals(field.getColumnName())) {
+                field.setDictCode("COMMON_STATUS");
+                field.setFormWidget("dict");
+                field.setQueryOperator("EQ");
+            }
+        }
+        List<SysCodegenPreviewFileResult> files = engine.render(plan, fields, List.of());
+        String view = contentContaining(files, "web/admin/src/views/");
+        assertTrue(view.contains("dictList('COMMON_STATUS')"));
+        assertTrue(view.contains("field: 'select'"));
+        assertTrue(view.contains("import { dictList,"));
     }
 
     @Test
@@ -57,7 +86,8 @@ class CodegenTemplateEngineTest {
         assertTrue(contentContaining(files, "CgTestCatalogServiceImpl.java").contains("TreeUtil"));
         assertTrue(contentContaining(files, "CgTestCatalog.java").contains("children"));
         assertTrue(contentContaining(files, "web/admin/src/api/").contains("export function tree"));
-        assertTrue(contentContaining(files, "_menu_permission.sql").contains(":list"));
+        assertTrue(contentContaining(files, "_menu_permission.sql").contains(":tree"));
+        assertTrue(contentContaining(files, "AdminCgTestCatalogController.java").contains(":tree"));
         assertFalse(paths(files).stream().anyMatch(p -> p.startsWith("module-api/")));
         assertFalse(paths(files).stream().anyMatch(p -> p.contains("ChildModal")));
     }
@@ -99,7 +129,7 @@ class CodegenTemplateEngineTest {
         assertTrue(controller.contains("/children/"));
         assertFalse(controller.contains("/tree"));
         assertTrue(paths(files).stream().anyMatch(p -> p.contains("ChildModalDetail.vue")));
-        assertFalse(contentContaining(files, "_menu_permission.sql").contains(":list"));
+        assertFalse(contentContaining(files, "_menu_permission.sql").contains(":tree"));
     }
 
     @Test

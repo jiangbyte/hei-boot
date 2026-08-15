@@ -11,34 +11,24 @@ import github.jiangbyte.io.biz.modules.cg_test_activity.param.CgTestActivityPage
 import java.util.List;
 
 /**
- * 测试活动领域服务：活动的增删改查与条件分页。
+ * CgTestActivity 服务接口：CRUD。
  *
  * Author: Charlie
  */
 public interface CgTestActivityService extends IService<CgTestActivity> {
 
-    /**
-     * 创建测试活动。
-     */
+    /** 创建。 */
     void create(CgTestActivityAddParam param);
 
-    /**
-     * 更新测试活动；不存在则 404。
-     */
+    /** 更新。 */
     void update(CgTestActivityEditParam param);
 
-    /**
-     * 按 ID 列表批量删除活动。
-     */
+    /** 批量删除。 */
     void delete(IdsParam param);
 
-    /**
-     * 按 ID 查询活动详情。
-     */
+    /** 查询详情。 */
     CgTestActivity detail(String id);
 
-    /**
-     * 按编码/名称/分类/类型/状态分页查询活动。
-     */
+    /** 分页查询。 */
     Page<CgTestActivity> page(CgTestActivityPageParam param);
 }

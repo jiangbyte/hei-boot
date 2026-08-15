@@ -15,59 +15,39 @@ import github.jiangbyte.io.biz.modules.cg_test_order.param.CgTestOrderItemPagePa
 import java.util.List;
 
 /**
- * 测试订单领域服务：订单 CRUD/分页，以及明细子资源 CRUD 与分页。
+ * CgTestOrder 服务接口：CRUD与子实体维护。
  *
  * Author: Charlie
  */
 public interface CgTestOrderService extends IService<CgTestOrder> {
 
-    /**
-     * 创建测试订单。
-     */
+    /** 创建。 */
     void create(CgTestOrderAddParam param);
 
-    /**
-     * 更新测试订单；不存在则 404。
-     */
+    /** 更新。 */
     void update(CgTestOrderEditParam param);
 
-    /**
-     * 按 ID 列表批量删除订单。
-     */
+    /** 批量删除。 */
     void delete(IdsParam param);
 
-    /**
-     * 按 ID 查询订单详情。
-     */
+    /** 查询详情。 */
     CgTestOrder detail(String id);
 
-    /**
-     * 按订单号/名称/客户/状态/类型分页查询订单。
-     */
+    /** 分页查询。 */
     Page<CgTestOrder> page(CgTestOrderPageParam param);
 
-    /**
-     * 创建订单明细。
-     */
+    /** 创建子实体。 */
     void childCreate(CgTestOrderItemAddParam param);
 
-    /**
-     * 更新订单明细；不存在则 404。
-     */
+    /** 更新子实体。 */
     void childUpdate(CgTestOrderItemEditParam param);
 
-    /**
-     * 按 ID 列表批量删除订单明细。
-     */
+    /** 删除子实体。 */
     void childDelete(IdsParam param);
 
-    /**
-     * 按 ID 查询订单明细详情。
-     */
+    /** 查询子实体详情。 */
     CgTestOrderItem childDetail(String id);
 
-    /**
-     * 按订单 ID 分页查询明细。
-     */
+    /** 分页查询子实体。 */
     Page<CgTestOrderItem> childPage(CgTestOrderItemPageParam param);
 }

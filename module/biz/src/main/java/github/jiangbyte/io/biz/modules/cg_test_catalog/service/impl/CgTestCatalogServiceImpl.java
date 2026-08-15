@@ -1,14 +1,11 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
-import github.jiangbyte.io.common.mybatis.datascope.OwnerDeptDataScope;
-import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.convert.CgTestCatalogConvert;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.entity.CgTestCatalog;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.mapper.CgTestCatalogMapper;
@@ -31,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * {@link github.jiangbyte.io.biz.modules.cg_test_catalog.service.CgTestCatalogService} 实现：目录持久化、分页与 Hutool 树构建。
+ * Catalog服务实现：维护与查询。
  *
  * Author: Charlie
  */
@@ -39,15 +36,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, CgTestCatalog> implements CgTestCatalogService {
 
-    private static final String PERMISSION_KEY = "biz:cgtestcatalog:page";
-
     private final CgTestCatalogConvert cgTestCatalogConvert;
-    private final OwnerDeptDataScope ownerDeptDataScope;
 
     @Override
     @Transactional
     public void create(CgTestCatalogAddParam param) {
-        // 参数转实体后保存
+        // 入参转实体并持久化
         CgTestCatalog entity = cgTestCatalogConvert.toEntity(param);
         this.save(entity);
     }
@@ -55,13 +49,13 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
     @Override
     @Transactional
     public void update(CgTestCatalogEditParam param) {
-        // 加载实体；不存在则 404
-        // 覆盖字段后更新
+        // 按主键加载
         CgTestCatalog entity = this.getById(param.getId());
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestCatalog not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
+        // 合并编辑入参并更新
         cgTestCatalogConvert.update(param, entity);
         this.updateById(entity);
     }
@@ -69,49 +63,42 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
     @Override
     @Transactional
     public void delete(IdsParam param) {
-        // 空列表直接返回；否则按 ID 删除
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
-        List<CgTestCatalog> entities = this.listByIds(param.getIds());
-        DataScopeConstraint scope = ownerDeptDataScope.resolve(PERMISSION_KEY);
-        for (CgTestCatalog entity : entities) {
-            ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), scope);
-        }
+        // 批量删除
         this.removeByIds(param.getIds());
     }
 
     @Override
     @ReadDataSource
     public CgTestCatalog detail(String id) {
-        // 按 ID 查询，不存在则 404
+        // 按主键加载
         CgTestCatalog entity = this.getById(id);
         if (entity == null) {
+            // 资源不存在
             throw new BizException(404, "CgTestCatalog not found");
         }
-        ownerDeptDataScope.assertAccessible(entity.getCreatedBy(), entity.getOwnerDeptId(), PERMISSION_KEY);
         return entity;
     }
 
     @Override
     @ReadDataSource
     public Page<CgTestCatalog> page(CgTestCatalogPageParam param) {
-        // 按编码/名称等条件分页查询
-        LambdaQueryWrapper<CgTestCatalog> wrapper = Wrappers.<CgTestCatalog>lambdaQuery()
-                .like(StringUtils.hasText(param.getCode()), CgTestCatalog::getCode, param.getCode())
-                .like(StringUtils.hasText(param.getName()), CgTestCatalog::getName, param.getName())
-                .like(StringUtils.hasText(param.getCategory()), CgTestCatalog::getCategory, param.getCategory())
-                .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestCatalog::getStatus, param.getStatus())
-                .orderByDesc(CgTestCatalog::getCreatedAt);
-        ownerDeptDataScope.apply(wrapper, PERMISSION_KEY, CgTestCatalog::getCreatedBy, CgTestCatalog::getOwnerDeptId);
-        return this.page(new Page<>(param.getCurrent(), param.getSize()), wrapper);
+        // 组装条件并分页查询
+        return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
+                Wrappers.<CgTestCatalog>lambdaQuery()
+                        .like(StringUtils.hasText(param.getCode()), CgTestCatalog::getCode, param.getCode())
+                        .like(StringUtils.hasText(param.getName()), CgTestCatalog::getName, param.getName())
+                        .like(StringUtils.hasText(param.getCategory()), CgTestCatalog::getCategory, param.getCategory())
+                        .eq(param.getStatus() != null && StringUtils.hasText(param.getStatus()), CgTestCatalog::getStatus, param.getStatus())
+                        .orderByDesc(CgTestCatalog::getCreatedAt));
     }
 
     @Override
     @ReadDataSource
     public List<Tree<String>> tree(String keyword) {
-        // 按关键字查询目录列表
-        // 缺失父节点时挂到根并构建树
+        // 查询节点列表
         List<CgTestCatalog> rows = this.list(Wrappers.<CgTestCatalog>lambdaQuery()
                 .like(StringUtils.hasText(keyword), CgTestCatalog::getName, keyword)
                 .orderByAsc(CgTestCatalog::getCreatedAt));
@@ -119,6 +106,7 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
             return List.of();
         }
 
+        // 构建树结构
         Set<String> ids = rows.stream().map(CgTestCatalog::getId).collect(Collectors.toSet());
         TreeNodeConfig config = new TreeNodeConfig();
         config.setIdKey("id");

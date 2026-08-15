@@ -1,17 +1,19 @@
 package github.jiangbyte.io.biz.modules.cg_test_order.param;
 
+/**
+ * 编辑Order入参。
+ *
+ * Author: Charlie
+ */
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import jakarta.validation.constraints.NotNull;
 
-/**
- * 编辑测试订单的请求参数（含主键 ID）。
- *
- * Author: Charlie
- */
 @Data
 public class CgTestOrderEditParam {
 
@@ -32,8 +34,11 @@ public class CgTestOrderEditParam {
     private String type;
     private OffsetDateTime orderedAt;
     private OffsetDateTime paidAt;
+    @NotNull
     private BigDecimal totalAmount;
+    @NotNull
     private Integer itemCount;
+    @NotNull
     private Boolean needInvoice;
     private java.util.Map<String, Object> invoiceConfig;
     @NotBlank

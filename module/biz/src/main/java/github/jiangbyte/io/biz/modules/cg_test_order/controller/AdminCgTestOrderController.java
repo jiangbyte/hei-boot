@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 管理端测试订单 API：订单 CRUD/分页，以及订单明细子资源的增删改查与分页。
+ * 管理端 CgTestOrder API：CRUD与子实体维护。
  *
  * Author: Charlie
  */
@@ -40,7 +40,7 @@ public class AdminCgTestOrderController {
 
     private final CgTestOrderService cgTestOrderService;
 
-    /** 创建测试订单。 */
+    /** 创建。 */
     @PostMapping("/v1/admin/biz/cg-test-order/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
@@ -49,7 +49,7 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 更新测试订单。 */
+    /** 更新。 */
     @PostMapping("/v1/admin/biz/cg-test-order/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
@@ -58,7 +58,7 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除测试订单。 */
+    /** 批量删除。 */
     @PostMapping("/v1/admin/biz/cg-test-order/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
@@ -67,21 +67,21 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 查询测试订单详情。 */
+    /** 查询详情。 */
     @GetMapping("/v1/admin/biz/cg-test-order/detail")
     @SaCheckPermission(value = "biz:cgtestorder:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestOrder> detail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestOrderService.detail(param.getId()));
     }
 
-    /** 分页查询测试订单。 */
+    /** 分页查询。 */
     @GetMapping("/v1/admin/biz/cg-test-order/page")
     @SaCheckPermission(value = "biz:cgtestorder:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestOrder>> page(@Valid @ModelAttribute CgTestOrderPageParam param) {
         return ApiResponse.ok(cgTestOrderService.page(param));
     }
 
-    /** 创建订单明细。 */
+    /** 创建子项。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
@@ -90,7 +90,7 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 更新订单明细。 */
+    /** 更新子项。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
@@ -99,7 +99,7 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除订单明细。 */
+    /** 删除子项。 */
     @PostMapping("/v1/admin/biz/cg-test-order/children/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
@@ -108,14 +108,14 @@ public class AdminCgTestOrderController {
         return ApiResponse.ok();
     }
 
-    /** 查询订单明细详情。 */
+    /** 查询子项详情。 */
     @GetMapping("/v1/admin/biz/cg-test-order/children/detail")
     @SaCheckPermission(value = "biz:cgtestorder:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestOrderItem> childDetail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestOrderService.childDetail(param.getId()));
     }
 
-    /** 分页查询订单明细。 */
+    /** 分页查询子项。 */
     @GetMapping("/v1/admin/biz/cg-test-order/children/page")
     @SaCheckPermission(value = "biz:cgtestorder:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestOrderItem>> childPage(@Valid @ModelAttribute CgTestOrderItemPageParam param) {

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 管理端测试目录 API：目录的增删改查、分页与树形结构查询。
+ * 管理端 CgTestCatalog API：CRUD与树查询。
  *
  * Author: Charlie
  */
@@ -37,7 +37,7 @@ public class AdminCgTestCatalogController {
 
     private final CgTestCatalogService cgTestCatalogService;
 
-    /** 创建测试目录。 */
+    /** 创建。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/create")
     @SaCheckPermission(value = "biz:cgtestcatalog:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "create")
@@ -46,7 +46,7 @@ public class AdminCgTestCatalogController {
         return ApiResponse.ok();
     }
 
-    /** 更新测试目录。 */
+    /** 更新。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/update")
     @SaCheckPermission(value = "biz:cgtestcatalog:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "update")
@@ -55,7 +55,7 @@ public class AdminCgTestCatalogController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除测试目录。 */
+    /** 批量删除。 */
     @PostMapping("/v1/admin/biz/cg-test-catalog/delete")
     @SaCheckPermission(value = "biz:cgtestcatalog:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "delete")
@@ -64,23 +64,23 @@ public class AdminCgTestCatalogController {
         return ApiResponse.ok();
     }
 
-    /** 查询测试目录详情。 */
+    /** 查询详情。 */
     @GetMapping("/v1/admin/biz/cg-test-catalog/detail")
     @SaCheckPermission(value = "biz:cgtestcatalog:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestCatalog> detail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestCatalogService.detail(param.getId()));
     }
 
-    /** 分页查询测试目录。 */
+    /** 分页查询。 */
     @GetMapping("/v1/admin/biz/cg-test-catalog/page")
     @SaCheckPermission(value = "biz:cgtestcatalog:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestCatalog>> page(@Valid @ModelAttribute CgTestCatalogPageParam param) {
         return ApiResponse.ok(cgTestCatalogService.page(param));
     }
 
-    /** 查询测试目录树。 */
+    /** 树形查询。 */
     @GetMapping("/v1/admin/biz/cg-test-catalog/tree")
-    @SaCheckPermission(value = "biz:cgtestcatalog:list", type = StpKit.TYPE_ADMIN)
+    @SaCheckPermission(value = "biz:cgtestcatalog:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {
         return ApiResponse.ok(cgTestCatalogService.tree(keyword));
     }

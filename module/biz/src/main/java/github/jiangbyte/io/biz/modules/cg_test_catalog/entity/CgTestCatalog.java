@@ -1,20 +1,21 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.TableField;
-import github.jiangbyte.io.common.core.domain.BaseEntity;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * 测试目录实体，对应表 {@code cg_test_catalog}；支持父子层级与分类状态。
+ * Catalog实体，对应表 {@code cg_test_catalog}。
  *
  * Author: Charlie
  */
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.core.domain.BaseEntity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "cg_test_catalog", autoResultMap = true)

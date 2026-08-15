@@ -16,64 +16,42 @@ import cn.hutool.core.lang.tree.Tree;
 import java.util.List;
 
 /**
- * 知识分类领域服务：分类 CRUD/分页/树，以及子级知识文档 CRUD 与分页。
+ * CgTestKnowledgeCategory 服务接口：CRUD与树查询与子实体维护。
  *
  * Author: Charlie
  */
 public interface CgTestKnowledgeCategoryService extends IService<CgTestKnowledgeCategory> {
 
-    /**
-     * 创建知识分类。
-     */
+    /** 创建。 */
     void create(CgTestKnowledgeCategoryAddParam param);
 
-    /**
-     * 更新知识分类；不存在则 404。
-     */
+    /** 更新。 */
     void update(CgTestKnowledgeCategoryEditParam param);
 
-    /**
-     * 按 ID 列表批量删除分类。
-     */
+    /** 批量删除。 */
     void delete(IdsParam param);
 
-    /**
-     * 按 ID 查询分类详情。
-     */
+    /** 查询详情。 */
     CgTestKnowledgeCategory detail(String id);
 
-    /**
-     * 按编码/名称/状态分页查询分类。
-     */
+    /** 分页查询。 */
     Page<CgTestKnowledgeCategory> page(CgTestKnowledgeCategoryPageParam param);
 
-    /**
-     * 按关键字查询并构建分类树。
-     */
+    /** 树形查询。 */
     List<Tree<String>> tree(String keyword);
 
-    /**
-     * 在分类下创建知识文档。
-     */
+    /** 创建子实体。 */
     void childCreate(CgTestKnowledgeDocAddParam param);
 
-    /**
-     * 更新知识文档；不存在则 404。
-     */
+    /** 更新子实体。 */
     void childUpdate(CgTestKnowledgeDocEditParam param);
 
-    /**
-     * 按 ID 列表批量删除知识文档。
-     */
+    /** 删除子实体。 */
     void childDelete(IdsParam param);
 
-    /**
-     * 按 ID 查询知识文档详情。
-     */
+    /** 查询子实体详情。 */
     CgTestKnowledgeDoc childDetail(String id);
 
-    /**
-     * 按分类 ID 分页查询知识文档。
-     */
+    /** 分页查询子实体。 */
     Page<CgTestKnowledgeDoc> childPage(CgTestKnowledgeDocPageParam param);
 }

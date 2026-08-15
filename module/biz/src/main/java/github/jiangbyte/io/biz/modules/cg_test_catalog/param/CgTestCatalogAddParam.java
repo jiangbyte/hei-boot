@@ -1,14 +1,16 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.param;
 
-import lombok.Data;
-import java.util.Map;
-import jakarta.validation.constraints.NotBlank;
-
 /**
- * 创建测试目录的请求参数。
+ * 创建Catalog入参。
  *
  * Author: Charlie
  */
+
+import lombok.Data;
+import java.util.Map;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 @Data
 public class CgTestCatalogAddParam {
     @NotBlank
@@ -21,7 +23,9 @@ public class CgTestCatalogAddParam {
     private String category;
     @NotBlank
     private String status;
+    @NotNull
     private Integer sort;
+    @NotNull
     private Boolean isVisible;
     @NotBlank
     private String icon;

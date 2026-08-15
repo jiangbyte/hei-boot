@@ -1,15 +1,17 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.param;
 
+/**
+ * 编辑KnowledgeCategory入参。
+ *
+ * Author: Charlie
+ */
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.util.Map;
+import jakarta.validation.constraints.NotNull;
 
-/**
- * 编辑知识分类的请求参数（含主键 ID）。
- *
- * Author: Charlie
- */
 @Data
 public class CgTestKnowledgeCategoryEditParam {
 
@@ -24,7 +26,9 @@ public class CgTestKnowledgeCategoryEditParam {
     private String name;
     @NotBlank
     private String status;
+    @NotNull
     private Integer sort;
+    @NotNull
     private Boolean isVisible;
     @NotBlank
     private String description;

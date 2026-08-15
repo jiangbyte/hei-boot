@@ -1,15 +1,17 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.param;
 
+/**
+ * 编辑Catalog入参。
+ *
+ * Author: Charlie
+ */
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import java.util.Map;
+import jakarta.validation.constraints.NotNull;
 
-/**
- * 编辑测试目录的请求参数（含主键 ID）。
- *
- * Author: Charlie
- */
 @Data
 public class CgTestCatalogEditParam {
 
@@ -26,7 +28,9 @@ public class CgTestCatalogEditParam {
     private String category;
     @NotBlank
     private String status;
+    @NotNull
     private Integer sort;
+    @NotNull
     private Boolean isVisible;
     @NotBlank
     private String icon;

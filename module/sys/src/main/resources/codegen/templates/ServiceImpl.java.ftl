@@ -39,11 +39,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 </#if>
 
+<#if businessName?? && businessName?has_content>
+/**
+ * ${businessName}服务实现：维护与查询。
+ *
+ * Author: ${author}
+ */
+<#else>
 /**
  * ${entityName} 服务实现：维护与查询。
  *
  * Author: ${author}
  */
+</#if>
 @Service
 @RequiredArgsConstructor
 public class ${entityName}ServiceImpl extends ServiceImpl<${entityName}Mapper, ${entityName}> implements ${entityName}Service {
@@ -102,7 +110,7 @@ public class ${entityName}ServiceImpl extends ServiceImpl<${entityName}Mapper, $
     @ReadDataSource
     public Page<${entityName}> page(${entityName}PageParam param) {
         // 组装条件并分页查询
-        return this.page(new Page<>(param.getCurrent(), param.getSize()),
+        return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<${entityName}>lambdaQuery()
 <#list queryFields as field>
 <#if ((field.queryOperator)!"EQ") == "LIKE">

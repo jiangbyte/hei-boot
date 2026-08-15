@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 管理端知识分类 API：分类 CRUD/分页/树，以及下属知识文档的增删改查与分页。
+ * 管理端 CgTestKnowledgeCategory API：CRUD与树查询与子实体维护。
  *
  * Author: Charlie
  */
@@ -41,7 +41,7 @@ public class AdminCgTestKnowledgeCategoryController {
 
     private final CgTestKnowledgeCategoryService cgTestKnowledgeCategoryService;
 
-    /** 创建知识分类。 */
+    /** 创建。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
@@ -50,7 +50,7 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 更新知识分类。 */
+    /** 更新。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
@@ -59,7 +59,7 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除知识分类。 */
+    /** 批量删除。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
@@ -68,28 +68,28 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 查询知识分类详情。 */
+    /** 查询详情。 */
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/detail")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestKnowledgeCategory> detail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestKnowledgeCategoryService.detail(param.getId()));
     }
 
-    /** 分页查询知识分类。 */
+    /** 分页查询。 */
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/page")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestKnowledgeCategory>> page(@Valid @ModelAttribute CgTestKnowledgeCategoryPageParam param) {
         return ApiResponse.ok(cgTestKnowledgeCategoryService.page(param));
     }
 
-    /** 查询知识分类树。 */
+    /** 树形查询。 */
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/tree")
-    @SaCheckPermission(value = "biz:cgtestknowledgecategory:list", type = StpKit.TYPE_ADMIN)
+    @SaCheckPermission(value = "biz:cgtestknowledgecategory:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {
         return ApiResponse.ok(cgTestKnowledgeCategoryService.tree(keyword));
     }
 
-    /** 创建知识文档。 */
+    /** 创建子项。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
@@ -98,7 +98,7 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 更新知识文档。 */
+    /** 更新子项。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
@@ -107,7 +107,7 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 批量删除知识文档。 */
+    /** 删除子项。 */
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
@@ -116,14 +116,14 @@ public class AdminCgTestKnowledgeCategoryController {
         return ApiResponse.ok();
     }
 
-    /** 查询知识文档详情。 */
+    /** 查询子项详情。 */
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/children/detail")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestKnowledgeDoc> childDetail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(cgTestKnowledgeCategoryService.childDetail(param.getId()));
     }
 
-    /** 分页查询知识文档。 */
+    /** 分页查询子项。 */
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/children/page")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestKnowledgeDoc>> childPage(@Valid @ModelAttribute CgTestKnowledgeDocPageParam param) {

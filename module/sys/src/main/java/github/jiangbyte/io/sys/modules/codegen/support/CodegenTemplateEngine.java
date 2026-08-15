@@ -135,6 +135,7 @@ public class CodegenTemplateEngine {
         model.put("paramPackage", ctx.get("paramPackage"));
         model.put("permissionPrefix", ctx.get("permissionPrefix"));
         model.put("apiPrefix", ctx.get("apiPrefix"));
+        model.put("auditResourceType", ctx.get("auditResourceType"));
         model.put("hasTree", ctx.get("hasTree"));
         model.put("hasSub", ctx.get("hasSub"));
         model.put("genType", ctx.get("genType"));
@@ -297,6 +298,10 @@ public class CodegenTemplateEngine {
         ctx.put("paramPackage", basePackage + ".param");
         ctx.put("permissionPrefix", plan.getPermissionPrefix());
         ctx.put("apiPrefix", apiPrefix);
+        String auditResourceType = plan.getPermissionPrefix() == null
+                ? toSnake(plan.getMainEntityName())
+                : plan.getPermissionPrefix().replace(':', '_');
+        ctx.put("auditResourceType", auditResourceType);
         ctx.put("mainEntityName", plan.getMainEntityName());
         ctx.put("mainVarName", Character.toLowerCase(plan.getMainEntityName().charAt(0))
                 + plan.getMainEntityName().substring(1));
@@ -372,6 +377,7 @@ public class CodegenTemplateEngine {
             jf.put("showInForm", Boolean.TRUE.equals(field.getShowInForm()));
             jf.put("queryOperator", field.getQueryOperator());
             jf.put("isRequired", Boolean.TRUE.equals(field.getIsRequired()));
+            jf.put("maxLength", field.getMaxLength());
             javaFields.add(jf);
             if (Boolean.TRUE.equals(field.getShowInForm()) && !Boolean.TRUE.equals(field.getIsPrimaryKey())) {
                 javaFormFields.add(jf);
@@ -398,6 +404,7 @@ public class CodegenTemplateEngine {
         entity.put("has_form_int", formFields.stream().anyMatch(f -> "int".equals(f.get("python_type"))));
         entity.put("has_form_float", formFields.stream().anyMatch(f -> "float".equals(f.get("python_type"))));
         entity.put("has_detail_json", detailFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_json"))));
+        entity.put("has_query_dict", queryFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
         entity.put("has_table_dict", tableFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
         entity.put("has_table_bool", tableFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_bool"))));
         entity.put("has_table_tag", tableFields.stream().anyMatch(f ->
@@ -478,7 +485,7 @@ public class CodegenTemplateEngine {
         actions.add(action("update", "编辑", 40));
         actions.add(action("delete", "删除", 50));
         if (needsList) {
-            actions.add(action("list", "树列表", 90));
+            actions.add(action("tree", "树查询", 90));
         }
         Map<String, Object> menu = new LinkedHashMap<>();
         menu.put("menu_id", snowflakeLikeId());
