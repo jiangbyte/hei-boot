@@ -82,7 +82,7 @@ async function handleCallback() {
       tip.value = '绑定成功，正在跳转…'
       await authStore.refreshUserInfo()
       window.$message?.success?.('绑定成功')
-      await router.replace('/usercenter?tab=oauth')
+      await router.replace('/profile?tab=oauth')
       return
     }
 

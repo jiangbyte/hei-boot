@@ -20,7 +20,7 @@ import github.jiangbyte.io.iam.account.AccountInfo;
 import github.jiangbyte.io.iam.account.AccountOauthApi;
 import github.jiangbyte.io.iam.account.AccountOauthBindingInfo;
 import github.jiangbyte.io.sys.config.ConfigApi;
-import github.jiangbyte.io.user.portal.profile.PortalUserProfileApi;
+import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class AuthOauthServiceImpl implements AuthOauthService {
     private final AccountApi accountApi;
     private final AuthService authService;
     private final ConfigApi configApi;
-    private final PortalUserProfileApi portalUserProfileApi;
+    private final ProfileUserPortalApi portalUserProfileApi;
 
     @Override
     public OauthAuthorizeResult authorize(AccountType accountType, String provider, String intent, String redirect) {

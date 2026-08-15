@@ -19,8 +19,8 @@ import github.jiangbyte.io.iam.account.AccountAuthorizationInfo;
 import github.jiangbyte.io.iam.account.AccountInfo;
 import github.jiangbyte.io.iam.password.PasswordPolicyApi;
 import github.jiangbyte.io.sys.config.ConfigApi;
-import github.jiangbyte.io.user.admin.profile.AdminUserProfileApi;
-import github.jiangbyte.io.user.portal.profile.PortalUserProfileApi;
+import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
+import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,9 +52,9 @@ class AuthServiceLoginTest {
     @Mock
     private AccountApi accountApi;
     @Mock
-    private AdminUserProfileApi adminUserProfileApi;
+    private ProfileUserAdminApi adminUserProfileApi;
     @Mock
-    private PortalUserProfileApi portalUserProfileApi;
+    private ProfileUserPortalApi portalUserProfileApi;
     @Mock
     private MailSenderFacade mailSenderFacade;
     @Mock

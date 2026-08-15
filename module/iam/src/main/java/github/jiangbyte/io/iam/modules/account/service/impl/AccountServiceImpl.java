@@ -52,10 +52,10 @@ import github.jiangbyte.io.iam.modules.resource.service.ResourceService;
 import github.jiangbyte.io.iam.modules.role.entity.SysRole;
 import github.jiangbyte.io.iam.modules.role.mapper.SysRoleMapper;
 import github.jiangbyte.io.sys.file.FileApi;
-import github.jiangbyte.io.user.admin.profile.AdminUserProfileApi;
-import github.jiangbyte.io.user.admin.profile.AdminUserProfileInfo;
-import github.jiangbyte.io.user.portal.profile.PortalUserProfileApi;
-import github.jiangbyte.io.user.portal.profile.PortalUserProfileInfo;
+import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
+import github.jiangbyte.io.profile.admin.ProfileUserAdminInfo;
+import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
+import github.jiangbyte.io.profile.portal.ProfileUserPortalInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -85,8 +85,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount> implements AccountService {
     private final SysAccountIdentityMapper identityMapper;
-    private final AdminUserProfileApi adminUserProfileApi;
-    private final PortalUserProfileApi portalUserProfileApi;
+    private final ProfileUserAdminApi adminUserProfileApi;
+    private final ProfileUserPortalApi portalUserProfileApi;
     private final FileApi fileApi;
     private final IamRelationService relationService;
     private final PasswordHelper passwordHelper;
@@ -790,8 +790,8 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         }
         List<String> ids = accounts.stream().map(SysAccount::getId).toList();
         Map<String, List<SysAccountIdentity>> identityMap = new HashMap<>();
-        Map<String, AdminUserProfileInfo> adminProfiles = new HashMap<>();
-        Map<String, PortalUserProfileInfo> portalProfiles = new HashMap<>();
+        Map<String, ProfileUserAdminInfo> adminProfiles = new HashMap<>();
+        Map<String, ProfileUserPortalInfo> portalProfiles = new HashMap<>();
 
         // 按账号类型分组，便于分批拉档案
         Map<String, List<String>> idsByType = accounts.stream()
@@ -860,7 +860,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                     ? account.getAccountType().trim().toUpperCase(Locale.ROOT)
                     : "";
             if (AccountType.ADMIN.name().equals(type)) {
-                AdminUserProfileInfo profile = adminProfiles.get(account.getId());
+                ProfileUserAdminInfo profile = adminProfiles.get(account.getId());
                 if (profile != null) {
                     result.setName(profile.getName());
                     result.setNickname(profile.getNickname());
@@ -871,7 +871,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                     result.setRemark(profile.getRemark());
                 }
             } else if (AccountType.PORTAL.name().equals(type)) {
-                PortalUserProfileInfo profile = portalProfiles.get(account.getId());
+                ProfileUserPortalInfo profile = portalProfiles.get(account.getId());
                 if (profile != null) {
                     result.setName(profile.getName());                    result.setNickname(profile.getNickname());
                     result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
@@ -905,7 +905,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 ? account.getAccountType().trim().toUpperCase(Locale.ROOT)
                 : "";
         if (AccountType.ADMIN.name().equals(type)) {
-            AdminUserProfileInfo info = new AdminUserProfileInfo();
+            ProfileUserAdminInfo info = new ProfileUserAdminInfo();
             info.setAccountId(account.getId());
             info.setName(name);
             info.setNickname(nickname);
@@ -918,7 +918,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             return;
         }
         if (AccountType.PORTAL.name().equals(type)) {
-            PortalUserProfileInfo info = new PortalUserProfileInfo();
+            ProfileUserPortalInfo info = new ProfileUserPortalInfo();
             info.setAccountId(account.getId());
             info.setName(name);
             info.setNickname(nickname);
@@ -1063,7 +1063,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             if (account != null && StringUtils.hasText(account.getAccountType())) {
                 String type = account.getAccountType().trim().toUpperCase(Locale.ROOT);
                 if (AccountType.ADMIN.name().equals(type)) {
-                    AdminUserProfileInfo profile = adminUserProfileApi.getProfile(accountId);
+                    ProfileUserAdminInfo profile = adminUserProfileApi.getProfile(accountId);
                     if (profile != null) {
                         if (email == null) {
                             email = profile.getEmail();
@@ -1073,7 +1073,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                         }
                     }
                 } else if (AccountType.PORTAL.name().equals(type)) {
-                    PortalUserProfileInfo profile = portalUserProfileApi.getProfile(accountId);
+                    ProfileUserPortalInfo profile = portalUserProfileApi.getProfile(accountId);
                     if (profile != null) {
                         if (email == null) {
                             email = profile.getEmail();

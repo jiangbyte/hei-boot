@@ -144,7 +144,7 @@
             </dependency>
             <dependency>
                 <groupId>github.jiangbyte.io</groupId>
-                <artifactId>user-api</artifactId>
+                <artifactId>profile-api</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
@@ -164,12 +164,7 @@
             </dependency>
             <dependency>
                 <groupId>github.jiangbyte.io</groupId>
-                <artifactId>user</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>github.jiangbyte.io</groupId>
-                <artifactId>message</artifactId>
+                <artifactId>profile</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

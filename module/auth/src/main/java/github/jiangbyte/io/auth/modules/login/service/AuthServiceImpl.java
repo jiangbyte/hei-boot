@@ -33,8 +33,8 @@ import github.jiangbyte.io.iam.account.AccountInfo;
 import github.jiangbyte.io.iam.account.PermissionGrantInfo;
 import github.jiangbyte.io.iam.password.PasswordPolicyApi;
 import github.jiangbyte.io.sys.config.ConfigApi;
-import github.jiangbyte.io.user.admin.profile.AdminUserProfileApi;
-import github.jiangbyte.io.user.portal.profile.PortalUserProfileApi;
+import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
+import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,8 +67,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final AuthCryptoService cryptoService;
     private final AccountApi accountApi;
-    private final AdminUserProfileApi adminUserProfileApi;
-    private final PortalUserProfileApi portalUserProfileApi;
+    private final ProfileUserAdminApi adminUserProfileApi;
+    private final ProfileUserPortalApi portalUserProfileApi;
     private final MailSenderFacade mailSenderFacade;
     private final SmsSenderFacade smsSenderFacade;
     private final PasswordPolicyApi passwordPolicyApi;

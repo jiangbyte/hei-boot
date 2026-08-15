@@ -89,7 +89,7 @@ public class AuditServiceImpl extends ServiceImpl<SysOperationAuditLogMapper, Sy
         try {
             this.save(auditLog);
         } catch (DataIntegrityViolationException ex) {
-            // Unique index on request_id (Flyway V6) / concurrent insert races
+            // Unique index on request_id (scripts/db.sql) / concurrent insert races
             log.debug("Ignore duplicate audit insert, requestId={}", event.getRequestId());
         }
     }

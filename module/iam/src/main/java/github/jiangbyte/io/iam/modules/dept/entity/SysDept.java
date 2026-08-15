@@ -30,13 +30,13 @@ public class SysDept extends BaseEntity {
     private String parentId;
     @Trans(
             type = TransType.RPC,
-            targetClassName = "github.jiangbyte.io.user.modules.admin.profile.entity.AdminUserProfile",
+            targetClassName = "github.jiangbyte.io.profile.modules.admin.entity.ProfileUserAdmin",
             fields = "name",
             ref = "masterName")
     private String masterId;
     @Trans(
             type = TransType.RPC,
-            targetClassName = "github.jiangbyte.io.user.modules.admin.profile.entity.AdminUserProfile",
+            targetClassName = "github.jiangbyte.io.profile.modules.admin.entity.ProfileUserAdmin",
             fields = "name",
             ref = "deputyMasterName")
     private String deputyMasterId;

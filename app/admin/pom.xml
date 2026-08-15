@@ -9,6 +9,7 @@
 
     <dependencies>
         <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId></dependency>
+        <!-- Flyway 依赖保留（库表由 scripts/db.sql 重建；如需迁移可在 resources/db/migration 重新放置 V{n}__*.sql 并启用） -->
         <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency>
         <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>
 
@@ -16,8 +17,7 @@
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>auth</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>iam</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>sys</artifactId></dependency>
-        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>user</artifactId></dependency>
-        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>message</artifactId></dependency>
+        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>profile</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>dashboard</artifactId></dependency>
         <!-- sample module/biz: see profile with-biz (activeByDefault); prod: -P'!with-biz' -->
 

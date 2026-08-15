@@ -13,6 +13,6 @@
         <module>auth-api</module>
         <module>iam-api</module>
         <module>sys-api</module>
-        <module>user-api</module>
+        <module>profile-api</module>
     </modules>
 </project>

@@ -9,7 +9,7 @@
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>auth-api</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>sys-api</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>iam-api</artifactId></dependency>
-        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>user-api</artifactId></dependency>
+        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>profile-api</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-web</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-mybatis</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-security</artifactId></dependency>

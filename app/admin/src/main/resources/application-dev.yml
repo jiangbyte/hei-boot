@@ -56,7 +56,7 @@ spring:
       database: ${REDIS_DATABASE:0}
       password: ${REDIS_PASSWORD:123456}
   flyway:
-    enabled: true
+    enabled: false
 
 # SnailJob Server 本地用 docker-compose.snailjob.yml（勿嵌入业务进程）
 hei:

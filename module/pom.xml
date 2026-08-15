@@ -11,11 +11,10 @@
 
     <modules>
         <module>sys</module>
-        <!-- user/iam before auth: auth implementation depends on both -->
-        <module>user</module>
+        <!-- profile/iam before auth: auth implementation depends on both -->
+        <module>profile</module>
         <module>iam</module>
         <module>auth</module>
-        <module>message</module>
         <module>dashboard</module>
         <module>biz</module>
     </modules>

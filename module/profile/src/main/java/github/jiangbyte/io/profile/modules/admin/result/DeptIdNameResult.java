@@ -1,0 +1,14 @@
+package github.jiangbyte.io.profile.modules.admin.result;
+
+import lombok.Data;
+
+/**
+ * 部门 ID-名称项（由 entity 查询后填充，非 easy-trans Result）。
+ *
+ * Author: Charlie
+ */
+@Data
+public class DeptIdNameResult {
+    private String id;
+    private String name;
+}

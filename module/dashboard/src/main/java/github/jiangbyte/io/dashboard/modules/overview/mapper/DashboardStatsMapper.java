@@ -36,7 +36,7 @@ public interface DashboardStatsMapper {
                  WHERE created_at >= #{dayStart}) AS audit_total,
               (SELECT COUNT(*) FROM sys_operation_audit_log
                  WHERE created_at >= #{dayStart} AND success = false) AS audit_failed,
-              (SELECT COUNT(*) FROM msg_feedback WHERE status = 'PENDING') AS feedback_pending
+              (SELECT COUNT(*) FROM sys_feedback WHERE status = 'PENDING') AS feedback_pending
             """)
     Map<String, Object> aggregateCounts(@Param("dayStart") OffsetDateTime dayStart);
 

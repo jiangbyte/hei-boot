@@ -8,6 +8,7 @@
     <dependencies>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>sys-api</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>iam-api</artifactId></dependency>
+        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>profile-api</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-web</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-oss</artifactId></dependency>
         <!-- common-oss marks awssdk/s3 optional; sys needs it for RustFS / S3-compatible engines -->
