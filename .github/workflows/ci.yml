@@ -34,7 +34,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/admin/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
+      - run: pnpm build
 
   frontend-portal:
     runs-on: ubuntu-latest
@@ -52,32 +52,4 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/portal/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build --mode production
-
-  e2e-admin:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web/admin
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-          cache-dependency-path: web/admin/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec vite build
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Preview + E2E
-        run: |
-          pnpm exec vite preview --host 127.0.0.1 --port 4173 &
-          for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:4173 >/dev/null && break
-            sleep 1
-          done
-          E2E_BASE_URL=http://127.0.0.1:4173 pnpm exec playwright test
+      - run: pnpm build

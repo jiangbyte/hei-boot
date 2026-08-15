@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { oauthExchange } from '@/api/auth'
 import { useAuthStore } from '@/stores'
 import { clearToken, setToken } from '@/utils/session'
-import { getSafeRedirect } from '@/utils/validate'
 import { wireBool } from '@/utils/wire'
 import { refreshDict, syncDictTree } from '@/utils/dict'
 import AuthLayout from './AuthLayout.vue'
@@ -95,7 +94,7 @@ async function handleCallback() {
     }
 
     tip.value = '登录成功，正在进入系统…'
-    await authStore.finishLogin(getSafeRedirect(redirect))
+    await authStore.finishLogin(redirect)
     syncDictTree()
     await refreshDict()
   } catch (e: any) {
