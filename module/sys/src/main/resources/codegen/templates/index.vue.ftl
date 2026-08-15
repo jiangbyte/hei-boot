@@ -237,12 +237,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: row => (
       <NFlex size={12}>
-        {hasPermission('${plan.permission_prefix}:detail') ? (
+        {hasPermission('${permissionPrefix}:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.${main.pk_name})}>
             {renderButtonIcon('icon-park-outline:preview-open')}
           </NButton>
         ) : null}
-        {hasPermission('${plan.permission_prefix}:update') ? (
+        {hasPermission('${permissionPrefix}:update') ? (
           <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.${main.pk_name})}>
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
@@ -252,7 +252,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
           {renderButtonIcon('icon-park-outline:list-view')}
         </NButton>
 </#if>
-        {hasPermission('${plan.permission_prefix}:delete') ? (
+        {hasPermission('${permissionPrefix}:delete') ? (
           <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.${main.pk_name})}>
             {renderButtonIcon('icon-park-outline:delete')}
           </NButton>
@@ -304,17 +304,17 @@ const childColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: row => (
       <NFlex size={12}>
-        {hasPermission('${plan.permission_prefix}:detail') ? (
+        {hasPermission('${permissionPrefix}:detail') ? (
           <NButton type="info" size="small" text={true} onClick={() => openChildDetailModal(row.${sub.pk_name})}>
             {renderButtonIcon('icon-park-outline:preview-open')}
           </NButton>
         ) : null}
-        {hasPermission('${plan.permission_prefix}:update') ? (
+        {hasPermission('${permissionPrefix}:update') ? (
           <NButton type="primary" size="small" text={true} onClick={() => openChildEditModal(row.${sub.pk_name})}>
             {renderButtonIcon('icon-park-outline:edit')}
           </NButton>
         ) : null}
-        {hasPermission('${plan.permission_prefix}:delete') ? (
+        {hasPermission('${permissionPrefix}:delete') ? (
           <NButton type="error" size="small" text={true} onClick={() => confirmChildDelete(row.${sub.pk_name})}>
             {renderButtonIcon('icon-park-outline:delete')}
           </NButton>
@@ -648,13 +648,13 @@ async function deleteChildRows(ids: string[]) {
       >
         <template #toolbar>
           <NFlex>
-            <NButton v-if="hasPermission('${plan.permission_prefix}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
+            <NButton v-if="hasPermission('${permissionPrefix}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
               <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
             </NButton>
             <NButton text :loading="state.childLoading" @click="fetchChildPage">
               <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
             </NButton>
-            <NButton v-if="hasPermission('${plan.permission_prefix}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
+            <NButton v-if="hasPermission('${permissionPrefix}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
               <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
             </NButton>
           </NFlex>
@@ -700,13 +700,13 @@ async function deleteChildRows(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('${plan.permission_prefix}:create')" type="primary" text @click="openCreateModal">
+          <NButton v-if="hasPermission('${permissionPrefix}:create')" type="primary" text @click="openCreateModal">
             <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
           </NButton>
           <NButton text :loading="<#if plan.gen_type == "TREE">state.treeLoading<#else>state.loading</#if>" @click="<#if plan.gen_type == "TREE">fetchTree<#else>fetchPage</#if>">
             <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
           </NButton>
-          <NButton v-if="hasPermission('${plan.permission_prefix}:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
+          <NButton v-if="hasPermission('${permissionPrefix}:delete')" type="error" text :disabled="!hasCheckedRows" @click="confirmDelete(state.checkedRowKeys)">
             <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
           </NButton>
         </NFlex>
@@ -740,13 +740,13 @@ async function deleteChildRows(ids: string[]) {
           >
             <template #toolbar>
               <NFlex>
-                <NButton v-if="hasPermission('${plan.permission_prefix}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
+                <NButton v-if="hasPermission('${permissionPrefix}:create')" type="primary" text :disabled="!canCreateChild" @click="openChildCreateModal">
                   <template #icon><NIcon><Icon icon="icon-park-outline:plus" /></NIcon></template>
                 </NButton>
                 <NButton text :loading="state.childLoading" @click="fetchChildPage">
                   <template #icon><NIcon><Icon icon="icon-park-outline:refresh" /></NIcon></template>
                 </NButton>
-                <NButton v-if="hasPermission('${plan.permission_prefix}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
+                <NButton v-if="hasPermission('${permissionPrefix}:delete')" type="error" text :disabled="!hasChildCheckedRows" @click="confirmChildDelete(state.childCheckedRowKeys)">
                   <template #icon><NIcon><Icon icon="icon-park-outline:delete" /></NIcon></template>
                 </NButton>
               </NFlex>

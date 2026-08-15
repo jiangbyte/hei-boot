@@ -296,11 +296,14 @@ public class CodegenTemplateEngine {
         String basePackage = CodegenNaming.packageFromModulePath(plan.getMainModulePath());
         ctx.put("basePackage", basePackage);
         ctx.put("paramPackage", basePackage + ".param");
-        ctx.put("permissionPrefix", plan.getPermissionPrefix());
+        // 三段式权限码段内不允许 - / _，统一清洗后再下发，保证生成代码与运行期权限校验一致。
+        String permissionPrefix = plan.getPermissionPrefix() == null
+                ? "" : plan.getPermissionPrefix().replaceAll("[-_]", "");
+        ctx.put("permissionPrefix", permissionPrefix);
         ctx.put("apiPrefix", apiPrefix);
         String auditResourceType = plan.getPermissionPrefix() == null
                 ? toSnake(plan.getMainEntityName())
-                : plan.getPermissionPrefix().replace(':', '_');
+                : permissionPrefix.replace(':', '_');
         ctx.put("auditResourceType", auditResourceType);
         ctx.put("mainEntityName", plan.getMainEntityName());
         ctx.put("mainVarName", Character.toLowerCase(plan.getMainEntityName().charAt(0))

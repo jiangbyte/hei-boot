@@ -9,7 +9,7 @@ INSERT INTO sys_resource (id, parent_id, code, name, resource_type, module_id, p
 VALUES (
   '${menu_permission.menu_id}',
   <#if plan.parent_resource_id?has_content>'${plan.parent_resource_id?replace("'", "''")}'<#else>NULL</#if>,
-  '${plan.permission_prefix?replace(":", "_")}',
+  '${permissionPrefix?replace(":", "_")}',
   '${plan.menu_name?replace("'", "''")}',
   'MENU',
   <#if plan.resource_module_id?has_content>'${plan.resource_module_id?replace("'", "''")}'<#else>NULL</#if>,
@@ -32,7 +32,7 @@ INSERT INTO sys_resource (id, parent_id, code, name, resource_type, module_id, s
 VALUES (
   '${action.resource_id}',
   '${menu_permission.menu_id}',
-  '${plan.permission_prefix?replace(":", "_")}_${action.key}',
+  '${permissionPrefix?replace(":", "_")}_${action.key}',
   '${action.label}${plan.main_business_name}',
   'BUTTON',
   <#if plan.resource_module_id?has_content>'${plan.resource_module_id?replace("'", "''")}'<#else>NULL</#if>,
@@ -53,7 +53,7 @@ VALUES (
   'RESOURCE_PERMISSION',
   'PERMISSION',
   '',
-  '${plan.permission_prefix}:${action.key}',
+  '${permissionPrefix}:${action.key}',
   'CASCADE',
   'ALL',
   '[]',
