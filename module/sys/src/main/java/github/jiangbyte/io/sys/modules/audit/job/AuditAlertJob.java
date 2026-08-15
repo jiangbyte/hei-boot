@@ -21,8 +21,11 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 审计告警定时任务：按配置规则扫描并发送告警。
@@ -34,6 +37,14 @@ import java.util.Map;
 public class AuditAlertJob {
 
     private static final String RULE_BRUTE_FORCE = "audit_volume";
+    private static final String RULE_UNUSUAL_HOURS = "unusual_hours";
+    private static final String RULE_SENSITIVE_OPS = "sensitive_ops";
+    private static final String RULE_BULK_DELETE = "bulk_delete";
+    private static final String RULE_IP_ANOMALY = "ip_anomaly";
+
+    /** 凌晨 0-6 点的角色/权限变更等敏感动作。 */
+    private static final List<String> SENSITIVE_ACTIONS = List.of(
+            "role_create", "role_grant", "permission_change", "permission_grant");
 
     private final SysOperationAuditLogMapper auditLogMapper;
     private final SysAlertLogMapper alertLogMapper;
@@ -54,8 +65,26 @@ public class AuditAlertJob {
             if (evaluateBruteForce(settings)) {
                 fired++;
             }
-        } else {
-            SnailJobLog.REMOTE.info("RULE_BRUTE_FORCE disabled, skip volume check");
+        }
+        if (settings.getBoolean("AUDIT_ALERT_RULE_UNUSUAL_HOURS", true)) {
+            if (evaluateUnusualHours(settings)) {
+                fired++;
+            }
+        }
+        if (settings.getBoolean("AUDIT_ALERT_RULE_SENSITIVE_OPS", true)) {
+            if (evaluateSensitiveOps(settings)) {
+                fired++;
+            }
+        }
+        if (settings.getBoolean("AUDIT_ALERT_RULE_BULK_DELETE", true)) {
+            if (evaluateBulkDelete(settings)) {
+                fired++;
+            }
+        }
+        if (settings.getBoolean("AUDIT_ALERT_RULE_IP_ANOMALY", true)) {
+            if (evaluateIpAnomaly(settings)) {
+                fired++;
+            }
         }
 
         return ExecuteResult.success("done fired=" + fired);
@@ -69,7 +98,6 @@ public class AuditAlertJob {
     private boolean evaluateBruteForce(RuntimeSettings settings) {
         int windowSeconds = Math.max(60, settings.getInt("AUDIT_ALERT_ANALYSIS_INTERVAL_SECONDS", 60));
         long threshold = Math.max(1L, settings.getLong("AUDIT_ALERT_BRUTE_FORCE_THRESHOLD", 10));
-        int windowMinutes = Math.max(1, windowSeconds / 60);
         OffsetDateTime since = OffsetDateTime.now().minusSeconds(windowSeconds);
         Long count = auditLogMapper.selectCount(Wrappers.<SysOperationAuditLog>lambdaQuery()
                 .ge(SysOperationAuditLog::getCreatedAt, since));
@@ -79,40 +107,181 @@ public class AuditAlertJob {
             return false;
         }
 
+        String summary = "Audit log volume " + volume + " exceeded threshold " + threshold
+                + " in last " + windowSeconds + " seconds";
+        Map<String, Object> details = new HashMap<>();
+        details.put("volume", volume);
+        details.put("threshold", threshold);
+        details.put("window_seconds", windowSeconds);
+        details.put("window_minutes", Math.max(1, windowSeconds / 60));
+        details.put("since", since.toString());
+
         int cooldownSeconds = Math.max(
                 windowSeconds,
                 settings.getInt("AUDIT_ALERT_ALERT_COOLDOWN_SECONDS", 1800));
+        return fireAlert(settings, RULE_BRUTE_FORCE, "WARNING", summary, details, cooldownSeconds);
+    }
+
+    /**
+     * 非常时段检测：凌晨 0-6 点出现角色/权限变更等敏感操作。
+     *
+     * @return 是否实际发出告警
+     */
+    private boolean evaluateUnusualHours(RuntimeSettings settings) {
+        OffsetDateTime now = OffsetDateTime.now();
+        if (now.getHour() > 5) {
+            return false;
+        }
+        OffsetDateTime since = now.minusHours(1);
+        List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
+                .ge(SysOperationAuditLog::getCreatedAt, since)
+                .in(SysOperationAuditLog::getAction, SENSITIVE_ACTIONS));
+        if (logs.isEmpty()) {
+            return false;
+        }
+        Set<String> actions = logs.stream()
+                .map(SysOperationAuditLog::getAction)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+        Map<String, Object> details = new HashMap<>();
+        details.put("count", logs.size());
+        details.put("actions", actions);
+        String summary = "凌晨 " + now.getHour() + " 时检测到 " + logs.size() + " 次敏感操作";
+        return fireAlert(settings, RULE_UNUSUAL_HOURS, "WARNING", summary, details, cooldownSeconds(settings));
+    }
+
+    /**
+     * 敏感操作检测：5 分钟内角色授权/权限变更等敏感操作。
+     *
+     * @return 是否实际发出告警
+     */
+    private boolean evaluateSensitiveOps(RuntimeSettings settings) {
+        OffsetDateTime since = OffsetDateTime.now().minusSeconds(300);
+        List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
+                .ge(SysOperationAuditLog::getCreatedAt, since)
+                .in(SysOperationAuditLog::getAction,
+                        List.of("role_grant", "permission_change", "permission_grant")));
+        if (logs.isEmpty()) {
+            return false;
+        }
+        Map<String, Long> byAccount = logs.stream()
+                .filter(l -> StringUtils.hasText(l.getAccountId()))
+                .collect(Collectors.groupingBy(SysOperationAuditLog::getAccountId, Collectors.counting()));
+        boolean fired = false;
+        for (Map.Entry<String, Long> entry : byAccount.entrySet()) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("account_id", entry.getKey());
+            details.put("count", entry.getValue());
+            String summary = "账户 " + entry.getKey() + " 执行了敏感操作 (" + entry.getValue() + " 次)";
+            fired |= fireAlert(settings, RULE_SENSITIVE_OPS, "WARNING", summary, details, cooldownSeconds(settings));
+        }
+        return fired;
+    }
+
+    /**
+     * 批量删除检测：同账户 5 分钟内删除操作达到阈值。
+     *
+     * @return 是否实际发出告警
+     */
+    private boolean evaluateBulkDelete(RuntimeSettings settings) {
+        long threshold = Math.max(1L, settings.getLong("AUDIT_ALERT_BULK_DELETE_THRESHOLD", 20));
+        OffsetDateTime since = OffsetDateTime.now().minusSeconds(300);
+        List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
+                .ge(SysOperationAuditLog::getCreatedAt, since)
+                .eq(SysOperationAuditLog::getAction, "delete"));
+        Map<String, Long> byAccount = logs.stream()
+                .filter(l -> StringUtils.hasText(l.getAccountId()))
+                .collect(Collectors.groupingBy(SysOperationAuditLog::getAccountId, Collectors.counting()));
+        boolean fired = false;
+        for (Map.Entry<String, Long> entry : byAccount.entrySet()) {
+            if (entry.getValue() < threshold) {
+                continue;
+            }
+            Map<String, Object> details = new HashMap<>();
+            details.put("account_id", entry.getKey());
+            details.put("count", entry.getValue());
+            details.put("threshold", threshold);
+            String summary = "账户 " + entry.getKey() + " 在 5 分钟内删除了 " + entry.getValue() + " 条记录";
+            fired |= fireAlert(settings, RULE_BULK_DELETE, "WARNING", summary, details, cooldownSeconds(settings));
+        }
+        return fired;
+    }
+
+    /**
+     * 异地 IP 检测：同账户 15 分钟内从多个不同 IP 成功登录达到阈值。
+     *
+     * @return 是否实际发出告警
+     */
+    private boolean evaluateIpAnomaly(RuntimeSettings settings) {
+        long threshold = Math.max(1L, settings.getLong("AUDIT_ALERT_IP_ANOMALY_THRESHOLD", 3));
+        OffsetDateTime since = OffsetDateTime.now().minusSeconds(900);
+        List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
+                .ge(SysOperationAuditLog::getCreatedAt, since)
+                .eq(SysOperationAuditLog::getAction, "login")
+                .eq(SysOperationAuditLog::getSuccess, true)
+                .isNotNull(SysOperationAuditLog::getAccountId));
+        Map<String, Set<String>> ipsByAccount = new HashMap<>();
+        for (SysOperationAuditLog log : logs) {
+            String ip = log.getIp() == null ? "" : log.getIp();
+            ipsByAccount.computeIfAbsent(log.getAccountId(), k -> new HashSet<>()).add(ip);
+        }
+        boolean fired = false;
+        for (Map.Entry<String, Set<String>> entry : ipsByAccount.entrySet()) {
+            if (entry.getValue().size() < threshold) {
+                continue;
+            }
+            Map<String, Object> details = new HashMap<>();
+            details.put("account_id", entry.getKey());
+            details.put("ip_count", entry.getValue().size());
+            details.put("threshold", threshold);
+            String summary = "账户 " + entry.getKey() + " 在 15 分钟内从 "
+                    + entry.getValue().size() + " 个不同 IP 登录";
+            fired |= fireAlert(settings, RULE_IP_ANOMALY, "WARNING", summary, details, cooldownSeconds(settings));
+        }
+        return fired;
+    }
+
+    private static int cooldownSeconds(RuntimeSettings settings) {
+        return Math.max(60, settings.getInt("AUDIT_ALERT_ALERT_COOLDOWN_SECONDS", 1800));
+    }
+
+    /**
+     * 公共告警出口：冷却期抑制 → 通知渠道 → 写入 sys_alert_log。
+     *
+     * @param cooldownSeconds 冷却窗口（秒），同规则在此窗口内只告警一次
+     * @return 是否实际发出告警
+     */
+    private boolean fireAlert(
+            RuntimeSettings settings,
+            String ruleName,
+            String severity,
+            String summary,
+            Map<String, Object> details,
+            int cooldownSeconds) {
         OffsetDateTime cooldownSince = OffsetDateTime.now().minusSeconds(cooldownSeconds);
         Long recentAlerts = alertLogMapper.selectCount(Wrappers.<SysAlertLog>lambdaQuery()
-                .eq(SysAlertLog::getRuleName, RULE_BRUTE_FORCE)
+                .eq(SysAlertLog::getRuleName, ruleName)
                 .ge(SysAlertLog::getCreatedAt, cooldownSince));
         if (recentAlerts != null && recentAlerts > 0) {
             SnailJobLog.REMOTE.info(
-                    "Audit alert suppressed: cooldown={}s, recent={}",
+                    "Audit alert suppressed: rule={} cooldown={}s recent={}",
+                    ruleName,
                     cooldownSeconds,
                     recentAlerts);
             return false;
         }
 
-        String summary = "Audit log volume " + volume + " exceeded threshold " + threshold
-                + " in last " + windowSeconds + " seconds";
         List<String> notified = notifyChannels(settings, summary);
 
         SysAlertLog alert = new SysAlertLog();
-        alert.setRuleName(RULE_BRUTE_FORCE);
-        alert.setSeverity("WARNING");
+        alert.setRuleName(ruleName);
+        alert.setSeverity(severity);
         alert.setSummary(summary);
-        Map<String, Object> details = new HashMap<>();
-        details.put("volume", volume);
-        details.put("threshold", threshold);
-        details.put("window_seconds", windowSeconds);
-        details.put("window_minutes", windowMinutes);
-        details.put("since", since.toString());
         alert.setDetails(details);
         alert.setNotifiedVia(notified.isEmpty() ? "sys_alert_log" : String.join(",", notified));
         alert.setCreatedAt(OffsetDateTime.now());
         alertLogMapper.insert(alert);
-        SnailJobLog.REMOTE.info("Wrote sys_alert_log id={}", alert.getId());
+        SnailJobLog.REMOTE.info("Wrote sys_alert_log rule={} id={}", ruleName, alert.getId());
         return true;
     }
 

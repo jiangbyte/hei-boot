@@ -25,6 +25,10 @@ public class AuthOptionsResult {
     private Boolean registerAllowEmail = false;
     /** 门户注册是否允许手机通道 */
     private Boolean registerAllowPhone = false;
+    /** 用户名通道注册是否必填邮箱 */
+    private Boolean registerRequireEmail = false;
+    /** 用户名通道注册是否必填手机号 */
+    private Boolean registerRequirePhone = false;
     /** 当前端是否强制绑定邮箱 */
     private Boolean forceBindEmail = false;
     /** 当前端是否强制绑定手机 */

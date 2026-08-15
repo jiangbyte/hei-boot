@@ -110,6 +110,10 @@ public class AuthServiceImpl implements AuthService {
         }
         result.setForceBindEmail(configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_EMAIL", false));
         result.setForceBindPhone(configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false));
+        result.setRegisterRequireEmail(configApi.getBoolean(
+                "AUTH_REGISTER_" + typeName + "_REQUIRE_EMAIL", type == AccountType.PORTAL));
+        result.setRegisterRequirePhone(configApi.getBoolean(
+                "AUTH_REGISTER_" + typeName + "_REQUIRE_PHONE", false));
         result.setOauthProviders(buildOauthProviderOptions(type));
         result.setPasswordChangeVerifyMethod(
                 configApi.getValue("PASSWORD_CHANGE_VERIFY_METHOD", "OLD_PASSWORD").trim().toUpperCase(Locale.ROOT));
@@ -255,6 +259,21 @@ public class AuthServiceImpl implements AuthService {
             accountName = requireAccountName(request.getAccount());
             if (accountApi.findByIdentifier(accountName, "ACCOUNT") != null) {
                 throw new BizException("账号已存在");
+            }
+            // 策略要求联系方式时，ACCOUNT 通道需在载荷中补齐（缺失则拒绝）
+            email = StringUtils.hasText(request.getEmail())
+                    ? request.getEmail().trim().toLowerCase(Locale.ROOT)
+                    : null;
+            phone = StringUtils.hasText(request.getPhone())
+                    ? request.getPhone().trim()
+                    : null;
+            if (configApi.getBoolean("AUTH_REGISTER_PORTAL_REQUIRE_EMAIL", true)
+                    && !StringUtils.hasText(email)) {
+                throw new BizException("注册必填邮箱");
+            }
+            if (configApi.getBoolean("AUTH_REGISTER_PORTAL_REQUIRE_PHONE", false)
+                    && !StringUtils.hasText(phone)) {
+                throw new BizException("注册必填手机号");
             }
         } else if ("EMAIL".equals(channel)) {
             email = normalizeTarget("EMAIL", request.getEmail());
