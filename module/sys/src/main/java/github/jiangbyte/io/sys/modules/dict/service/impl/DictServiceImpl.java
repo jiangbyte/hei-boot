@@ -48,6 +48,9 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
 
     private static final Logger log = LoggerFactory.getLogger(DictServiceImpl.class);
 
+    /** 字典分类仅允许 SYS / BIZ（与 hei-fastapi SysBizCategory 枚举对齐）。 */
+    private static final Set<String> DICT_CATEGORIES = Set.of("SYS", "BIZ");
+
     private final SysDictConvert dictConvert;
     private final DictionaryTransService dictionaryTransService;
     private final TransService transService;
@@ -58,9 +61,17 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
         refreshTransCache();
     }
 
+    /** 校验字典分类：仅允许 SYS / BIZ。 */
+    private void validateCategory(String category) {
+        if (StringUtils.hasText(category) && !DICT_CATEGORIES.contains(category)) {
+            throw new BizException("Dict category must be SYS or BIZ");
+        }
+    }
+
     @Override
     @Transactional
     public void create(SysDictAddParam param) {
+        validateCategory(param.getCategory());
         // 校验唯一性
         SysDict existing = getBaseMapper().selectOne(Wrappers.<SysDict>lambdaQuery()
                 .eq(SysDict::getCode, param.getCode()).last("limit 1"));
@@ -75,6 +86,7 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
     @Override
     @Transactional
     public void update(SysDictEditParam param) {
+        validateCategory(param.getCategory());
         // 按主键加载
         SysDict dict = this.getById(param.getId());
         if (dict == null) {

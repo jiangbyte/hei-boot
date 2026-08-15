@@ -1467,12 +1467,12 @@ INSERT INTO "public"."sys_dict" VALUES ('100212', 'NOTIFICATION_CATEGORY_APPROVA
 INSERT INTO "public"."sys_dict" VALUES ('100213', 'NOTIFICATION_CATEGORY_SYSTEM', '系统', 'SYSTEM', '#18a058', 'SYS', '100210', 'ENABLED', 3, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100214', 'NOTIFICATION_CATEGORY_SECURITY', '安全', 'SECURITY', '#d03050', 'SYS', '100210', 'ENABLED', 4, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100215', 'NOTIFICATION_CATEGORY_BIZ', '业务', 'BIZ', '#f0a020', 'SYS', '100210', 'ENABLED', 5, '2026-08-08 00:00:00+00', NULL, '2026-08-08 00:00:00+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_provider', 'OAUTH_PROVIDER', '三方登录提供商', 'OAUTH_PROVIDER', NULL, 'SYSTEM', NULL, 'ENABLED', 90, '2026-08-12 15:57:59.360135+00', NULL, '2026-08-12 15:57:59.360135+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_github', 'GITHUB', 'GitHub', 'GITHUB', NULL, 'OAUTH_PROVIDER', 'dict_oauth_provider', 'ENABLED', 1, '2026-08-12 15:57:59.376072+00', NULL, '2026-08-12 15:57:59.376072+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_gitee', 'GITEE', 'Gitee', 'GITEE', NULL, 'OAUTH_PROVIDER', 'dict_oauth_provider', 'ENABLED', 2, '2026-08-12 15:57:59.380323+00', NULL, '2026-08-12 15:57:59.380323+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_qq', 'QQ', 'QQ', 'QQ', NULL, 'OAUTH_PROVIDER', 'dict_oauth_provider', 'ENABLED', 3, '2026-08-12 15:57:59.384444+00', NULL, '2026-08-12 15:57:59.384444+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_open', 'WECHAT_OPEN', '微信开放平台', 'WECHAT_OPEN', NULL, 'OAUTH_PROVIDER', 'dict_oauth_provider', 'ENABLED', 4, '2026-08-12 15:57:59.388141+00', NULL, '2026-08-12 15:57:59.388141+00', NULL);
-INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_mp', 'WECHAT_MP', '微信小程序', 'WECHAT_MP', NULL, 'OAUTH_PROVIDER', 'dict_oauth_provider', 'ENABLED', 5, '2026-08-12 15:57:59.392548+00', NULL, '2026-08-12 15:57:59.392548+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_provider', 'OAUTH_PROVIDER', '三方登录提供商', 'OAUTH_PROVIDER', NULL, 'SYS', NULL, 'ENABLED', 90, '2026-08-12 15:57:59.360135+00', NULL, '2026-08-12 15:57:59.360135+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_github', 'GITHUB', 'GitHub', 'GITHUB', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 1, '2026-08-12 15:57:59.376072+00', NULL, '2026-08-12 15:57:59.376072+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_gitee', 'GITEE', 'Gitee', 'GITEE', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 2, '2026-08-12 15:57:59.380323+00', NULL, '2026-08-12 15:57:59.380323+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_qq', 'QQ', 'QQ', 'QQ', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 3, '2026-08-12 15:57:59.384444+00', NULL, '2026-08-12 15:57:59.384444+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_open', 'WECHAT_OPEN', '微信开放平台', 'WECHAT_OPEN', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 4, '2026-08-12 15:57:59.388141+00', NULL, '2026-08-12 15:57:59.388141+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('dict_oauth_wechat_mp', 'WECHAT_MP', '微信小程序', 'WECHAT_MP', NULL, 'SYS', 'dict_oauth_provider', 'ENABLED', 5, '2026-08-12 15:57:59.392548+00', NULL, '2026-08-12 15:57:59.392548+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_file
