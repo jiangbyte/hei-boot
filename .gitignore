@@ -11,3 +11,8 @@ logs/
 /storage/
 *.jar
 *.war
+
+# IDE/工具缓存目录
+.zcode/
+__pycache__/
+*.pyc
