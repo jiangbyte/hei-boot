@@ -259,7 +259,7 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 | --- | --- | --- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架（本仓库） | Apache License 2.0 |
 | [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | Apache License 2.0 |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 异步脚手架 | Apache License 2.0 |
 
 ## License
 
