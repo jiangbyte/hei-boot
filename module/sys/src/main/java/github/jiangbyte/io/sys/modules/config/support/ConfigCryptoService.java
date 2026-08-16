@@ -27,7 +27,8 @@ public class ConfigCryptoService {
     void init() {
         // 无配置密钥初始化 Fernet
         if (!StringUtils.hasText(cryptoKey)) {
-            log.warn("hei.config.crypto-key / APP__CONFIG_CRYPTO_KEY is empty; Fernet-encrypted config values will be used as-is");
+            log.warn("hei.config.crypto-key / APP__CONFIG_CRYPTO_KEY is empty; "
+                    + "startup will fail if sys_config contains Fernet-encrypted values");
             return;
         }
         try {
