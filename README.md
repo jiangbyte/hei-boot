@@ -9,7 +9,7 @@
 
 HEI Boot 是一个 Spring Boot 一体化应用脚手架：**一个后端应用同时提供管理端（Admin）与门户（Portal）两套 API**，配合同仓维护的三个前端工程，覆盖账号认证、组织权限（RBAC）、系统管理、消息反馈与运营工作台等常用能力，开箱即用、可按需裁剪。
 
-- **后端**：JDK 21 · Spring Boot 4.1 · Maven 多模块 · PostgreSQL · Redis · Sa-Token · MyBatis-Plus · JustAuth · SnailJob
+- **后端**：JDK 21 · Spring Boot 4.1 · Maven 多模块 · PostgreSQL · Redis · Sa-Token · MyBatis-Plus · JustAuth
 - **前端**：`web/admin`（Vue 3 / Naive UI）· `web/portal`（React / Ant Design）· `web/admin-uniapp`（uni-app）
 - **数据约定**：Java 层驼峰命名；对外 JSON 字段使用 `snake_case`，标量（含 boolean / 数字）统一按字符串收发
 
@@ -38,7 +38,7 @@ HEI Boot 是一个 Spring Boot 一体化应用脚手架：**一个后端应用�
 **运营与调度**
 
 - 运营工作台（`module/dashboard`）：账号、会话、审计、文件等核心指标概览与 7 日趋势
-- SnailJob 分布式任务：注销账号清理、Banner 定时上下架、审计量级告警
+- 内置任务调度（`module/sys`）：注销账号清理、Banner 定时上下架、审计量级告警，CRON / 固定间隔触发，Redis 锁防多实例重复执行
 
 ## 技术栈
 
@@ -49,7 +49,7 @@ HEI Boot 是一个 Spring Boot 一体化应用脚手架：**一个后端应用�
 | 缓存 / 会话 | Redis、Redisson、Sa-Token、lock4j |
 | 安全 | Sa-Token 双端鉴权、JustAuth、图形验证码、登录锁定 / 限流、AES / RSA 加密 |
 | 观测 / 运维 | springdoc + Knife4j、Actuator + Prometheus、结构化日志、操作审计 |
-| 任务 | SnailJob 2.0（Executor 客户端内嵌） |
+| 任务 | sys 模块内置调度（CRON 表达式 / 固定间隔，Redis @Lock4j 分布式锁） |
 | 其他 | easy-trans（关联回显）、hutool、AWS SDK S3、spring-cloud-vault（可选） |
 
 | 前端 | 技术 |
@@ -108,7 +108,7 @@ mvn -pl app/admin -am spring-boot:run
 | http://127.0.0.1:8000/doc.html | Knife4j 接口文档 |
 | http://127.0.0.1:8000/actuator/health | 健康检查 |
 
-> SnailJob 客户端在开发环境默认启用（连接 `127.0.0.1:17888`）。本地未启动 SnailJob Server 时任务不会执行，但不影响主流程；如需关闭可设置 `SNAIL_JOB_ENABLED=false`。
+> 内置任务调度随应用进程运行（默认每 1s 扫描一次 `sys_job` 到期任务）。任务定义与触发配置在管理端「系统管理 → 任务管理」维护；多实例部署时通过 Redis 分布式锁保证同一任务仅执行一次。
 
 ### 3. 启动前端
 
@@ -203,7 +203,7 @@ cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
 ```text
 hei-boot
 ├── app
-│   └── admin                    # 唯一可运行应用：Admin / Portal API + SnailJob 客户端
+│   └── admin                    # 唯一可运行应用：Admin / Portal API
 ├── common                       # 通用能力（core / web / mybatis / redis / satoken / security / log / oss / notify / job / doc）
 ├── module-api                   # 跨模块窄接口（auth / iam / sys / profile）
 ├── module                       # 业务模块（auth / iam / sys / profile / dashboard / biz 样板）
@@ -236,7 +236,8 @@ hei-boot
 | `DB_WRITE_URL` / `DB_WRITE_USERNAME` / `DB_WRITE_PASSWORD` | 主库连接（可用 `DB_READ_*` 配置读库） | `127.0.0.1:5432/hei_boot` / `postgres` / `123456` |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE` | 会话、验证码与审计 | `127.0.0.1` / `6379` / `123456` / `0` |
 | `HEI_CONFIG_CRYPTO_KEY` | 敏感配置加密密钥（Fernet），无默认值 | 开发内置默认 |
-| `SNAIL_JOB_ENABLED` | 是否启用 SnailJob 客户端 | dev 开 / prod 关 |
+| `HEI_JOB_SCAN_INTERVAL_MS` | 内置任务调度扫描间隔 | `1000` |
+| `HEI_JOB_POOL_SIZE` | 内置任务执行线程池大小 | `4` |
 | `HEI_LOG_AUDIT_CONSUME_ENABLED` | 操作审计异步消费开关 | `true` |
 | `LOG_JSON` | 日志格式（JSON / 键值） | 键值 |
 
@@ -262,14 +263,14 @@ docker build -f app/admin/Dockerfile -t hei-boot-admin .
 | `REDIS_HOST`（可选 port / password / database） | 会话与 Redis Stream 审计 |
 | `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值，首次上线必须设置） |
 
-可选：`SNAIL_JOB_ENABLED` / `SNAIL_JOB_SERVER_HOST` / `SNAIL_JOB_NAMESPACE` / `SNAIL_JOB_GROUP` / `SNAIL_JOB_TOKEN`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
+可选：`HEI_JOB_SCAN_INTERVAL_MS` / `HEI_JOB_POOL_SIZE`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
 
 ### 上线检查清单
 
 - 轮换 `superadmin` 默认密码与 `HEI_CONFIG_CRYPTO_KEY`
 - 关闭文档 / Actuator / Druid 控制台公网暴露
 - 仅在可信反向代理后开启 `hei.security.trust-forwarded-headers`
-- 生产建议 `SNAIL_JOB_ENABLED=false`，由独立 SnailJob Server 调度
+- 多实例部署时保持 Redis 可用（任务执行依赖 Redis 分布式锁）
 
 ## 二次开发
 
@@ -297,4 +298,4 @@ git commit -m "feat: describe your change"
 
 ## 许可证
 
-本项目使用 [Apache License 2.0](LICENSE) 开源协议。
+本项目使用 [Apache License 2.0](LICENSE) 开源协议，版权归属声明见 [NOTICE](NOTICE)。
