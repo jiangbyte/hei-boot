@@ -6,7 +6,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { jobApi } from '@/api'
-import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon, wireBool } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
@@ -90,7 +90,7 @@ const pagination = computed<PaginationProps>(() => ({
 }))
 
 function renderEnabled(row: any) {
-  return row.enabled ? (
+  return wireBool(row.enabled) ? (
     <NTag size="small" type="success" bordered={false}>
       启用
     </NTag>
@@ -201,7 +201,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         ) : null}
         {hasPermission('sys:job:update') ? (
           <NButton size="small" text={true} onClick={() => toggleEnabled(row)}>
-            {renderButtonIcon(row.enabled ? 'icon-park-outline:pause' : 'icon-park-outline:play')}
+            {renderButtonIcon(wireBool(row.enabled) ? 'icon-park-outline:pause' : 'icon-park-outline:play')}
           </NButton>
         ) : null}
         {hasPermission('sys:job:delete') ? (
@@ -275,7 +275,7 @@ function confirmRun(row: any) {
 }
 
 function toggleEnabled(row: any) {
-  const target = !row.enabled
+  const target = !wireBool(row.enabled)
   window.$dialog.info({
     title: target ? '启用任务' : '停用任务',
     draggable: true,

@@ -5,7 +5,7 @@
 -->
 <script setup lang="ts">
 import { jobApi } from '@/api'
-import { displayValue, formatDateTime, hasPermission } from '@/utils'
+import { displayValue, formatDateTime, hasPermission, wireBool } from '@/utils'
 import { computed, onMounted, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -92,7 +92,7 @@ watch(dataId, (id) => {
                   启用状态
                 </div>
                 <div class="meta-value">
-                  {{ state.detail.enabled ? '启用' : '停用' }}
+                  {{ wireBool(state.detail.enabled) ? '启用' : '停用' }}
                 </div>
               </div>
               <div class="meta-item">
