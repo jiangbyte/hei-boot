@@ -7,134 +7,16 @@
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 
-HEI Boot 是一个 Spring Boot 一体化应用脚手架：**一个后端应用同时提供管理端（Admin）与门户（Portal）两套 API**，配合同仓维护的三个前端工程，覆盖账号认证、组织权限（RBAC）、系统管理、消息反馈与运营工作台等常用能力，开箱即用、可按需裁剪。
+**HEI Boot** 是一个 Spring Boot 后端脚手架：一个应用同时提供**管理端（Admin）**与**门户（Portal）**双端 API，覆盖账号认证、组织权限（RBAC）、系统管理、消息反馈与运营工作台等常用能力。配合同仓维护的 Vue 3 / React / uni-app 三套前端，开箱即用、可按需裁剪。
 
-- **后端**：JDK 21 · Spring Boot 4.1 · Maven 多模块 · PostgreSQL · Redis · Sa-Token · MyBatis-Plus · JustAuth
-- **前端**：`web/admin`（Vue 3 / Naive UI）· `web/portal`（React / Ant Design）· `web/admin-uniapp`（uni-app）
-- **数据约定**：Java 层驼峰命名；对外 JSON 字段使用 `snake_case`，标量（含 boolean / 数字）统一按字符串收发
+## 特性
 
-## 姊妹项目
-
-| 项目 | 说明 | 协议 |
-| :--- | :--- | :--- |
-| [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
-| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
-| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | Apache License 2.0 |
-
-## 功能特性
-
-**认证与账号（`module/auth`）**
-
-- 双端登录：ADMIN / PORTAL 两套独立账号体系与会话（Sa-Token + Redis）
-- 账号 / 邮箱 / 手机号多种身份登录，密码登录（RSA 加密传输）与验证码登录（OTP）
-- 图形验证码（SVG / PNG）、登录失败锁定与限流防护
-- 忘记 / 重置密码、注册（门户）
-- 三方登录（JustAuth）：GitHub、Gitee、QQ、微信开放平台、微信小程序；管理员可绑定 / 解绑
-
-**组织与权限（`module/iam`）**
-
-- 账号、角色、部门、用户组、岗位管理
-- 菜单资源、资源模块、客户端资源多层授权（RBAC）
-- 在线会话查询与强制下线
-
-**系统管理（`module/sys`）**
-
-- 数据字典、系统配置（含敏感配置加密存储）、Banner、文件存储（S3 / 本地）
-- 弱口令清单、操作审计（Redis Stream 异步落库）、代码生成
-- 公告 / 通知、意见反馈（管理端 + 门户双端）
-
-**运营与调度**
-
-- 运营工作台（`module/dashboard`）：账号、会话、审计、文件等核心指标概览与 7 日趋势
-- 内置任务调度（`module/sys`）：注销账号清理、Banner 定时上下架、审计量级告警，CRON / 固定间隔触发，Redis 锁防多实例重复执行
-
-## 技术栈
-
-| 分类 | 选型 |
-| :--- | :--- |
-| 语言 / 框架 | JDK 21、Spring Boot 4.1、Spring MVC、Maven 多模块（Flatten + CI-Friendly 版本） |
-| 数据 | PostgreSQL、MyBatis-Plus（MyBatis-Plus-Join）、dynamic-datasource（读写分离）、Druid |
-| 缓存 / 会话 | Redis、Redisson、Sa-Token、lock4j |
-| 安全 | Sa-Token 双端鉴权、JustAuth、图形验证码、登录锁定 / 限流、AES / RSA 加密 |
-| 观测 / 运维 | springdoc + Knife4j、Actuator + Prometheus、结构化日志、操作审计 |
-| 任务 | sys 模块内置调度（CRON 表达式 / 固定间隔，Redis @Lock4j 分布式锁） |
-| 其他 | easy-trans（关联回显）、hutool、AWS SDK S3、spring-cloud-vault（可选） |
-
-| 前端 | 技术 |
-| :--- | :--- |
-| `web/admin` | Vue 3.5、Naive UI 2、Pinia、Vue Router、Vite 8、TypeScript |
-| `web/portal` | React 19、Ant Design 6、zustand、Vite 8、TypeScript |
-| `web/admin-uniapp` | uni-app 3（H5 / 小程序） |
-
-## 架构
-
-后端只有**一个可运行应用** `app/admin`，按请求前缀区分管理端与门户两套接口，双账号体系会话相互隔离；业务能力按模块划分，由 `app/admin` 显式依赖装配。
-
-| 分层 | 说明 |
-| :--- | :--- |
-| `common/*` | 通用能力：web、mybatis、redis、satoken、security、log、oss、notify、job、doc |
-| `module-api/*` | 跨模块窄接口（auth-api / iam-api / sys-api / profile-api） |
-| `module/*` | 业务模块：auth、iam、sys、profile、dashboard，以及样板模块 biz |
-| `web/*` | 独立前端工程（无共享依赖层） |
-
-## 快速开始
-
-### 环境要求
-
-- JDK 21、Maven 3.9+
-- PostgreSQL、Redis
-- Node.js 22+ 与 pnpm 9+（前端）
-
-### 1. 初始化数据库
-
-以 `scripts/db.sql` 为权威库表与种子数据源（含全部表结构、菜单、权限、字典、配置与 `superadmin` 账号）。
-
-```bash
-# 创建数据库
-createdb -U postgres -h 127.0.0.1 hei_boot
-
-# 导入库表与种子数据（也可用 Navicat / DataGrip 等工具直接执行该文件）
-psql -U postgres -h 127.0.0.1 -d hei_boot -f scripts/db.sql
-```
-
-### 2. 启动后端
-
-开发默认配置见 `app/admin/src/main/resources/application-dev.yml`：
-
-- 数据库：`jdbc:postgresql://127.0.0.1:5432/hei_boot`（`postgres` / `123456`）
-- Redis：`127.0.0.1:6379`（密码 `123456`，库 0）
-
-```bash
-mvn -pl app/admin -am spring-boot:run
-```
-
-启动后可访问：
-
-| 地址 | 说明 |
-| :--- | :--- |
-| http://127.0.0.1:8000 | Admin API |
-| http://127.0.0.1:8000/doc.html | Knife4j 接口文档 |
-| http://127.0.0.1:8000/actuator/health | 健康检查 |
-
-> 内置任务调度随应用进程运行（默认每 1s 扫描一次 `sys_job` 到期任务）。任务定义与触发配置在管理端「系统管理 → 任务管理」维护；多实例部署时通过 Redis 分布式锁保证同一任务仅执行一次。
-
-### 3. 启动前端
-
-```bash
-cd web/admin && pnpm install && pnpm dev    # http://127.0.0.1:5173
-cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
-```
-
-前端开发模式通过 Vite 将 `/api` 代理到后端 `http://127.0.0.1:8000`。
-
-### 默认账号
-
-| 端 | 地址 | 账号 | 密码 |
-| :--- | :--- | :--- | :--- |
-| Admin | http://localhost:5173 | `superadmin` | `123456` |
-| Portal | http://localhost:5174 | `user` | `123456` |
-
-> 登录需要图形验证码（后端将验证码明文小写的 SHA-256 存入 Redis `captcha:{id}`，TTL 5 分钟）。本地自动化调试可用 `scripts/read_captcha.py` 从 Redis 还原验证码明文。**生产环境首次启动后请立即修改默认密码。**
+- **双端账号体系**：ADMIN / PORTAL 独立会话（Sa-Token）；密码 RSA 加密传输、验证码登录、登录锁定与限流、JustAuth 三方登录
+- **RBAC 权限**：账号 / 角色 / 部门 / 用户组 / 岗位，菜单与资源多层授权，在线会话管理
+- **系统管理**：字典、配置（敏感加密）、Banner、文件存储（本地 / S3 兼容）、公告通知、意见反馈、弱口令清单
+- **运维能力**：操作审计与告警、运营工作台概览与 7 日趋势、内置任务调度（`sys_job` 管理台）
+- **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
+- **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
 
 ## 界面预览
 
@@ -151,7 +33,7 @@ cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
   </tr>
 </table>
 
-### 管理端 Admin · 登录 / 工作台
+### 管理端 · 登录 / 工作台
 
 <table>
   <tr>
@@ -164,7 +46,7 @@ cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
   </tr>
 </table>
 
-### 管理端 Admin · 组织权限
+### 管理端 · 组织权限
 
 <table>
   <tr>
@@ -185,7 +67,7 @@ cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
   </tr>
 </table>
 
-### 管理端 Admin · 系统运维
+### 管理端 · 系统运维
 
 <table>
   <tr>
@@ -206,104 +88,80 @@ cd web/portal && pnpm install && pnpm dev   # http://127.0.0.1:5174
   </tr>
 </table>
 
-## 项目结构
+### 管理端 · 消息与文件
 
-```text
-hei-boot
-├── app
-│   └── admin                    # 唯一可运行应用：Admin / Portal API
-├── common                       # 通用能力（core / web / mybatis / redis / satoken / security / log / oss / notify / job / doc）
-├── module-api                   # 跨模块窄接口（auth / iam / sys / profile）
-├── module                       # 业务模块（auth / iam / sys / profile / dashboard / biz 样板）
-├── web                          # 前端（admin / portal / admin-uniapp）
-├── docs                         # 文档与界面截图
-└── scripts
-    ├── db.sql                   # 权威库表与种子数据
-    └── read_captcha.py          # 开发辅助：从 Redis 还原登录图形验证码
-```
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-sys-banner.png" alt="Banner 管理" /></td>
+    <td width="50%"><img src="docs/images/admin-message-notice.png" alt="公告通知" /></td>
+  </tr>
+  <tr>
+    <td align="center">Banner 管理</td>
+    <td align="center">公告通知</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/admin-message-feedback.png" alt="意见反馈" /></td>
+    <td width="50%"><img src="docs/images/admin-sys-file.png" alt="文件管理" /></td>
+  </tr>
+  <tr>
+    <td align="center">意见反馈</td>
+    <td align="center">文件管理</td>
+  </tr>
+</table>
 
-## 主要 API
+## 快速开始
 
-| 前缀 | 用途 |
-| :--- | :--- |
-| `/api/v1/admin/**` | 管理端接口 |
-| `/api/v1/portal/**` | 门户接口 |
-| `/api/v1/files/**` | 公开文件读取（可配置） |
-| `/api/*/internal/**` | 集群内部接口（勿对公网暴露） |
-| `/actuator/**` | 健康与指标（勿对公网暴露） |
-| `/doc.html`、`/v3/api-docs` | OpenAPI / Knife4j 接口文档 |
+### 环境要求
 
-常用接口：`/api/v1/{admin|portal}/login`、`/captcha`、`/oauth/**`、`/sys/**`（账号、角色、字典、配置、公告、反馈等）、`/profile/**`、`/dashboard/overview`。
+- JDK 21、Maven 3.9+
+- PostgreSQL、Redis
+- Node.js 22+ 与 pnpm 9+（前端）
 
-## 配置说明
-
-配置文件位于 `app/admin/src/main/resources/`，包含 `application.yml` 与 `application-dev.yml` / `application-local.yml` / `application-prod.yml` 三个 profile（默认 `dev`，通过 `SPRING_PROFILES_ACTIVE` 切换）。
-
-| 配置项 | 说明 | 默认（dev） |
-| :--- | :--- | :--- |
-| `DB_WRITE_URL` / `DB_WRITE_USERNAME` / `DB_WRITE_PASSWORD` | 主库连接（可用 `DB_READ_*` 配置读库） | `127.0.0.1:5432/hei_boot` / `postgres` / `123456` |
-| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE` | 会话、验证码与审计 | `127.0.0.1` / `6379` / `123456` / `0` |
-| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置加密密钥（Fernet），无默认值 | 开发内置默认 |
-| `HEI_JOB_SCAN_INTERVAL_MS` | 内置任务调度扫描间隔 | `1000` |
-| `HEI_JOB_POOL_SIZE` | 内置任务执行线程池大小 | `4` |
-| `HEI_LOG_AUDIT_CONSUME_ENABLED` | 操作审计异步消费开关 | `true` |
-| `LOG_JSON` | 日志格式（JSON / 键值） | 键值 |
-
-## 生产部署
-
-### 构建镜像
-
-仓库为 `app/admin`、`web/admin`、`web/portal` 分别提供 Dockerfile：
+### 初始化数据库
 
 ```bash
-# 后端镜像（生产包排除样板业务模块 biz）
-mvn -pl app/admin -am -P'!with-biz' package -DskipTests
-docker build -f app/admin/Dockerfile -t hei-boot-admin .
+createdb -U postgres -h 127.0.0.1 hei_boot
+psql -U postgres -h 127.0.0.1 -d hei_boot -f scripts/db.sql
 ```
 
-前端镜像由各自 Dockerfile 构建（nginx 托管静态资源，`/api` 反向代理到后端，`BACKEND_URL` 可配）。
-
-### 生产必填环境变量
-
-| 变量 | 说明 |
-| :--- | :--- |
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 主库连接（也可用 `DB_WRITE_*` / `DB_READ_*`） |
-| `REDIS_HOST`（可选 port / password / database） | 会话与 Redis Stream 审计 |
-| `HEI_CONFIG_CRYPTO_KEY` | 敏感配置 Fernet 密钥（无默认值，首次上线必须设置） |
-
-可选：`HEI_JOB_SCAN_INTERVAL_MS` / `HEI_JOB_POOL_SIZE`、`HEI_LOG_AUDIT_CONSUME_ENABLED`、`LOG_JSON`、`HEI_SECURITY_TRUST_FORWARDED_HEADERS`。
-
-### 上线检查清单
-
-- 轮换 `superadmin` 默认密码与 `HEI_CONFIG_CRYPTO_KEY`
-- 关闭文档 / Actuator / Druid 控制台公网暴露
-- 仅在可信反向代理后开启 `hei.security.trust-forwarded-headers`
-- 多实例部署时保持 Redis 可用（任务执行依赖 Redis 分布式锁）
-
-## 二次开发
-
-1. 在 `module/` 新增业务模块：`@AutoConfiguration` + `@ComponentScan`，跨模块契约放入 `module-api/`
-2. 在根 `pom.xml` `dependencyManagement` 登记版本，并加入 `module/pom.xml` 的 modules
-3. 在 `app/admin/pom.xml` **显式依赖**新模块（样板 `biz` 走 `with-biz` profile）
-4. 库表 / 菜单 / 权限 / 字典 / 配置种子统一维护在 `scripts/db.sql`
-5. 配置改动走 `application-*.yml` 或环境变量（如 `hei.security.ignore-urls`）
-
-开发约定：业务表继承 `BaseEntity`（`id` + 审计四字段）；领域服务 `XxxService` / `XxxServiceImpl`；权限用 `@SaCheckPermission` / `@SaCheckLogin`；关联回显用 easy-trans，联表查询用 MyBatis-Plus-Join，只读库用 `@ReadDataSource`。
-
-## 代码贡献
-
-欢迎 Issue 与 PR。提交前请确认：
-
-- Controller 入参与出参符合 `snake_case` 字符串线格式约定
-- 遵守模块边界：`app` / `common` / `module-api` / `module` / `web/*`
-- 兼容 JDK 21、Spring Boot 4、Jakarta 体系；敏感配置走环境变量；文档随行为同步
+### 启动后端
 
 ```bash
-git checkout -b feature/your-change
-mvn clean package -DskipTests
-git commit -m "feat: describe your change"
+mvn -pl app/admin -am spring-boot:run
 ```
 
-## 开源协议
+启动后 API 位于 `http://127.0.0.1:8000`（接口文档 `http://127.0.0.1:8000/doc.html`）。
 
-本项目使用 [Apache License 2.0](LICENSE) 开源协议，三个姊妹项目（hei-boot / hei-gin / hei-fastapi）协议一致。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
+### 启动前端
+
+```bash
+cd web/admin && pnpm install && pnpm dev   # http://127.0.0.1:5173
+cd web/portal && pnpm install && pnpm dev  # http://127.0.0.1:5174
+```
+
+### 默认账号
+
+| 端 | 地址 | 账号 | 密码 |
+| --- | --- | --- | --- |
+| Admin | http://localhost:5173 | `superadmin` | `123456` |
+| Portal | http://localhost:5174 | `user` | `123456` |
+
+> 生产环境首次启动后请立即修改默认密码。
+
+## 文档
+
+- [docs/README.md](docs/README.md) — 架构与二次开发指南
+- [app/admin/src/main/resources/application-dev.yml](app/admin/src/main/resources/application-dev.yml) — 开发配置
+- [scripts/db.sql](scripts/db.sql) — 数据库 schema 与种子数据
+
+## 姊妹项目
+
+| 项目 | 说明 | 协议 |
+| --- | --- | --- |
+| [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架 | Apache License 2.0 |
+| [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
+| [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 原型项目（早期阶段，仅供参考） | Apache License 2.0 |
+
+## License
+
+本项目使用 [Apache License 2.0](LICENSE) 开源协议，三个姊妹项目协议一致。完整条款见 [LICENSE](LICENSE)，版权归属声明见 [NOTICE](NOTICE)。
