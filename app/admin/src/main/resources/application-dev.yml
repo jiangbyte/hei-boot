@@ -58,7 +58,6 @@ spring:
   flyway:
     enabled: false
 
-# SnailJob Server 本地用 docker-compose.snailjob.yml（勿嵌入业务进程）
 hei:
   logging:
     json: false
@@ -68,9 +67,3 @@ hei:
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}
-
-snail-job:
-  enabled: ${SNAIL_JOB_ENABLED:true}
-  server:
-    host: ${SNAIL_JOB_SERVER_HOST:127.0.0.1}
-    port: ${SNAIL_JOB_SERVER_PORT:17888}

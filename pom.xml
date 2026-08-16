@@ -41,7 +41,6 @@
         <redisson.version>4.6.1</redisson.version>
         <lock4j.version>2.2.7</lock4j.version>
         <aws.sdk.version>2.42.9</aws.sdk.version>
-        <snail-job.version>2.0.0</snail-job.version>
         <mybatis-spring-boot.version>4.0.1</mybatis-spring-boot.version>
         <flyway.version>12.4.0</flyway.version>
         <justauth.version>1.16.7</justauth.version>
@@ -267,16 +266,6 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>s3</artifactId>
                 <version>${aws.sdk.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.aizuda</groupId>
-                <artifactId>snail-job-client-starter</artifactId>
-                <version>${snail-job.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.aizuda</groupId>
-                <artifactId>snail-job-client-job-core</artifactId>
-                <version>${snail-job.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.mybatis.spring.boot</groupId>

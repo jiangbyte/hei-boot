@@ -690,6 +690,100 @@ INSERT INTO "public"."sys_account_password_history" VALUES ('7491872892125335552
 INSERT INTO "public"."sys_account_password_history" VALUES ('7491985391344615424', '7491847383584804864', '$2b$12$562T0duxv9fT5lEOWRMMjey8MwEZeXOuyQuP705mJznyOCnbvsxGu', '7491847383584804864', 'self_reset', '2026-08-08 22:35:11.342559+00');
 
 -- ----------------------------
+-- Table structure for sys_job
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job";
+CREATE TABLE "public"."sys_job" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_class" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_type" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
+  "trigger_config" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_param" json,
+  "last_run_time" timestamptz(6),
+  "next_run_time" timestamptz(6) NOT NULL,
+  "last_execute_result" varchar(500) COLLATE "pg_catalog"."default",
+  "enabled" bool NOT NULL,
+  "description" varchar(500) COLLATE "pg_catalog"."default",
+  "sort" int4 NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_job"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_job"."job_name" IS '任务名称';
+COMMENT ON COLUMN "public"."sys_job"."execute_class" IS '执行类（JobHandler 全限定类名）';
+COMMENT ON COLUMN "public"."sys_job"."execute_type" IS '触发类型：CRON（表达式）/ FIXED（固定间隔）';
+COMMENT ON COLUMN "public"."sys_job"."trigger_config" IS '触发配置：CRON 表达式或固定间隔秒数';
+COMMENT ON COLUMN "public"."sys_job"."execute_param" IS '执行参数（JSON）';
+COMMENT ON COLUMN "public"."sys_job"."last_run_time" IS '上次执行时间';
+COMMENT ON COLUMN "public"."sys_job"."next_run_time" IS '下次执行时间';
+COMMENT ON COLUMN "public"."sys_job"."last_execute_result" IS '上次执行结果摘要';
+COMMENT ON COLUMN "public"."sys_job"."enabled" IS '启用状态';
+COMMENT ON COLUMN "public"."sys_job"."description" IS '任务描述';
+COMMENT ON COLUMN "public"."sys_job"."sort" IS '排序';
+COMMENT ON COLUMN "public"."sys_job"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_job"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_job"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_job"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_job
+-- ----------------------------
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000001', '示例任务', 'github.jiangbyte.io.sys.modules.job.sample.SysJobSample', 'FIXED', '60', '{}', NULL, now(), NULL, 't', '演示调度链路：回显执行参数', 1, now(), NULL, now(), NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000002', 'Banner 状态同步', 'github.jiangbyte.io.sys.modules.banner.job.BannerStatusJob', 'FIXED', '60', '{}', NULL, now(), NULL, 't', '按 start_at / end_at 激活或过期 Banner', 2, now(), NULL, now(), NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000003', 'Banner 互动计数刷库', 'github.jiangbyte.io.sys.modules.banner.job.BannerFlushInteractionsJob', 'FIXED', '60', '{}', NULL, now(), NULL, 't', '将 Redis 互动增量写入 sys_banner.interaction_count', 3, now(), NULL, now(), NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000004', '审计告警', 'github.jiangbyte.io.sys.modules.audit.job.AuditAlertJob', 'FIXED', '300', '{}', NULL, now(), NULL, 't', '按配置规则扫描审计日志并发送告警', 4, now(), NULL, now(), NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000005', '本地孤立文件清理', 'github.jiangbyte.io.sys.modules.file.job.SysFileCleanupLocalOrphansJob', 'FIXED', '3600', '{"minAgeMinutes": 60}', NULL, now(), NULL, 't', '删除早于保留期且无 sys_file 元数据行的本地文件', 5, now(), NULL, now(), NULL);
+INSERT INTO "public"."sys_job" VALUES ('7541000000000000006', '注销账号清理', 'github.jiangbyte.io.iam.modules.account.job.AccountPurgeCancelledJob', 'CRON', '0 0 3 * * *', '{"retentionDays": 15}', NULL, now(), NULL, 't', '每日清理已取消且超过保留期的账号数据', 6, now(), NULL, now(), NULL);
+
+-- ----------------------------
+-- Table structure for sys_job_log
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_job_log";
+CREATE TABLE "public"."sys_job_log" (
+  "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "execute_param" json,
+  "execute_time" timestamptz(6) NOT NULL,
+  "execute_duration_ms" int8,
+  "success" bool NOT NULL,
+  "execute_result" text COLLATE "pg_catalog"."default",
+  "executor" varchar(64) COLLATE "pg_catalog"."default",
+  "ip" varchar(64) COLLATE "pg_catalog"."default",
+  "process_id" varchar(32) COLLATE "pg_catalog"."default",
+  "app_dir" varchar(500) COLLATE "pg_catalog"."default",
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_job_log"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_job_log"."job_id" IS '任务ID';
+COMMENT ON COLUMN "public"."sys_job_log"."job_name" IS '任务名称';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_param" IS '执行参数快照（JSON）';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_time" IS '执行开始时间';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_duration_ms" IS '执行用时（毫秒）';
+COMMENT ON COLUMN "public"."sys_job_log"."success" IS '执行结果：是否成功';
+COMMENT ON COLUMN "public"."sys_job_log"."execute_result" IS '执行结果摘要 / 错误信息';
+COMMENT ON COLUMN "public"."sys_job_log"."executor" IS '执行人（人工触发为账号 id，调度触发为 system）';
+COMMENT ON COLUMN "public"."sys_job_log"."ip" IS '执行实例 IP';
+COMMENT ON COLUMN "public"."sys_job_log"."process_id" IS '执行实例进程 ID';
+COMMENT ON COLUMN "public"."sys_job_log"."app_dir" IS '执行实例程序目录';
+COMMENT ON COLUMN "public"."sys_job_log"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_job_log"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_job_log"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_job_log"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_job_log
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sys_alert_log
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."sys_alert_log";
@@ -1640,6 +1734,13 @@ INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202205', 'RESOURCE',
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202209', 'RESOURCE', '202209', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:publish', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '发布消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202240', 'RESOURCE', '202240', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:revoke', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '撤回消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('rel_notice_202241', 'RESOURCE', '202241', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:notice:pin', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '置顶消息', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-08 13:06:55.992098+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_menu_page', 'RESOURCE', '204001', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:page', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '分页任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_create', 'RESOURCE', '204011', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:create', 'CASCADE', 'ALL', '[]', 'f', 1, 'ENABLED', '新增任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_update', 'RESOURCE', '204012', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:update', 'CASCADE', 'ALL', '[]', 'f', 2, 'ENABLED', '编辑任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_delete', 'RESOURCE', '204013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:delete', 'CASCADE', 'ALL', '[]', 'f', 3, 'ENABLED', '删除任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_detail', 'RESOURCE', '204014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:detail', 'CASCADE', 'ALL', '[]', 'f', 4, 'ENABLED', '任务详情', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_run', 'RESOURCE', '204015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:run', 'CASCADE', 'ALL', '[]', 'f', 5, 'ENABLED', '立即执行', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('rel_job_btn_log', 'RESOURCE', '204016', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:joblog:page', 'CASCADE', 'ALL', '[]', 'f', 6, 'ENABLED', '执行日志', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_operation_audit_log
@@ -2058,6 +2159,16 @@ INSERT INTO "public"."sys_resource" VALUES ('203043','202007','biz-cgtestknowled
 INSERT INTO "public"."sys_resource" VALUES ('203044','202007','biz-cgtestknowledgecategory-update','编辑知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,40,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
 INSERT INTO "public"."sys_resource" VALUES ('203045','202007','biz-cgtestknowledgecategory-delete','删除知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,50,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
 INSERT INTO "public"."sys_resource" VALUES ('203046','202007','biz-cgtestknowledgecategory-list','树列表知识分类','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,90,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-08 00:00:00+00',NULL,'2026-08-08 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204001','200003','sys-job','任务管理','MENU','210001','/sys/job','/sys/job/index.vue',NULL,'icon-park-outline:timer',NULL,NULL,4,'t','f','f','ENABLED','任务调度管理（CRON / 固定间隔，Redis 锁防多实例重复执行）',NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204011','204001','sys-job-create','新增任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,1,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204012','204001','sys-job-update','编辑任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,2,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204013','204001','sys-job-delete','删除任务','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,3,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204014','204001','sys-job-detail','任务详情','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,4,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204015','204001','sys-job-run','立即执行','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,5,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204016','204001','sys-job-log','执行日志','BUTTON','210001',NULL,NULL,NULL,NULL,NULL,NULL,6,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204021','204001','sys-job-create-page','新增任务页','PAGE','210001','/sys/job/create','/sys/job/form.vue',NULL,NULL,NULL,NULL,7,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204022','204001','sys-job-edit-page','编辑任务页','PAGE','210001','/sys/job/edit','/sys/job/form.vue',NULL,NULL,NULL,NULL,8,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
+INSERT INTO "public"."sys_resource" VALUES ('204023','204001','sys-job-detail-page','任务详情页','PAGE','210001','/sys/job/detail','/sys/job/detail.vue',NULL,NULL,NULL,NULL,9,'f','f','f','ENABLED',NULL,NULL,'{}','2026-08-16 00:00:00+00',NULL,'2026-08-16 00:00:00+00',NULL);
 
 -- ----------------------------
 -- Table structure for sys_resource_module

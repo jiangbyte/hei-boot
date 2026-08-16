@@ -15,6 +15,7 @@ import github.jiangbyte.io.sys.modules.banner.param.SysBannerEditParam;
 import github.jiangbyte.io.sys.modules.banner.param.SysBannerPageParam;
 import github.jiangbyte.io.sys.modules.banner.service.BannerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,8 +32,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> implements BannerService {
 
+    /** Redis 中 Banner 互动计数增量哈希键（对齐 hei-fastapi banner_interaction_delta_key）。 */
+    public static final String INTERACTION_DELTA_KEY = "hei:banner:interaction:deltas";
+
     private final SysBannerConvert bannerConvert;
     private final FileApi fileApi;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
     @Transactional
@@ -161,7 +166,7 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         if (banner.getEndAt() != null && banner.getEndAt().isBefore(now)) {
             throw new BizException("Banner is not publicly visible");
         }
-        banner.setInteractionCount((banner.getInteractionCount() == null ? 0L : banner.getInteractionCount()) + 1);
-        this.updateById(banner);
+        // 计数先入 Redis 增量，由 bannerFlushInteractions 周期任务刷入 DB（对齐 hei-fastapi）
+        stringRedisTemplate.opsForHash().increment(INTERACTION_DELTA_KEY, id, 1L);
     }
 }

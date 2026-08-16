@@ -175,14 +175,11 @@ hei:
     namespace: ${VAULT_NAMESPACE:}
     fail-fast: ${HEI_VAULT_FAIL_FAST:true}
 
-snail-job:
-  enabled: ${SNAIL_JOB_ENABLED:true}
-  namespace: ${SNAIL_JOB_NAMESPACE:764d604ec6fc45f68cd92514c40e9e1a}
-  group: ${SNAIL_JOB_GROUP:BOOT}
-  token: ${SNAIL_JOB_TOKEN:SJ_Wyz3dmsdbDOkDujOTSSoBjGQP1BMsVnj}
-  server:
-    host: ${SNAIL_JOB_SERVER_HOST:127.0.0.1}
-    port: ${SNAIL_JOB_SERVER_PORT:17888}
+# 内置单体任务调度（sys 模块）：扫描间隔 / 执行线程池大小
+hei:
+  job:
+    scan-interval-ms: ${HEI_JOB_SCAN_INTERVAL_MS:1000}
+    pool-size: ${HEI_JOB_POOL_SIZE:4}
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*Mapper.xml

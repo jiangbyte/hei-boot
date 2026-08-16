@@ -68,9 +68,3 @@ hei:
   log:
     audit:
       consume-enabled: true
-
-snail-job:
-  enabled: ${SNAIL_JOB_ENABLED:true}
-  server:
-    host: ${SNAIL_JOB_SERVER_HOST:127.0.0.1}
-    port: ${SNAIL_JOB_SERVER_PORT:17888}

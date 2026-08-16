@@ -12,6 +12,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * 本地磁盘对象存储实现，适用于开发与单机部署。
@@ -54,6 +57,30 @@ public class LocalStorageService implements StorageService {
             throw new BizException(404, "File not found");
         }
         return new FileSystemResource(path);
+    }
+
+    /** 枚举本地存储的全部对象（相对根目录的斜杠路径 + 最后修改时间毫秒）。 */
+    @Override
+    public List<LocalObjectEntry> listLocalObjects() {
+        List<LocalObjectEntry> entries = new ArrayList<>();
+        Path base = Path.of(properties.getLocal().getBasePath()).toAbsolutePath().normalize();
+        if (!Files.isDirectory(base)) {
+            return entries;
+        }
+        try (Stream<Path> stream = Files.walk(base)) {
+            stream.filter(Files::isRegularFile).forEach(path -> {
+                try {
+                    String relative = base.relativize(path).toString().replace('\\', '/');
+                    long lastModified = Files.getLastModifiedTime(path).toMillis();
+                    entries.add(new LocalObjectEntry(relative, lastModified));
+                } catch (IOException ignored) {
+                    // 忽略单个文件读取失败
+                }
+            });
+        } catch (IOException ignored) {
+            // 忽略遍历失败
+        }
+        return entries;
     }
 
     /** 返回本地对象的公开 URL。 */

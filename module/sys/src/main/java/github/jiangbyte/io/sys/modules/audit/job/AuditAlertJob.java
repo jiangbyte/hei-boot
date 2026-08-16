@@ -1,10 +1,7 @@
 package github.jiangbyte.io.sys.modules.audit.job;
 
-import com.aizuda.snailjob.client.job.core.annotation.JobExecutor;
-import com.aizuda.snailjob.client.job.core.dto.JobArgs;
-import com.aizuda.snailjob.common.log.SnailJobLog;
-import com.aizuda.snailjob.model.dto.ExecuteResult;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import github.jiangbyte.io.common.job.JobHandler;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.push.PushSenderFacade;
 import github.jiangbyte.io.sys.config.RuntimeSettings;
@@ -15,6 +12,7 @@ import github.jiangbyte.io.sys.modules.audit.mapper.SysAlertLogMapper;
 import github.jiangbyte.io.sys.modules.audit.mapper.SysOperationAuditLogMapper;
 import github.jiangbyte.io.sys.modules.config.support.AuditAlertTestSender;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -32,9 +30,10 @@ import java.util.stream.Collectors;
  *
  * Author: Charlie
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
-public class AuditAlertJob {
+public class AuditAlertJob implements JobHandler {
 
     private static final String RULE_BRUTE_FORCE = "audit_volume";
     private static final String RULE_UNUSUAL_HOURS = "unusual_hours";
@@ -52,12 +51,12 @@ public class AuditAlertJob {
     private final MailSenderFacade mailSenderFacade;
     private final AuditAlertTestSender auditAlertTestSender;
 
-    @JobExecutor(name = "auditAlertJob")
-    public ExecuteResult jobExecute(JobArgs jobArgs) {
+    @Override
+    public String execute(String params) {
         RuntimeSettings settings = RuntimeSettingsHolder.get();
         if (!settings.getBoolean("AUDIT_ALERT_ENABLED", true)) {
-            SnailJobLog.REMOTE.info("Audit alert disabled via AUDIT_ALERT_ENABLED=false");
-            return ExecuteResult.success("disabled");
+            log.info("Audit alert disabled via AUDIT_ALERT_ENABLED=false");
+            return "disabled";
         }
 
         int fired = 0;
@@ -87,7 +86,7 @@ public class AuditAlertJob {
             }
         }
 
-        return ExecuteResult.success("done fired=" + fired);
+        return "done fired=" + fired;
     }
 
     /**
@@ -102,7 +101,7 @@ public class AuditAlertJob {
         Long count = auditLogMapper.selectCount(Wrappers.<SysOperationAuditLog>lambdaQuery()
                 .ge(SysOperationAuditLog::getCreatedAt, since));
         long volume = count == null ? 0L : count;
-        SnailJobLog.REMOTE.info("Audit volume in last {}s: {}, threshold={}", windowSeconds, volume, threshold);
+        log.info("Audit volume in last {}s: {}, threshold={}", windowSeconds, volume, threshold);
         if (volume < threshold) {
             return false;
         }
@@ -263,7 +262,7 @@ public class AuditAlertJob {
                 .eq(SysAlertLog::getRuleName, ruleName)
                 .ge(SysAlertLog::getCreatedAt, cooldownSince));
         if (recentAlerts != null && recentAlerts > 0) {
-            SnailJobLog.REMOTE.info(
+            log.info(
                     "Audit alert suppressed: rule={} cooldown={}s recent={}",
                     ruleName,
                     cooldownSeconds,
@@ -281,7 +280,7 @@ public class AuditAlertJob {
         alert.setNotifiedVia(notified.isEmpty() ? "sys_alert_log" : String.join(",", notified));
         alert.setCreatedAt(OffsetDateTime.now());
         alertLogMapper.insert(alert);
-        SnailJobLog.REMOTE.info("Wrote sys_alert_log rule={} id={}", ruleName, alert.getId());
+        log.info("Wrote sys_alert_log rule={} id={}", ruleName, alert.getId());
         return true;
     }
 
@@ -292,7 +291,7 @@ public class AuditAlertJob {
                 pushSenderFacade.send("审计告警", summary);
                 notified.add("push");
             } catch (Exception ex) {
-                SnailJobLog.REMOTE.info("Push notify failed: {}", ex.getMessage());
+                log.info("Push notify failed: {}", ex.getMessage());
             }
         }
         if (settings.getBoolean("AUDIT_ALERT_NOTIFY_EMAIL", true)) {
@@ -302,10 +301,10 @@ public class AuditAlertJob {
                     mailSenderFacade.send(to, "审计告警", summary);
                     notified.add("email");
                 } catch (Exception ex) {
-                    SnailJobLog.REMOTE.info("Email notify failed: {}", ex.getMessage());
+                    log.info("Email notify failed: {}", ex.getMessage());
                 }
             } else {
-                SnailJobLog.REMOTE.info("Email notify skipped: AUDIT_ALERT_NOTIFY_EMAIL_TO empty");
+                log.info("Email notify skipped: AUDIT_ALERT_NOTIFY_EMAIL_TO empty");
             }
         }
         if (settings.getBoolean("AUDIT_ALERT_NOTIFY_CUSTOM_WEBHOOK", false)) {
@@ -315,7 +314,7 @@ public class AuditAlertJob {
                     auditAlertTestSender.testWebhook(webhook, settings.get("AUDIT_ALERT_WEBHOOK_SECRET", ""));
                     notified.add("webhook");
                 } catch (Exception ex) {
-                    SnailJobLog.REMOTE.info("Webhook notify failed: {}", ex.getMessage());
+                    log.info("Webhook notify failed: {}", ex.getMessage());
                 }
             }
         }

@@ -19,8 +19,8 @@
 
 ## 职责边界（简）
 
-- **`app/admin`**：可运行业务 API + 内嵌 SnailJob 客户端；数据库以 `scripts/db.sql` 为权威。
-- **SnailJob Server**：独立容器（见 `script/docker/docker-compose.snailjob.yml`），不 vendor 进仓库。
+- **`app/admin`**：唯一可运行应用（Admin / Portal API + 内置任务调度）；数据库以 `scripts/db.sql` 为权威。
+- **`module/sys` 任务调度**：任务定义在 `sys_job` 表（CRON / 固定间隔），随应用进程运行，Redis 锁防多实例重复执行。
 - **`module/*` / `module-api/*`**：业务实现与跨模块窄接口；`module/auth` 含登录 / OTP / 找回密码 / JustAuth OAuth；样板业务在 `module/biz`，生产打包用 `-P'!with-biz'` 排除。
 - **`web/admin` / `web/portal` / `web/admin-uniapp`**：各自独立前端工程（无 `web/packages` 共享层）。
 - **`script/`**：本地脚本与辅助资产；**`deploy/`**：部署参考（Helm）。
