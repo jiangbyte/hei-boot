@@ -55,10 +55,10 @@ public interface DashboardStatsMapper {
      * 统计自 since 起每日新增账号数。
      */
     @Select("""
-            SELECT TO_CHAR(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
+            SELECT TO_CHAR((created_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
             FROM sys_account
             WHERE created_at >= #{since}
-            GROUP BY created_at::date
+            GROUP BY (created_at AT TIME ZONE 'Asia/Shanghai')::date
             ORDER BY day
             """)
     List<Map<String, Object>> accountDailyCounts(@Param("since") OffsetDateTime since);
@@ -67,10 +67,10 @@ public interface DashboardStatsMapper {
      * 统计自 since 起每日审计日志数。
      */
     @Select("""
-            SELECT TO_CHAR(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
+            SELECT TO_CHAR((created_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
             FROM sys_operation_audit_log
             WHERE created_at >= #{since}
-            GROUP BY created_at::date
+            GROUP BY (created_at AT TIME ZONE 'Asia/Shanghai')::date
             ORDER BY day
             """)
     List<Map<String, Object>> auditDailyCounts(@Param("since") OffsetDateTime since);

@@ -156,11 +156,8 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     @Override
     @ReadDataSource
     public SysFileUrlResult url(String objectName) {
-        // 校验唯一性
         SysFile file = getBaseMapper().selectOne(Wrappers.<SysFile>lambdaQuery()
                 .eq(SysFile::getObjectName, objectName).last("limit 1"));
-        // 始终重新生成访问 URL（fastapi get_url → storage.get_object_url）。
-        // 库中 url 可能是已过期的 S3 预签名，不能原样返回。
         String objectKey = fileAccessUrls.toObjectKey(objectName);
         if (objectKey == null) {
             throw new BizException(404, "File not found");
@@ -171,7 +168,6 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     @Override
     @ReadDataSource
     public SysFileUrlResult presignedUrl(String objectName) {
-        // 校验唯一性
         SysFile file = getBaseMapper().selectOne(Wrappers.<SysFile>lambdaQuery()
                 .eq(SysFile::getObjectName, objectName).last("limit 1"));
         int expireSeconds = RuntimeSettingsHolder.get().getInt(
@@ -188,7 +184,6 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     @Override
     @ReadDataSource
     public Page<SysFile> page(SysFilePageParam param) {
-        // 分页查询
         Page<SysFile> page = this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<SysFile>lambdaQuery()
                         .like(StringUtils.hasText(param.getOriginalName()), SysFile::getOriginalName, param.getOriginalName())
@@ -201,46 +196,21 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     }
 
     @Override
-    public Resource publicDownload(String objectName) {
-        if (!StringUtils.hasText(objectName)) {
-            throw new BizException(400, "object_name required");
-        }
-        if (objectName.contains("..") || objectName.startsWith("/") || objectName.contains("\\")) {
-            throw new BizException(400, "Invalid object_name");
-        }
-        SysFile file = getBaseMapper().selectOne(Wrappers.<SysFile>lambdaQuery()
-                .eq(SysFile::getObjectName, objectName)
-                .last("limit 1"));
-        if (file == null) {
-            // 不存在则抛出业务异常
-            throw new BizException(404, "File not found");
-        }
-        String objectKey = fileAccessUrls.toObjectKey(file.getObjectName());
-        if (objectKey == null) {
-            throw new BizException(404, "File not found");
-        }
-        return storageFor(file).load(objectKey);
-    }
-
-    @Override
     @Transactional
     public void deleteByObjectName(String objectName) {
         if (!StringUtils.hasText(objectName) || objectName.startsWith("http://") || objectName.startsWith("https://")) {
             return;
         }
-        // 按 objectName 加载
         SysFile file = getBaseMapper().selectOne(Wrappers.<SysFile>lambdaQuery()
                 .eq(SysFile::getObjectName, objectName).last("limit 1"));
         if (file == null) {
             return;
         }
-        // 删存储后删库（object_name 可能为 URL/路径形式，统一转纯 key）
         String objectKey = fileAccessUrls.toObjectKey(objectName);
         if (objectKey != null) {
             try {
                 storageFor(file).delete(objectKey);
             } catch (Exception ex) {
-                // 存储删除失败不阻断元数据清理，仅记录警告
                 log.warn("Failed to delete storage object, skip (object={}, provider={}): {}",
                         objectKey, file.getStorageProvider(), ex.getMessage());
             }
@@ -251,8 +221,46 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
     @Override
     @ReadDataSource
     public String resolveAccessUrl(String objectNameOrUrl) {
-        // 跨模块：路径风格 /api/v1/files/...（fastapi resolve_file_url；前端 FILES_PUBLIC_PATH）
-        return fileAccessUrls.resolveFileUrl(objectNameOrUrl);
+        if (!StringUtils.hasText(objectNameOrUrl)) {
+            return null;
+        }
+        String raw = objectNameOrUrl.trim();
+        if (fileAccessUrls.isExternalUrl(raw)) {
+            // 永久外链（无签名参数）原样返回；预签/脏存储 URL 再解析
+            if (!fileAccessUrls.looksLikePresignedUrl(raw)) {
+                return raw;
+            }
+            String objectKey = fileAccessUrls.toObjectKey(raw);
+            if (!StringUtils.hasText(objectKey)) {
+                return null;
+            }
+            SysFile file = findByObjectName(objectKey);
+            if (file == null) {
+                int slash = objectKey.indexOf('/');
+                if (slash > 0) {
+                    String alt = objectKey.substring(slash + 1);
+                    file = findByObjectName(alt);
+                    if (file != null) {
+                        objectKey = alt;
+                    }
+                }
+            }
+            return storageFor(file).publicUrl(objectKey);
+        }
+        String objectKey = fileAccessUrls.toObjectKey(raw);
+        if (!StringUtils.hasText(objectKey)) {
+            return null;
+        }
+        SysFile file = findByObjectName(objectKey);
+        return storageFor(file).publicUrl(objectKey);
+    }
+
+    private SysFile findByObjectName(String objectKey) {
+        if (!StringUtils.hasText(objectKey)) {
+            return null;
+        }
+        return getBaseMapper().selectOne(Wrappers.<SysFile>lambdaQuery()
+                .eq(SysFile::getObjectName, objectKey).last("limit 1"));
     }
 
     @Override
@@ -273,17 +281,9 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         }
         List<SysFile> result = new ArrayList<>();
         for (List<String> batch : BatchPartition.partition(normalized)) {
-            // 组装查询条件
             getBaseMapper().selectList(Wrappers.<SysFile>lambdaQuery()
                             .in(SysFile::getObjectName, batch))
-                    .forEach(file -> {
-                        // 跨模块消费优先稳定公网路径（非 S3 预签名）。
-                        String access = fileAccessUrls.resolveFileUrl(file.getObjectName());
-                        if (StringUtils.hasText(access)) {
-                            file.setUrl(access);
-                        }
-                        result.add(file);
-                    });
+                    .forEach(file -> result.add(withResolvedUrl(file)));
         }
         return result;
     }
@@ -300,8 +300,8 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         try {
             String contentType = sanitizeContentType(file.getContentType());
             StorageService storage = storageEngineFactory.get(storageConfig);
-            // 写入对象存储
-            String url = storage.put(objectName, file.getInputStream(), file.getSize(), contentType);
+            // 写入对象存储（put 返回值仅作即时提示；落库不存预签名）
+            storage.put(objectName, file.getInputStream(), file.getSize(), contentType);
             // 落库元数据并解析访问 URL
             SysFile entity = new SysFile();
             entity.setObjectName(objectName);
@@ -310,7 +310,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
             entity.setBucket(storageConfig.getBucket());
             entity.setContentType(contentType);
             entity.setSize(file.getSize());
-            entity.setUrl(url);
+            entity.setUrl(objectName);
             this.save(entity);
             return withResolvedUrl(entity);
         } catch (IOException exception) {

@@ -63,7 +63,7 @@ hei:
     json: false
   # 与 hei-fastapi/.env 的 APP__CONFIG_CRYPTO_KEY 保持一致（仅开发）
   config:
-    crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
+    crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:}}
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}

@@ -1,6 +1,8 @@
 package github.jiangbyte.io.sys.modules.job.support;
 
+import github.jiangbyte.io.sys.modules.job.config.HeiJobProperties;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -15,6 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Configuration
 @EnableScheduling
+@EnableConfigurationProperties(HeiJobProperties.class)
 public class JobSchedulingConfiguration {
 
     /** 任务执行线程池：池满时由调度线程兜底执行（CallerRunsPolicy）。 */

@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,15 +34,16 @@ import java.util.Map;
 public class DashboardServiceImpl implements DashboardService {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final DashboardStatsMapper statsMapper;
 
     @ReadDataSource
     @Override
     public DashboardOverviewResult overview() {
-        // 计算今日起点与近七日窗口
-        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        OffsetDateTime dayStart = now.toLocalDate().atStartOfDay().atOffset(ZoneOffset.UTC);
+        // 计算今日起点与近七日窗口（业务时区 Asia/Shanghai）
+        OffsetDateTime now = OffsetDateTime.now(BIZ_ZONE);
+        OffsetDateTime dayStart = now.toLocalDate().atStartOfDay(BIZ_ZONE).toOffsetDateTime();
         OffsetDateTime since = dayStart.minusDays(6);
 
         // 一次聚合计数
@@ -98,7 +99,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
         List<DashboardTrendPointResult> points = new ArrayList<>(7);
         for (int i = 0; i < 7; i++) {
-            String day = since.plusDays(i).toLocalDate().format(DAY);
+            String day = since.plusDays(i).atZoneSameInstant(BIZ_ZONE).toLocalDate().format(DAY);
             points.add(new DashboardTrendPointResult(day.substring(5), type, byDay.getOrDefault(day, 0L)));
         }
         return points;

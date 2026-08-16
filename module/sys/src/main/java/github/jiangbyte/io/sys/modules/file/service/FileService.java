@@ -50,9 +50,6 @@ public interface FileService extends IService<SysFile> {
     /** 分页查询。 */
     Page<SysFile> page(SysFilePageParam param);
 
-    /** 公开下载本地文件。 */
-    Resource publicDownload(String objectName);
-
     /** 按对象名删除文件。 */
     void deleteByObjectName(String objectName);
 

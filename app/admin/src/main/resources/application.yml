@@ -83,6 +83,7 @@ hei:
   app:
     name: ${HEI_APP_NAME:HEI}
     frontend-base-url: ${HEI_FRONTEND_BASE_URL:http://localhost:5173}
+    portal-frontend-base-url: ${HEI_PORTAL_FRONTEND_BASE_URL:http://localhost:5174}
     password-reset-expire-minutes: ${HEI_PASSWORD_RESET_EXPIRE_MINUTES:30}
   security:
     expose-docs: ${HEI_SECURITY_EXPOSE_DOCS:true}
@@ -128,8 +129,6 @@ hei:
       - /api/v1/portal/sys/resources/current
       - /api/v1/portal/sys/notices/list
       - /api/*/internal/**
-      - /api/v1/files
-      - /api/v1/files/**
   rate-limit:
     enabled: ${HEI_RATE_LIMIT_ENABLED:true}
     default-permits: ${HEI_RATE_LIMIT_DEFAULT_PERMITS:60}
@@ -174,12 +173,15 @@ hei:
     kv-path: ${HEI_VAULT_KV_PATH:hei/boot}
     namespace: ${VAULT_NAMESPACE:}
     fail-fast: ${HEI_VAULT_FAIL_FAST:true}
-
-# 内置单体任务调度（sys 模块）：扫描间隔 / 执行线程池大小
-hei:
+  # 内置单体任务调度（sys 模块）：扫描间隔 / 执行线程池大小
   job:
     scan-interval-ms: ${HEI_JOB_SCAN_INTERVAL_MS:1000}
     pool-size: ${HEI_JOB_POOL_SIZE:4}
+    log:
+      # 保留天数；小于等于 0 表示跳过清理
+      retention-days: ${HEI_JOB_LOG_RETENTION_DAYS:30}
+      # 单次删除上限，避免大表一次 DELETE 过久
+      batch-size: ${HEI_JOB_LOG_BATCH_SIZE:1000}
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*Mapper.xml

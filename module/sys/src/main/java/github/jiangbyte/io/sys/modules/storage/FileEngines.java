@@ -7,26 +7,23 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 文件存储引擎常量与 DEFAULT_FILE_ENGINE 映射（对齐 hei-fastapi）。
+ * 文件存储引擎常量与 DEFAULT_FILE_ENGINE 映射。
  *
  * Author: Charlie
  */
 public final class FileEngines {
 
-    public static final String ENGINE_LOCAL = "LOCAL";
     public static final String ENGINE_MINIO = "MINIO";
     public static final String ENGINE_RUSTFS = "RUSTFS";
     public static final String ENGINE_ALIYUN = "ALIYUN";
     public static final String ENGINE_TENCENT = "TENCENT";
 
-    public static final String PROVIDER_LOCAL = "local";
     public static final String PROVIDER_MINIO = "minio";
     public static final String PROVIDER_RUSTFS = "rustfs";
     public static final String PROVIDER_OSS = "oss";
     public static final String PROVIDER_S3 = "s3";
 
     private static final Map<String, String> ENGINE_TO_PROVIDER = Map.of(
-            ENGINE_LOCAL, PROVIDER_LOCAL,
             ENGINE_MINIO, PROVIDER_MINIO,
             ENGINE_RUSTFS, PROVIDER_RUSTFS,
             ENGINE_ALIYUN, PROVIDER_OSS,
@@ -34,7 +31,6 @@ public final class FileEngines {
     );
 
     private static final Map<String, String> PROVIDER_TO_ENGINE = Map.of(
-            PROVIDER_LOCAL, ENGINE_LOCAL,
             PROVIDER_MINIO, ENGINE_MINIO,
             PROVIDER_RUSTFS, ENGINE_RUSTFS,
             PROVIDER_OSS, ENGINE_ALIYUN,
@@ -42,7 +38,6 @@ public final class FileEngines {
     );
 
     private static final Map<String, String> PROVIDER_TO_KEY_PREFIX = Map.of(
-            PROVIDER_LOCAL, "STORAGE_LOCAL",
             PROVIDER_MINIO, "STORAGE_MINIO",
             PROVIDER_RUSTFS, "STORAGE_RUSTFS",
             PROVIDER_OSS, "STORAGE_ALIYUN",
@@ -104,17 +99,12 @@ public final class FileEngines {
         return prefix + "_" + fieldSuffix;
     }
 
-    /** 是否本地存储引擎。 */
-    public static boolean isLocal(String provider) {
-        return PROVIDER_LOCAL.equals(normalizeProvider(provider));
-    }
-
     /** 是否 S3 兼容引擎。 */
     public static boolean isS3Compatible(String provider) {
         return S3_COMPAT_PROVIDERS.contains(normalizeProvider(provider));
     }
 
     public static String toOssType(String provider) {
-        return isLocal(provider) ? "local" : "s3";
+        return "s3";
     }
 }

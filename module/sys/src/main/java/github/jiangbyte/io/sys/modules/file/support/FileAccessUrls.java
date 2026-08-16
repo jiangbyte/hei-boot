@@ -1,28 +1,26 @@
 package github.jiangbyte.io.sys.modules.file.support;
 
-import github.jiangbyte.io.sys.modules.storage.ResolvedStorageConfig;
-import github.jiangbyte.io.sys.modules.storage.StorageSettingsResolver;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 /**
- * 文件访问 URL 组装工具。
+ * 文件对象名规范化与访问 URL 解析（统一走 FileService.resolveAccessUrl）。
  *
  * Author: Charlie
  */
 @Component
-@RequiredArgsConstructor
 public class FileAccessUrls {
 
-    private final StorageSettingsResolver storageSettingsResolver;
+    private final ObjectProvider<github.jiangbyte.io.sys.modules.file.service.FileService> fileServiceProvider;
+
+    public FileAccessUrls(
+            ObjectProvider<github.jiangbyte.io.sys.modules.file.service.FileService> fileServiceProvider) {
+        this.fileServiceProvider = fileServiceProvider;
+    }
 
     public boolean isExternalUrl(String value) {
         if (!StringUtils.hasText(value)) {
@@ -40,7 +38,19 @@ public class FileAccessUrls {
         }
     }
 
-    /** 规范化对象名。 */
+    /** 是否疑似预签名 / 临时存储 URL（不可当永久地址透传）。 */
+    public boolean looksLikePresignedUrl(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        return lower.contains("x-amz-")
+                || lower.contains("x-oss-")
+                || lower.contains("signature=")
+                || lower.contains("x-goog-signature");
+    }
+
+    /** 规范化对象名（纯 object key）；外部 URL 原样返回。 */
     public String normalizeObjectName(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -49,103 +59,54 @@ public class FileAccessUrls {
         if (isExternalUrl(raw)) {
             return raw;
         }
-        String publicPath = defaultPublicPath().replaceAll("/+$", "");
-        String pathOnly;
-        try {
-            pathOnly = raw.contains("://") ? URI.create(raw).getPath() : raw;
-        } catch (IllegalArgumentException ex) {
-            pathOnly = raw;
-        }
-        if (pathOnly == null) {
-            return null;
-        }
-        pathOnly = pathOnly.replace('\\', '/');
-        String prefix = publicPath + "/";
-        if (pathOnly.startsWith(prefix)) {
-            String stripped = pathOnly.substring(prefix.length()).replaceAll("^/+", "");
-            return StringUtils.hasText(stripped) ? stripped : null;
-        }
-        if (pathOnly.equals(publicPath)) {
-            return null;
-        }
-        String normalized = pathOnly.replaceAll("^/+", "");
-        return StringUtils.hasText(normalized) ? normalized : null;
-    }
-
-    public String buildAccessUrl(String objectName) {
-        if (!StringUtils.hasText(objectName)) {
-            return null;
-        }
-        if (isExternalUrl(objectName)) {
-            return objectName;
-        }
-        String publicPath = defaultPublicPath().replaceAll("/+$", "");
-        if (!publicPath.startsWith("/")) {
-            publicPath = "/" + publicPath;
-        }
-        String path = publicPath + "/" + quoteObjectName(objectName);
-        ResolvedStorageConfig config = storageSettingsResolver.resolveDefault();
-        String baseUrl = config == null ? null : config.getBaseUrl();
-        if (!StringUtils.hasText(baseUrl)) {
-            return path;
-        }
-        String origin = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl.trim();
-        return origin + path;
+        return stripToObjectKey(raw);
     }
 
     /**
-     * 把任意形式的对象引用转成纯 object key（用于存储引擎删除/加载）：
-     * 支持 纯 key（uploads/2024/01/x.jpg）、/api/v1/files/... 路径、完整 http(s) URL。
+     * 把任意形式的对象引用转成纯 object key（用于存储引擎删除/加载）。
      */
     public String toObjectKey(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
         }
-        String raw = value.trim();
-        String pathOnly;
-        try {
-            pathOnly = raw.contains("://") ? URI.create(raw).getPath() : raw;
-        } catch (IllegalArgumentException ex) {
-            pathOnly = raw;
+        if (isExternalUrl(value)) {
+            try {
+                URI uri = URI.create(value.trim());
+                return stripToObjectKey(uri.getPath());
+            } catch (IllegalArgumentException ex) {
+                return null;
+            }
         }
-        if (pathOnly == null) {
-            return null;
-        }
-        pathOnly = pathOnly.replace('\\', '/');
-        // 去掉公开路径前缀（/api/v1/files/...）
-        String publicPath = defaultPublicPath().replaceAll("/+$", "");
-        String prefix = publicPath + "/";
-        if (pathOnly.startsWith(prefix)) {
-            pathOnly = pathOnly.substring(prefix.length());
-        } else if (pathOnly.equals(publicPath)) {
-            return null;
-        }
-        String key = pathOnly.replaceAll("^/+", "");
-        return StringUtils.hasText(key) ? key : null;
+        return stripToObjectKey(value);
     }
 
+    /**
+     * path-style URL 常为 /{bucket}/{key}：若第二段起像业务 key（uploads/），去掉首段 bucket。
+     */
+    public String stripToObjectKey(String pathOrKey) {
+        if (!StringUtils.hasText(pathOrKey)) {
+            return null;
+        }
+        String normalized = pathOrKey.replace('\\', '/').replaceAll("^/+", "");
+        if (normalized.startsWith("api/v1/files/")) {
+            normalized = normalized.substring("api/v1/files/".length());
+        }
+        int slash = normalized.indexOf('/');
+        if (slash > 0) {
+            String rest = normalized.substring(slash + 1);
+            if (rest.startsWith("uploads/")) {
+                normalized = rest;
+            }
+        }
+        return StringUtils.hasText(normalized) ? normalized : null;
+    }
+
+    /** 解析可浏览器访问的 URL（公开直连或预签名）。 */
     public String resolveFileUrl(String value) {
-        String objectName = normalizeObjectName(value);
-        if (!StringUtils.hasText(objectName)) {
-            return null;
+        github.jiangbyte.io.sys.modules.file.service.FileService fileService = fileServiceProvider.getIfAvailable();
+        if (fileService != null) {
+            return fileService.resolveAccessUrl(value);
         }
-        if (isExternalUrl(objectName)) {
-            return objectName;
-        }
-        return buildAccessUrl(objectName);
-    }
-
-    public String defaultPublicPath() {
-        // 解析存储配置
-        ResolvedStorageConfig config = storageSettingsResolver.resolveDefault();
-        String publicPath = config == null ? null : config.getPublicPath();
-        return StringUtils.hasText(publicPath) ? publicPath.trim() : "/api/v1/files";
-    }
-
-    static String quoteObjectName(String objectName) {
-        return Arrays.stream(objectName.replace('\\', '/').split("/"))
-                .filter(StringUtils::hasText)
-                .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
-                .collect(Collectors.joining("/"));
+        return null;
     }
 }

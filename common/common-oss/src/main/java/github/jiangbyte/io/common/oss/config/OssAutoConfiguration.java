@@ -4,7 +4,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * 对象存储自动配置入口：按类型装配 local / S3 实现。
+ * 对象存储自动配置入口：装配 S3 兼容实现。
  *
  * Author: Charlie
  */

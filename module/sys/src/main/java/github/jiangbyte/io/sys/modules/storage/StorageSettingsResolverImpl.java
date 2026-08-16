@@ -18,7 +18,7 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
     public static final String KEY_UPLOAD_MAX_BYTES = "STORAGE_UPLOAD_MAX_BYTES";
     public static final String KEY_PRESIGN_EXPIRE_SECONDS = "STORAGE_PRESIGN_EXPIRE_SECONDS";
 
-    public static final String DEFAULT_ENGINE = "LOCAL";
+    public static final String DEFAULT_ENGINE = "RUSTFS";
     public static final long DEFAULT_UPLOAD_MAX_BYTES = 10_485_760L;
     public static final int DEFAULT_PRESIGN_EXPIRE_SECONDS = 3600;
 
@@ -29,7 +29,6 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
 
     @Override
     public ResolvedStorageConfig resolve(String storageProvider) {
-        // 读取运行时配置并解析提供方
         RuntimeSettings settings = RuntimeSettingsHolder.get();
         String provider = FileEngines.resolveProvider(storageProvider);
         if (provider == null) {
@@ -37,7 +36,7 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
             provider = FileEngines.engineToProvider(engine);
         }
         if (provider == null) {
-            provider = FileEngines.PROVIDER_LOCAL;
+            provider = FileEngines.PROVIDER_RUSTFS;
         }
         return buildForProvider(provider, settings);
     }
@@ -47,33 +46,16 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
         if (engine == null) {
             throw new BizException(400, "Unknown storage provider: " + provider);
         }
-        long uploadMax = settings.getLong(KEY_UPLOAD_MAX_BYTES, DEFAULT_UPLOAD_MAX_BYTES);
-
-        if (FileEngines.isLocal(provider)) {
-            // 组装本地存储快照
-            String localRoot = cfg(settings, provider, "LOCAL_ROOT");
-            if (!StringUtils.hasText(localRoot)) {
-                localRoot = "./storage";
-            }
-            return ResolvedStorageConfig.builder()
-                    .id(provider)
-                    .engine(engine)
-                    .provider(provider)
-                    .localRoot(localRoot)
-                    .windowsRoot(cfg(settings, provider, "WINDOWS_ROOT"))
-                    .publicPath(cfgOr(settings, provider, "PUBLIC_PATH", "/api/v1/files"))
-                    .baseUrl(cfg(settings, provider, "BASE_URL"))
-                    .uploadMaxBytes(uploadMax)
-                    .presignExpireSeconds(settings.getInt(KEY_PRESIGN_EXPIRE_SECONDS, DEFAULT_PRESIGN_EXPIRE_SECONDS))
-                    .build();
+        if (!FileEngines.isS3Compatible(provider)) {
+            throw new BizException(400, "Unsupported storage provider: " + provider);
         }
 
-        // 组装对象存储快照
+        long uploadMax = settings.getLong(KEY_UPLOAD_MAX_BYTES, DEFAULT_UPLOAD_MAX_BYTES);
         boolean pathStyle = FileEngines.PROVIDER_MINIO.equals(provider)
                 || FileEngines.PROVIDER_RUSTFS.equals(provider);
         String region = cfg(settings, provider, "REGION");
         if (!StringUtils.hasText(region)) {
-            region = FileEngines.PROVIDER_RUSTFS.equals(provider) ? "us-east-1" : "us-east-1";
+            region = "us-east-1";
         }
         return ResolvedStorageConfig.builder()
                 .id(provider)
@@ -87,7 +69,7 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
                 .useSsl(parseBool(cfg(settings, provider, "USE_SSL"), true))
                 .pathStyleAccess(pathStyle)
                 .baseUrl(cfg(settings, provider, "BASE_URL"))
-                .publicPath(cfgOr(settings, provider, "PUBLIC_PATH", "/api/v1/files"))
+                .bucketPublic(parseBool(cfg(settings, provider, "BUCKET_PUBLIC"), false))
                 .uploadMaxBytes(uploadMax)
                 .presignExpireSeconds(settings.getInt(KEY_PRESIGN_EXPIRE_SECONDS, DEFAULT_PRESIGN_EXPIRE_SECONDS))
                 .build();
@@ -95,11 +77,6 @@ public class StorageSettingsResolverImpl implements StorageSettingsResolver {
 
     private static String cfg(RuntimeSettings settings, String provider, String suffix) {
         return settings.get(FileEngines.configKey(provider, suffix));
-    }
-
-    private static String cfgOr(RuntimeSettings settings, String provider, String suffix, String fallback) {
-        String value = cfg(settings, provider, suffix);
-        return StringUtils.hasText(value) ? value : fallback;
     }
 
     private static boolean parseBool(String raw, boolean defaultValue) {

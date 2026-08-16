@@ -20,7 +20,11 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 /**
  * 基于 S3 兼容 API 的对象存储实现。
@@ -64,7 +68,6 @@ public class S3StorageService implements StorageService {
             // 对象已不存在：幂等删除成功
         } catch (S3Exception exception) {
             if (isNotFound(exception)) {
-                // 404/NoSuchBucket 等：视为对象不存在，删除成功
                 return;
             }
             throw new BizException(500, "Failed to delete S3 object: " + describe(exception));
@@ -88,20 +91,75 @@ public class S3StorageService implements StorageService {
         }
     }
 
-    /** 返回 S3 对象公开 URL。 */
+    /**
+     * 返回可访问 URL：公开桶→永久直链（优先自定义 Base URL）；非公开→预签名（可选 Base URL host 改写）。
+     */
     @Override
     public String publicUrl(String objectKey) {
         String key = normalizeKey(objectKey);
-        String publicBaseUrl = properties.getS3().getPublicBaseUrl();
-        if (StringUtils.hasText(publicBaseUrl)) {
-            return publicBaseUrl.endsWith("/") ? publicBaseUrl + key : publicBaseUrl + "/" + key;
+        if (properties.getS3().isBucketPublic()) {
+            return buildPublicDirectUrl(key);
         }
-        // 对齐 hei-fastapi S3CompatibleStorage.get_object_url：无 base_url → 预签名 http(s) URL
         int expireSeconds = properties.getS3().getPresignExpireSeconds();
         if (expireSeconds <= 0) {
             expireSeconds = 3600;
         }
         return presignedUrl(key, Duration.ofSeconds(expireSeconds));
+    }
+
+    private String buildPublicDirectUrl(String key) {
+        String publicBaseUrl = properties.getS3().getPublicBaseUrl();
+        if (StringUtils.hasText(publicBaseUrl)) {
+            return joinBaseAndKey(publicBaseUrl, key);
+        }
+        return buildEndpointObjectUrl(key);
+    }
+
+    private String buildEndpointObjectUrl(String key) {
+        String bucket = properties.getS3().getBucket();
+        String endpoint = properties.getS3().getEndpoint();
+        if (!StringUtils.hasText(bucket) || !StringUtils.hasText(endpoint)) {
+            throw new BizException(500, "S3 bucket/endpoint is required for public URL");
+        }
+        String encodedKey = quoteObjectKey(key);
+        String origin = normalizeEndpointOrigin(endpoint);
+        if (properties.getS3().isPathStyleAccess()) {
+            return origin + "/" + bucket + "/" + encodedKey;
+        }
+        // virtual-host: https://bucket.endpoint/key
+        URI uri = URI.create(origin);
+        String host = uri.getRawAuthority();
+        if (!StringUtils.hasText(host)) {
+            return origin + "/" + bucket + "/" + encodedKey;
+        }
+        String scheme = uri.getScheme() == null ? "https" : uri.getScheme();
+        return scheme + "://" + bucket + "." + host + "/" + encodedKey;
+    }
+
+    private static String normalizeEndpointOrigin(String endpoint) {
+        String value = endpoint.trim();
+        if (!value.contains("://")) {
+            value = "https://" + value;
+        }
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
+    }
+
+    private static String joinBaseAndKey(String baseUrl, String key) {
+        String base = baseUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/" + quoteObjectKey(key);
+    }
+
+    private static String quoteObjectKey(String objectKey) {
+        return Arrays.stream(objectKey.replace('\\', '/').split("/"))
+                .filter(StringUtils::hasText)
+                .map(part -> URLEncoder.encode(part, StandardCharsets.UTF_8).replace("+", "%20"))
+                .collect(Collectors.joining("/"));
     }
 
     private static boolean isNotFound(S3Exception exception) {
@@ -146,7 +204,7 @@ public class S3StorageService implements StorageService {
             Duration expire = ttl == null || ttl.isNegative() || ttl.isZero() ? Duration.ofMinutes(15) : ttl;
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                     .bucket(properties.getS3().getBucket())
-                    .key(objectKey)
+                    .key(normalizeKey(objectKey))
                     .build();
             PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(GetObjectPresignRequest.builder()
                     .signatureDuration(expire)
@@ -163,6 +221,10 @@ public class S3StorageService implements StorageService {
      * 保留 SigV4 查询参数；可选地将 scheme/host 改写为 CDN / 公网 base。
      */
     private String rewritePublicHost(String signedUrl) {
+        // 私有桶不做 host 改写，避免 SigV4 SignatureDoesNotMatch
+        if (!properties.getS3().isBucketPublic()) {
+            return signedUrl;
+        }
         String publicBaseUrl = properties.getS3().getPublicBaseUrl();
         if (!StringUtils.hasText(publicBaseUrl)) {
             return signedUrl;

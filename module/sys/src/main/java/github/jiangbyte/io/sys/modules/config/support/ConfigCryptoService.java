@@ -39,12 +39,21 @@ public class ConfigCryptoService {
     }
 
     public String decryptForRead(String value) {
-        // 非密文或未启用加密则原样返回
-        if (!StringUtils.hasText(value) || codec == null || !FernetCodec.looksLikeToken(value)) {
+        if (!StringUtils.hasText(value)) {
             return value;
         }
+        if (!FernetCodec.looksLikeToken(value)) {
+            return value;
+        }
+        if (codec == null) {
+            throw new IllegalStateException(
+                    "Encrypted config value present but hei.config.crypto-key / APP__CONFIG_CRYPTO_KEY is empty");
+        }
         String plain = codec.tryDecrypt(value);
-        return plain != null ? plain : value;
+        if (plain == null) {
+            throw new IllegalStateException("Failed to decrypt config value with current crypto-key");
+        }
+        return plain;
     }
 
     public String encryptForWrite(String configKey, String value, boolean sensitive) {

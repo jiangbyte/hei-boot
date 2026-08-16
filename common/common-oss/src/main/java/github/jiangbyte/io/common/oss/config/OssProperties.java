@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 对象存储配置属性：类型、本地路径、S3 端点与凭证等。
+ * 对象存储配置属性：S3 兼容端点、凭证与访问策略。
  *
  * Author: Charlie
  */
@@ -15,39 +15,27 @@ import java.util.List;
 @ConfigurationProperties(prefix = "hei.storage")
 public class OssProperties {
 
-    private String type = "local";
-    private Local local = new Local();
+    private String type = "s3";
     private S3 s3 = new S3();
     private Upload upload = new Upload();
-
-    @Data
-    public static class Local {
-        private String basePath = "./storage";
-        private String publicBaseUrl = "/api/v1/files";
-        /**
-         * 可选绝对公网基址（CDN / 站点源）；为空则仅用相对 publicBaseUrl。
-         */
-        private String baseUrl = "";
-    }
 
     @Data
     public static class S3 {
         private String bucket;
         private String region = "us-east-1";
         private String endpoint;
-        /** 绝对公网源/CDN（可选）。为空 → 预签名完整 URL（对齐 fastapi）。 */
-        private String publicBaseUrl;
         /**
-         * base 为空时 S3 publicUrl 不使用（保留给本地/代理工具）。
+         * 自定义访问基础 URL（CDN / 自定义域名）。
+         * 公开桶：永久直链前缀；非公开：预签名后可选 host 改写。
          */
-        private String publicPath = "/api/v1/files";
+        private String publicBaseUrl;
         private String accessKey;
         private String secretKey;
-        /** MinIO / 自定义 endpoint 的可选 path-style 访问。 */
+        /** MinIO / 自定义 endpoint 的 path-style 访问。 */
         private boolean pathStyleAccess = false;
-        /**
-         * {@link #publicBaseUrl} 为空时的预签名 TTL 秒数（默认 3600）。
-         */
+        /** 桶是否公开可读。公开→直连；非公开→预签名。 */
+        private boolean bucketPublic = false;
+        /** 非公开预签名 TTL 秒数（默认 3600）。 */
         private int presignExpireSeconds = 3600;
     }
 

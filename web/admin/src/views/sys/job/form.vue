@@ -273,7 +273,7 @@ watch(
                   v-model:value="state.formModel.paramText"
                   type="textarea"
                   :autosize="{ minRows: 4, maxRows: 10 }"
-                  placeholder='JSON 对象，如：{"retentionDays": 15}'
+                  placeholder="JSON 对象，如：{&quot;retentionDays&quot;: 15}"
                 />
               </NFormItem>
             </NGi>

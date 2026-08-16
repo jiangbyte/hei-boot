@@ -2,7 +2,6 @@ package github.jiangbyte.io.sys.modules.storage;
 
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.oss.StorageService;
-import github.jiangbyte.io.common.oss.local.LocalStorageService;
 import github.jiangbyte.io.common.oss.s3.S3ClientFactory;
 import github.jiangbyte.io.sys.config.RuntimeSettingsHolder;
 import jakarta.annotation.PreDestroy;
@@ -29,7 +28,6 @@ public class StorageEngineFactory {
     }
 
     public StorageService getDefault() {
-        // 解析存储配置
         return get(storageSettingsResolver.resolveDefault());
     }
 
@@ -81,15 +79,11 @@ public class StorageEngineFactory {
     private record CachedEngine(ResolvedStorageConfig config, long version, StorageService service,
                                 AutoCloseable closeable) {
         static CachedEngine create(ResolvedStorageConfig config, long version) {
-            if (config.isLocal()) {
-                StorageService local = new LocalStorageService(config.toOssProperties());
-                return new CachedEngine(config, version, local, null);
+            if (!config.isS3Compatible()) {
+                throw new BizException(500, "Unsupported storage provider: " + config.getProvider());
             }
-            if (config.isS3Compatible()) {
-                S3ClientFactory.ManagedS3Storage managed = S3ClientFactory.create(config.toOssProperties());
-                return new CachedEngine(config, version, managed, managed);
-            }
-            throw new BizException(500, "Unsupported storage provider: " + config.getProvider());
+            S3ClientFactory.ManagedS3Storage managed = S3ClientFactory.create(config.toOssProperties());
+            return new CachedEngine(config, version, managed, managed);
         }
 
         boolean matches(ResolvedStorageConfig other, long currentVersion) {

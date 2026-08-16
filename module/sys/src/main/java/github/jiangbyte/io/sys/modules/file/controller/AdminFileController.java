@@ -13,6 +13,7 @@ import github.jiangbyte.io.sys.modules.file.param.SysFileObjectNameParam;
 import github.jiangbyte.io.sys.modules.file.param.SysFilePageParam;
 import github.jiangbyte.io.sys.modules.file.result.SysFileUrlResult;
 import github.jiangbyte.io.sys.modules.file.service.FileService;
+import github.jiangbyte.io.sys.modules.file.support.ContentDispositions;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -91,7 +92,7 @@ public class AdminFileController {
         SysFile meta = fileService.detail(param.getId());
         Resource resource = fileService.download(param.getId());
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + meta.getOriginalName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDispositions.attachment(meta.getOriginalName()))
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }

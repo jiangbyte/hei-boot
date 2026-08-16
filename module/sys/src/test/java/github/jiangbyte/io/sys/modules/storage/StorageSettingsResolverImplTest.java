@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StorageSettingsResolverImplTest {
@@ -32,34 +33,14 @@ class StorageSettingsResolverImplTest {
     }
 
     @Test
-    void resolvesLocalFromDefaultFileEngine() {
-        bind(Map.of(
-                "DEFAULT_FILE_ENGINE", "LOCAL",
-                "STORAGE_UPLOAD_MAX_BYTES", "10485760",
-                "STORAGE_LOCAL_LOCAL_ROOT", "./storage",
-                "STORAGE_LOCAL_PUBLIC_PATH", "/api/v1/files",
-                "STORAGE_LOCAL_BASE_URL", ""
-        ));
-
-        ResolvedStorageConfig config = resolver.resolveDefault();
-
-        assertEquals("local", config.getId());
-        assertEquals("LOCAL", config.getEngine());
-        assertEquals("local", config.getProvider());
-        assertEquals("./storage", config.getLocalRoot());
-        assertEquals("/api/v1/files", config.getPublicPath());
-        assertEquals(10_485_760L, config.getUploadMaxBytes());
-    }
-
-    @Test
-    void usesSeedDefaultsWhenKeysMissing() {
+    void usesRustfsDefaultsWhenKeysMissing() {
         bind(Map.of());
 
         ResolvedStorageConfig config = resolver.resolveDefault();
 
-        assertEquals("local", config.getProvider());
-        assertEquals("./storage", config.getLocalRoot());
-        assertEquals("/api/v1/files", config.getPublicPath());
+        assertEquals("rustfs", config.getProvider());
+        assertEquals("RUSTFS", config.getEngine());
+        assertFalse(config.isBucketPublic());
         assertEquals(10_485_760L, config.getUploadMaxBytes());
     }
 
@@ -71,7 +52,9 @@ class StorageSettingsResolverImplTest {
                 "STORAGE_MINIO_ENDPOINT", "http://127.0.0.1:9000",
                 "STORAGE_MINIO_ACCESS_KEY", "ak",
                 "STORAGE_MINIO_SECRET_KEY", "sk",
-                "STORAGE_MINIO_USE_SSL", "false"
+                "STORAGE_MINIO_USE_SSL", "false",
+                "STORAGE_MINIO_BUCKET_PUBLIC", "true",
+                "STORAGE_MINIO_BASE_URL", "https://cdn.example.com"
         ));
 
         ResolvedStorageConfig config = resolver.resolveDefault();
@@ -80,13 +63,14 @@ class StorageSettingsResolverImplTest {
         assertEquals("MINIO", config.getEngine());
         assertEquals("bucket", config.getBucket());
         assertTrue(config.isPathStyleAccess());
+        assertTrue(config.isBucketPublic());
+        assertEquals("https://cdn.example.com", config.getBaseUrl());
         assertEquals("s3", FileEngines.toOssType(config.getProvider()));
     }
 
     private static void bind(Map<String, String> values) {
         Map<String, String> copy = new HashMap<>(values);
         RuntimeSettingsHolder.bindLoader(() -> copy);
-        // 强制版本号递增
         RuntimeSettingsHolder.reload();
         RuntimeSettings ignored = RuntimeSettingsHolder.get();
         assertEquals(copy, ignored.asMap());

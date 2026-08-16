@@ -22,6 +22,7 @@ import github.jiangbyte.io.iam.account.AccountOauthBindingInfo;
 import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -54,6 +55,12 @@ public class AuthOauthServiceImpl implements AuthOauthService {
     private final AuthService authService;
     private final ConfigApi configApi;
     private final ProfileUserPortalApi portalUserProfileApi;
+
+    @Value("${hei.app.frontend-base-url:http://localhost:5173}")
+    private String adminFrontendBaseUrl;
+
+    @Value("${hei.app.portal-frontend-base-url:http://localhost:5174}")
+    private String portalFrontendBaseUrl;
 
     @Override
     public OauthAuthorizeResult authorize(AccountType accountType, String provider, String intent, String redirect) {
@@ -344,11 +351,37 @@ public class AuthOauthServiceImpl implements AuthOauthService {
                 ? "AUTH_OAUTH_FRONTEND_CALLBACK_ADMIN"
                 : "AUTH_OAUTH_FRONTEND_CALLBACK_PORTAL";
         String configured = configApi.getValue(key, "").trim();
-        if (StringUtils.hasText(configured)) {
-            return configured;
+        String candidate = StringUtils.hasText(configured)
+                ? configured
+                : joinBaseAndPath(
+                        accountType == AccountType.ADMIN ? adminFrontendBaseUrl : portalFrontendBaseUrl,
+                        "/auth/oauth/callback");
+        if (!isAbsoluteHttpUrl(candidate)) {
+            throw new BizException("OAuth 前端回调地址必须为 http(s) 绝对 URL，请配置 "
+                    + key + " 或 hei.app."
+                    + (accountType == AccountType.ADMIN ? "frontend-base-url" : "portal-frontend-base-url"));
         }
-        // 默认相对前端路径（由网关/前端同源处理）
-        return accountType == AccountType.ADMIN ? "/auth/oauth/callback" : "/auth/oauth/callback";
+        return candidate;
+    }
+
+    private static String joinBaseAndPath(String baseUrl, String path) {
+        String base = baseUrl == null ? "" : baseUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        String suffix = path == null ? "" : path.trim();
+        if (!suffix.startsWith("/")) {
+            suffix = "/" + suffix;
+        }
+        return base + suffix;
+    }
+
+    private static boolean isAbsoluteHttpUrl(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        String lower = value.trim().toLowerCase(Locale.ROOT);
+        return lower.startsWith("http://") || lower.startsWith("https://");
     }
 
     private String successRedirect(String frontend, LoginResult login, String redirect, String action) {
