@@ -3,13 +3,14 @@
 ![JDK](https://img.shields.io/badge/JDK-21-007396?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supported-4169E1?logo=postgresql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![Vue](https://img.shields.io/badge/Admin-Vue%203-4FC08D?logo=vuedotjs&logoColor=white)
 ![React](https://img.shields.io/badge/Portal-React-61DAFB?logo=react&logoColor=black)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
 ![Version](https://img.shields.io/badge/version-1.0.0--beta-orange)
 
-**HEI Boot** 是一套开箱即用的 Spring Boot 工程化脚手架：单个后端应用同时提供 **Admin** 与 **Portal** 双端 API，同仓维护 Vue 3 / React / uni-app 前端，覆盖认证授权、组织权限、系统运维、消息通知与运营看板等常见后台能力。
+**HEI Boot** 是一套开箱即用的 Spring Boot 工程化脚手架：单个后端应用同时提供 **Admin** 与 **Portal** 双端 API，同仓维护 Vue 3 / React / uni-app 前端，覆盖认证授权、组织权限、系统运维、消息通知与运营看板等常见后台能力。与 [hei-gin](https://github.com/jiangbyte/hei-gin)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 保持 API 契约与前端对齐。
 
 > 当前版本：`1.0.0-beta` · 协议：[Apache License 2.0](LICENSE)
 
@@ -168,7 +169,7 @@
 | 层级 | 技术 |
 | --- | --- |
 | 后端 | JDK 21 · Spring Boot 4.1 · Maven 多模块 · 虚拟线程 |
-| 持久化 | PostgreSQL · MyBatis-Plus · Dynamic Datasource · Druid |
+| 持久化 | PostgreSQL / MySQL · MyBatis-Plus · Dynamic Datasource · Druid（按 JDBC URL 二选一） |
 | 缓存 / 会话 | Redis · Redisson · Sa-Token |
 | 文档 | Knife4j / SpringDoc |
 | 其他 | JustAuth · AWS SDK v2（S3）· Hutool · MapStruct |
@@ -188,7 +189,9 @@ hei-boot
 │   ├── admin                 # 管理端（Vue 3）
 │   ├── portal                # 门户（React）
 │   └── admin-uniapp          # 管理端 uni-app
-├── scripts/db.sql            # 数据库结构 + 种子数据
+├── scripts/db.sql            # PostgreSQL 源 dump
+├── scripts/db.postgresql.sql # PostgreSQL 结构 + 种子（无 jsonb）
+├── scripts/db.mysql.sql      # MySQL 结构 + 种子
 └── docs/images               # README 截图
 ```
 
@@ -197,21 +200,46 @@ hei-boot
 ### 环境要求
 
 - JDK **21**、Maven **3.9+**
-- PostgreSQL、Redis
+- PostgreSQL **或** MySQL 8+、Redis
 - Node.js **22+**、pnpm **9+**（前端）
 
 ### 1. 初始化数据库
 
+**PostgreSQL：**
+
 ```bash
 createdb -U postgres -h 127.0.0.1 hei_boot
-psql -U postgres -h 127.0.0.1 -d hei_boot -f scripts/db.sql
+psql -U postgres -h 127.0.0.1 -d hei_boot -f scripts/db.postgresql.sql
 ```
 
-> Flyway 默认关闭；本地/演示环境以 `scripts/db.sql` 为准重建库表与种子数据。
+**MySQL 8+：**
+
+```bash
+mysql -u root -p -e "CREATE DATABASE hei_boot DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p hei_boot < scripts/db.mysql.sql
+```
+
+方言由 JDBC URL 自动识别（无需 `hei.db.type`）。在 [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml) 中配置 `DB_WRITE_*` / `DB_READ_*`（也可只改 URL，由 `jdbc:` scheme 推断）：
+
+```bash
+# PostgreSQL（默认）
+export DB_WRITE_DRIVER=org.postgresql.Driver
+export DB_WRITE_URL=jdbc:postgresql://127.0.0.1:5432/hei_boot
+export DB_WRITE_USERNAME=postgres
+export DB_WRITE_PASSWORD=123456
+
+# MySQL
+# export DB_WRITE_DRIVER=com.mysql.cj.jdbc.Driver
+# export DB_WRITE_URL='jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false'
+# export DB_WRITE_USERNAME=root
+# export DB_WRITE_PASSWORD=123456
+```
+
+> Flyway 默认关闭；本地 / 演示环境以对应脚本全量重建库表与种子数据。JSON 列统一为 `json`（无 `jsonb`）。
 
 ### 2. 启动后端
 
-按需修改 [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml) 中的数据源、Redis 与对象存储配置，然后：
+按需修改 Redis 与对象存储配置，然后：
 
 ```bash
 mvn -pl app/admin -am spring-boot:run
@@ -250,8 +278,9 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 | [`web/admin/README.md`](web/admin/README.md) | 管理端前端说明与环境变量 |
 | [`web/portal/README.md`](web/portal/README.md) | 门户前端说明与环境变量 |
 | [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md) | uni-app 端说明 |
-| [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml) | 开发环境配置 |
-| [`scripts/db.sql`](scripts/db.sql) | 数据库结构与种子数据 |
+| [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml) | 开发环境配置（数据源 / Redis / 存储） |
+| [`scripts/db.postgresql.sql`](scripts/db.postgresql.sql) | PostgreSQL 结构与种子数据 |
+| [`scripts/db.mysql.sql`](scripts/db.mysql.sql) | MySQL 结构与种子数据 |
 
 ## 姊妹项目
 
