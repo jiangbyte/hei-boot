@@ -9,6 +9,7 @@ import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.sys.modules.notice.convert.SysNoticeConvert;
@@ -48,6 +49,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> implements NoticeService {
+
+    private final DbDialect dbDialect;
 
     private final SysNoticeReadMapper readMapper;
     private final SysNoticeConvert noticeConvert;
@@ -325,13 +328,11 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
                     .and(typeMatch -> typeMatch
                             .isNull(SysNotice::getTargetAccountTypes)
                             .or()
-                            .apply("jsonb_array_length(COALESCE(target_account_types::jsonb, '[]'::jsonb)) = 0")
-                            .or()
-                            .apply("jsonb_exists(target_account_types::jsonb, {0})", accountType)));
+                            .apply(dbDialect.jsonArrayEmptyOrContainsApply("target_account_types"), accountType)));
             if (StringUtils.hasText(accountId)) {
                 w.or(specific -> specific
                         .eq(SysNotice::getTargetScope, MessageConstants.TARGET_SPECIFIC)
-                        .apply("jsonb_exists(target_account_ids::jsonb, {0})", accountId));
+                        .apply(dbDialect.jsonArrayContainsApply("target_account_ids"), accountId));
             }
         });
     }

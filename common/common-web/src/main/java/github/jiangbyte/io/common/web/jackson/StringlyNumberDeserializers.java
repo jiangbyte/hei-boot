@@ -142,6 +142,15 @@ public final class StringlyNumberDeserializers {
     private static String readNumberString(JsonParser p, DeserializationContext ctxt, Class<?> target)
             throws JacksonException {
         JsonToken token = p.currentToken();
+        if (token == JsonToken.VALUE_NUMBER_INT || token == JsonToken.VALUE_NUMBER_FLOAT) {
+            return p.getText();
+        }
+        if (token == JsonToken.VALUE_TRUE) {
+            return "1";
+        }
+        if (token == JsonToken.VALUE_FALSE) {
+            return "0";
+        }
         if (token == JsonToken.VALUE_STRING) {
             String raw = p.getText();
             if (raw == null) {

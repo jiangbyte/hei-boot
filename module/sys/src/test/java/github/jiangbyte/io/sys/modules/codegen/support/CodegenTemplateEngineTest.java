@@ -2,6 +2,8 @@ package github.jiangbyte.io.sys.modules.codegen.support;
 
 /** Author: Charlie **/
 
+import github.jiangbyte.io.common.mybatis.dialect.MysqlDialect;
+import github.jiangbyte.io.common.mybatis.dialect.PostgreSqlDialect;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
 import github.jiangbyte.io.sys.modules.codegen.result.SysCodegenPreviewFileResult;
@@ -20,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CodegenTemplateEngineTest {
 
-    private final CodegenTemplateEngine engine = new CodegenTemplateEngine();
+    private final CodegenTemplateEngine engine = new CodegenTemplateEngine(new PostgreSqlDialect());
 
     @Test
     void tableRenderContainsFullStackWithoutTreeOrChild() {
@@ -130,6 +132,27 @@ class CodegenTemplateEngineTest {
         assertFalse(controller.contains("/tree"));
         assertTrue(paths(files).stream().anyMatch(p -> p.contains("ChildModalDetail.vue")));
         assertFalse(contentContaining(files, "_menu_permission.sql").contains(":tree"));
+    }
+
+    @Test
+    void menuPermissionSqlUsesPostgresqlUpsertByDefault() {
+        SysCodegenPlan plan = basePlan("TABLE", "cg_test_activity", "CgTestActivity", "activity");
+        List<SysCodegenPreviewFileResult> files = engine.render(plan, sampleFields("MAIN"), List.of());
+        String sql = contentContaining(files, "_menu_permission.sql");
+        assertTrue(sql.contains("ON CONFLICT"));
+        assertFalse(sql.contains("ON DUPLICATE KEY"));
+        assertTrue(sql.contains("db_vendor: postgresql"));
+    }
+
+    @Test
+    void menuPermissionSqlUsesMysqlUpsertWhenMysqlDialect() {
+        CodegenTemplateEngine mysqlEngine = new CodegenTemplateEngine(new MysqlDialect());
+        SysCodegenPlan plan = basePlan("TABLE", "cg_test_activity", "CgTestActivity", "activity");
+        List<SysCodegenPreviewFileResult> files = mysqlEngine.render(plan, sampleFields("MAIN"), List.of());
+        String sql = contentContaining(files, "_menu_permission.sql");
+        assertTrue(sql.contains("ON DUPLICATE KEY"));
+        assertFalse(sql.contains("ON CONFLICT"));
+        assertTrue(sql.contains("db_vendor: mysql"));
     }
 
     @Test

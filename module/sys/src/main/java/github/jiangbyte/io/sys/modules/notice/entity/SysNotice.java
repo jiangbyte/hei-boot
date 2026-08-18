@@ -3,7 +3,7 @@ package github.jiangbyte.io.sys.modules.notice.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -27,15 +27,15 @@ public class SysNotice extends BaseEntity {
     private String category;
     private String severity;
     private String targetScope;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> targetAccountTypes;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> targetAccountIds;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> targetDeptIds;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> targetRoleIds;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private Map<String, Object> publishLocations;
     private Boolean isPinned;
     private OffsetDateTime pinnedUntil;
@@ -48,7 +48,7 @@ public class SysNotice extends BaseEntity {
     private OffsetDateTime revokedAt;
     private OffsetDateTime expireAt;
     private Integer viewCount;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private Map<String, Object> extra;
 
     @TableField(exist = false)

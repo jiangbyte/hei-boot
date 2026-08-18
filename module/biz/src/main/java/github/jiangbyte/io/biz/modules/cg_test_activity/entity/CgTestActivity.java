@@ -8,7 +8,7 @@ package github.jiangbyte.io.biz.modules.cg_test_activity.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,9 +33,9 @@ public class CgTestActivity extends BaseEntity {
     private BigDecimal price;
     private Boolean isPublic;
     private Boolean needApproval;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private java.util.Map<String, Object> ruleConfig;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private java.util.Map<String, Object> extra;
     private String ownerDeptId;
 }

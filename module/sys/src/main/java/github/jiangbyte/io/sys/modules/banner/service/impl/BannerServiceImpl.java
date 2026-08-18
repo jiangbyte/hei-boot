@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
 import github.jiangbyte.io.sys.file.FileApi;
 import github.jiangbyte.io.sys.modules.banner.convert.SysBannerConvert;
 import github.jiangbyte.io.sys.modules.banner.entity.SysBanner;
@@ -38,6 +39,7 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
     private final SysBannerConvert bannerConvert;
     private final FileApi fileApi;
     private final StringRedisTemplate stringRedisTemplate;
+    private final DbDialect dbDialect;
 
     @Override
     @Transactional
@@ -96,7 +98,7 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         Page<SysBanner> page = this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<SysBanner>lambdaQuery()
                         .apply(StringUtils.hasText(param.getTargetAccountType()),
-                                "jsonb_exists(target_account_types::jsonb, {0})", param.getTargetAccountType())
+                                dbDialect.jsonArrayContainsApply("target_account_types"), param.getTargetAccountType())
                         .eq(StringUtils.hasText(param.getCategory()), SysBanner::getCategory, param.getCategory())
                         .eq(StringUtils.hasText(param.getType()), SysBanner::getType, param.getType())
                         .eq(StringUtils.hasText(param.getPosition()), SysBanner::getPosition, param.getPosition())
@@ -127,7 +129,7 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         List<SysBanner> list = getBaseMapper().selectList(Wrappers.<SysBanner>lambdaQuery()
                 .eq(SysBanner::getPosition, position)
                 .eq(SysBanner::getStatus, "ENABLED")
-                .apply("jsonb_exists(target_account_types::jsonb, {0})", accountType)
+                .apply(dbDialect.jsonArrayContainsApply("target_account_types"), accountType)
                 .eq(StringUtils.hasText(category), SysBanner::getCategory, category)
                 .eq(StringUtils.hasText(type), SysBanner::getType, type)
                 .and(wrapper -> wrapper.isNull(SysBanner::getStartAt).or().le(SysBanner::getStartAt, now))

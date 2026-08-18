@@ -3,7 +3,7 @@ package github.jiangbyte.io.iam.modules.relation.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -31,7 +31,7 @@ public class SysIamRelation extends BaseEntity {
     private String targetKey;
     private String grantMode;
     private String dataScope;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> customScopeDeptIds;
     private Boolean isPrimary;
     private Integer sort;
@@ -39,6 +39,6 @@ public class SysIamRelation extends BaseEntity {
     private String description;
     private String reason;
     private OffsetDateTime expiredAt;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private Map<String, Object> extra;
 }

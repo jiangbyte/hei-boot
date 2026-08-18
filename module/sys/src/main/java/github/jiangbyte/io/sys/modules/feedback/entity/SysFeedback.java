@@ -2,7 +2,7 @@ package github.jiangbyte.io.sys.modules.feedback.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import github.jiangbyte.io.sys.modules.feedback.result.SysFeedbackAttachmentResult;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class SysFeedback extends BaseEntity {
     private String content;
     private String category;
     private String contact;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> attachObjectNames;
     private String status;
     private String reply;

@@ -8,7 +8,7 @@ package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,7 +27,7 @@ public class CgTestKnowledgeCategory extends BaseEntity {
     private Integer sort;
     private Boolean isVisible;
     private String description;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private java.util.Map<String, Object> extra;
     private String ownerDeptId;
 

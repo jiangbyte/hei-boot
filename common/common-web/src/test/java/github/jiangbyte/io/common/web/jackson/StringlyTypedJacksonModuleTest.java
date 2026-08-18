@@ -42,6 +42,15 @@ class StringlyTypedJacksonModuleTest {
         assertEquals(99L, sample.count);
     }
 
+    @Test
+    void deserializesScalarsFromNativeJsonTokens() throws Exception {
+        Sample sample = mapper.readValue(
+                "{\"code\":200,\"enabled\":true,\"count\":12}", Sample.class);
+        assertEquals(200, sample.code);
+        assertTrue(sample.enabled);
+        assertEquals(12L, sample.count);
+    }
+
     static class Sample {
         public int code;
         public boolean enabled;

@@ -8,7 +8,7 @@ package github.jiangbyte.io.biz.modules.cg_test_order.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,9 +29,9 @@ public class CgTestOrderItem extends BaseEntity {
     private BigDecimal unitPrice;
     private OffsetDateTime shippedAt;
     private Boolean isGift;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private java.util.Map<String, Object> itemConfig;
     private String remark;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private java.util.Map<String, Object> extra;
 }

@@ -3,7 +3,7 @@ package github.jiangbyte.io.iam.modules.dept.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
@@ -45,7 +45,7 @@ public class SysDept extends BaseEntity {
     private Integer sort;
     private Boolean isVirtual;
     private String status;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private Map<String, Object> extra;
 
     @TableField(exist = false)

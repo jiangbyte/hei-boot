@@ -19,7 +19,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 </#if>
 <#if hasJson>
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 </#if>
 import github.jiangbyte.io.common.core.domain.BaseEntity;
 import lombok.Data;
@@ -38,7 +38,7 @@ import java.util.List;
 public class ${entityName} extends BaseEntity {
 <#list fields as field>
 <#if field.isJson>
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
 </#if>
     private ${field.javaType} ${field.propertyName};
 </#list>

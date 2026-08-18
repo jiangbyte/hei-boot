@@ -1,0 +1,39 @@
+{
+  "elapsed_seconds": 121.3,
+  "rounds": [
+    {
+      "dialect": "mysql",
+      "e2e_exit": 0,
+      "report": "E:\\projects\\mine\\hei\\hei-boot\\scripts\\e2e\\report-mysql.json",
+      "log": "E:\\projects\\mine\\hei\\hei-boot\\scripts\\e2e\\boot-mysql.log",
+      "admin_login_ok": true,
+      "portal_login_ok": true,
+      "hard_pass": 30,
+      "hard_fail": 0,
+      "out_pass": 110,
+      "out_total": 110,
+      "in_pass": 118,
+      "in_total": 118,
+      "crud_pass": 10,
+      "crud_total": 10,
+      "fail_5xx": 0
+    },
+    {
+      "dialect": "postgresql",
+      "e2e_exit": 0,
+      "report": "E:\\projects\\mine\\hei\\hei-boot\\scripts\\e2e\\report-postgresql.json",
+      "log": "E:\\projects\\mine\\hei\\hei-boot\\scripts\\e2e\\boot-postgresql.log",
+      "admin_login_ok": true,
+      "portal_login_ok": true,
+      "hard_pass": 30,
+      "hard_fail": 0,
+      "out_pass": 110,
+      "out_total": 110,
+      "in_pass": 118,
+      "in_total": 118,
+      "crud_pass": 10,
+      "crud_total": 10,
+      "fail_5xx": 0
+    }
+  ]
+}

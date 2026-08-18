@@ -3,6 +3,7 @@ package github.jiangbyte.io.dashboard.modules.overview.mapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -54,25 +55,13 @@ public interface DashboardStatsMapper {
     /**
      * 统计自 since 起每日新增账号数。
      */
-    @Select("""
-            SELECT TO_CHAR(timezone('Asia/Shanghai', created_at), 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
-            FROM sys_account
-            WHERE created_at >= #{since}
-            GROUP BY TO_CHAR(timezone('Asia/Shanghai', created_at), 'YYYY-MM-DD')
-            ORDER BY day
-            """)
+    @SelectProvider(type = DashboardStatsSqlProvider.class, method = "accountDailyCounts")
     List<Map<String, Object>> accountDailyCounts(@Param("since") OffsetDateTime since);
 
     /**
      * 统计自 since 起每日审计日志数。
      */
-    @Select("""
-            SELECT TO_CHAR(timezone('Asia/Shanghai', created_at), 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
-            FROM sys_operation_audit_log
-            WHERE created_at >= #{since}
-            GROUP BY TO_CHAR(timezone('Asia/Shanghai', created_at), 'YYYY-MM-DD')
-            ORDER BY day
-            """)
+    @SelectProvider(type = DashboardStatsSqlProvider.class, method = "auditDailyCounts")
     List<Map<String, Object>> auditDailyCounts(@Param("since") OffsetDateTime since);
 
     /**

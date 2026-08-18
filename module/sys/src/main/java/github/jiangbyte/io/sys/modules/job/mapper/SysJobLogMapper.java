@@ -2,7 +2,7 @@ package github.jiangbyte.io.sys.modules.job.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import github.jiangbyte.io.sys.modules.job.entity.SysJobLog;
-import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -19,14 +19,6 @@ public interface SysJobLogMapper extends BaseMapper<SysJobLog> {
     /**
      * 删除执行时间早于 cutoff 的日志，最多 limit 条（按 execute_time 升序优先删最旧）。
      */
-    @Delete("""
-            DELETE FROM sys_job_log
-            WHERE id IN (
-              SELECT id FROM sys_job_log
-              WHERE execute_time < #{cutoff}
-              ORDER BY execute_time
-              LIMIT #{limit}
-            )
-            """)
+    @DeleteProvider(type = SysJobLogSqlProvider.class, method = "deleteExpired")
     int deleteExpired(@Param("cutoff") OffsetDateTime cutoff, @Param("limit") int limit);
 }

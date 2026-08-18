@@ -8,6 +8,8 @@ import cn.hutool.core.util.IdUtil;
 import github.jiangbyte.io.common.core.exception.BizException;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -15,18 +17,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link AuthCryptoService} 实现：验证码摘要、RSA-OAEP 密码解密、重置令牌与 OTP 的 Redis 存储。
+ * {@link AuthCryptoService} 实现：验证码 BCrypt、RSA-OAEP 密码解密、重置令牌与 OTP 的 Redis 存储。
  *
  * Author: Charlie
  */
@@ -40,6 +40,7 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
     private static final String PASSWORD_KEY_SHARED = "password:crypto:shared";
 
     private final RedissonClient redissonClient;
+    private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
@@ -49,8 +50,9 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
             value.append(CAPTCHA_ALPHABET.charAt(secureRandom.nextInt(CAPTCHA_ALPHABET.length())));
         }
         String captchaId = IdUtil.simpleUUID();
-        RBucket<String> bucket = redissonClient.getBucket(captchaKey(captchaId));
-        bucket.set(sha256Hex(value.toString().toLowerCase()), CAPTCHA_TTL);
+        // StringCodec：与 gin/fastapi 一致，e2e 可用 redis-py 直接植入 bcrypt 明文哈希
+        RBucket<String> bucket = redissonClient.getBucket(captchaKey(captchaId), StringCodec.INSTANCE);
+        bucket.set(passwordEncoder.encode(value.toString().toLowerCase()), CAPTCHA_TTL);
 
         String text = value.toString();
         CaptchaResult response = new CaptchaResult();
@@ -67,10 +69,10 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
 
     @Override
     public void verifyCaptcha(String captchaId, String captchaValue) {
-        RBucket<String> bucket = redissonClient.getBucket(captchaKey(captchaId));
+        RBucket<String> bucket = redissonClient.getBucket(captchaKey(captchaId), StringCodec.INSTANCE);
         String hashed = bucket.getAndDelete();
         if (hashed == null || captchaValue == null
-                || !hashed.equals(sha256Hex(captchaValue.trim().toLowerCase()))) {
+                || !passwordEncoder.matches(captchaValue.trim().toLowerCase(), hashed)) {
             throw new BizException("验证码无效或已过期");
         }
     }
@@ -200,16 +202,6 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         RBucket<String> bucket = redissonClient.getBucket(bindOtpKey(accountType, channel, accountId, target));
         String stored = bucket.getAndDelete();
         return stored != null && code != null && stored.equals(code.trim());
-    }
-
-    private static String sha256Hex(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (Exception ex) {
-            throw new BizException(500, "验证码摘要失败");
-        }
     }
 
     private static String captchaKey(String captchaId) {

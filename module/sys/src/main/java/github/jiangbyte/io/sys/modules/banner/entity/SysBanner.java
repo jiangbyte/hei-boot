@@ -3,7 +3,7 @@ package github.jiangbyte.io.sys.modules.banner.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import github.jiangbyte.io.common.core.domain.BaseEntity;
-import github.jiangbyte.io.common.mybatis.handler.PostgresJacksonTypeHandler;
+import github.jiangbyte.io.common.mybatis.handler.JacksonJsonTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -31,7 +31,7 @@ public class SysBanner extends BaseEntity {
     private String category;
     private String type;
     private String position;
-    @TableField(typeHandler = PostgresJacksonTypeHandler.class)
+    @TableField(typeHandler = JacksonJsonTypeHandler.class)
     private List<String> targetAccountTypes;
     private Integer sort;
     private Long interactionCount;

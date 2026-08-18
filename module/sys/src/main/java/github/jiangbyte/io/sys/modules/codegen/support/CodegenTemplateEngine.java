@@ -4,6 +4,10 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
+import github.jiangbyte.io.common.mybatis.dialect.DbDialectHolder;
+import github.jiangbyte.io.common.mybatis.dialect.DbVendor;
+import github.jiangbyte.io.common.mybatis.dialect.PostgreSqlDialect;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
 import github.jiangbyte.io.sys.modules.codegen.result.SysCodegenPreviewFileResult;
@@ -36,8 +40,10 @@ public class CodegenTemplateEngine {
     private static final Set<String> SUB_TYPES = Set.of("LEFT_TREE_TABLE", "MASTER_DETAIL");
 
     private final Configuration configuration;
+    private final DbDialect dbDialect;
 
-    public CodegenTemplateEngine() {
+    public CodegenTemplateEngine(DbDialect dbDialect) {
+        this.dbDialect = dbDialect == null ? new PostgreSqlDialect() : dbDialect;
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_32);
         cfg.setClassLoaderForTemplateLoading(getClass().getClassLoader(), "codegen/templates");
         cfg.setDefaultEncoding("UTF-8");
@@ -317,7 +323,20 @@ public class CodegenTemplateEngine {
         ctx.put("treeParentProperty", CodegenNaming.snakeToCamel(plan.getTreeParentField()));
         ctx.put("treeLabelProperty", CodegenNaming.snakeToCamel(plan.getTreeLabelField()));
         ctx.put("subForeignProperty", CodegenNaming.snakeToCamel(plan.getSubForeignKey()));
+        String vendor = resolveDbVendor();
+        ctx.put("db_vendor", vendor);
+        ctx.put("dbVendor", vendor);
         return ctx;
+    }
+
+    private String resolveDbVendor() {
+        if (dbDialect != null) {
+            return dbDialect.vendor().code();
+        }
+        if (DbDialectHolder.isReady()) {
+            return DbDialectHolder.get().vendor().code();
+        }
+        return DbVendor.POSTGRESQL.code();
     }
 
     private Map<String, Object> entityContext(

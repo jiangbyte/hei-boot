@@ -35,6 +35,7 @@ import java.util.Map;
 public class AuditOutboxRelayScheduler {
 
     private final SysOperationAuditOutboxMapper outboxMapper;
+    private final AuditOutboxClaimSupport outboxClaimSupport;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final HeiLogProperties heiLogProperties;
@@ -51,7 +52,7 @@ public class AuditOutboxRelayScheduler {
                 .minus(Duration.ofMillis(Math.max(1000L, audit.getOutboxClaimStaleMs())));
 
         List<SysOperationAuditOutbox> claimed = transactionTemplate.execute(
-                status -> outboxMapper.claimBatch(batchSize, staleBefore));
+                status -> outboxClaimSupport.claimBatch(batchSize, staleBefore));
         if (claimed == null || claimed.isEmpty()) {
             return;
         }

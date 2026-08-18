@@ -39,16 +39,27 @@ spring:
       datasource:
         master:
           type: ${spring.datasource.type}
-          driver-class-name: org.postgresql.Driver
+          # 切换 MySQL：DB_WRITE_DRIVER=com.mysql.cj.jdbc.Driver 且 DB_WRITE_URL=jdbc:mysql://...（方言由 URL 自动识别）
+          driver-class-name: ${DB_WRITE_DRIVER:org.postgresql.Driver}
           url: ${DB_WRITE_URL:jdbc:postgresql://127.0.0.1:5432/hei_boot}
           username: ${DB_WRITE_USERNAME:postgres}
           password: ${DB_WRITE_PASSWORD:123456}
+          # --- MySQL 示例（启用时注释上方 PostgreSQL 四行，解开下方，并执行 scripts/db.mysql.sql）---
+          # driver-class-name: com.mysql.cj.jdbc.Driver
+          # url: ${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+          # username: ${DB_WRITE_USERNAME:root}
+          # password: ${DB_WRITE_PASSWORD:123456}
         slave:
           type: ${spring.datasource.type}
-          driver-class-name: org.postgresql.Driver
+          driver-class-name: ${DB_READ_DRIVER:${DB_WRITE_DRIVER:org.postgresql.Driver}}
           url: ${DB_READ_URL:${DB_WRITE_URL:jdbc:postgresql://127.0.0.1:5432/hei_boot}}
           username: ${DB_READ_USERNAME:${DB_WRITE_USERNAME:postgres}}
           password: ${DB_READ_PASSWORD:${DB_WRITE_PASSWORD:123456}}
+          # --- MySQL 示例 ---
+          # driver-class-name: com.mysql.cj.jdbc.Driver
+          # url: ${DB_READ_URL:${DB_WRITE_URL:jdbc:mysql://127.0.0.1:3306/hei_boot?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}}
+          # username: ${DB_READ_USERNAME:${DB_WRITE_USERNAME:root}}
+          # password: ${DB_READ_PASSWORD:${DB_WRITE_PASSWORD:123456}}
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
