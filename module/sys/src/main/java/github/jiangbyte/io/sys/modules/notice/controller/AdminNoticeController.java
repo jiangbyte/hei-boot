@@ -123,7 +123,6 @@ public class AdminNoticeController {
 
     /** 标记指定消息为已读。 */
     @PostMapping("/v1/admin/sys/notices/read")
-    @OperationAudit(resourceType = "sys_notice", action = "read")
     public ApiResponse<Void> read(@Valid @RequestBody SysNoticeReadParam param) {
         noticeService.markRead(param);
         return ApiResponse.ok();
@@ -131,7 +130,6 @@ public class AdminNoticeController {
 
     /** 将全部可见消息标记为已读。 */
     @PostMapping("/v1/admin/sys/notices/read-all")
-    @OperationAudit(resourceType = "sys_notice", action = "read_all")
     public ApiResponse<Void> readAll() {
         noticeService.markAllRead();
         return ApiResponse.ok();

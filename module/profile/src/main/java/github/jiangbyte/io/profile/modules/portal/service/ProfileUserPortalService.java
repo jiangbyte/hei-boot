@@ -44,7 +44,7 @@ public interface ProfileUserPortalService {
     /** 批量查询资料，返回 accountId → 资料映射。 */
     Map<String, ProfileUserPortalInfo> getProfiles(Collection<String> accountIds);
 
-    /** 批量解析展示名（优先 name，否则 nickname）。 */
+    /** 批量解析展示名（已认证姓名优先，否则 nickname）。 */
     Map<String, String> getDisplayNames(Collection<String> accountIds);
 
     /** 按账号 upsert 资料（不存在则插入）。 */
@@ -56,8 +56,8 @@ public interface ProfileUserPortalService {
     /** 按账号更新或创建邮箱字段。 */
     void updateEmailByAccount(String accountId, String email);
 
-    /** 创建基础资料（姓名/昵称/邮箱）。 */
-    void createProfile(String accountId, String name, String nickname, String email);
+    /** 创建基础资料（昵称/邮箱）。 */
+    void createProfile(String accountId, String nickname, String email);
 
     /** 按账号集合批量删除资料。 */
     void deleteProfiles(Collection<String> accountIds);

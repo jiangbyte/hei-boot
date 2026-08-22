@@ -6,6 +6,8 @@
 
 
 
+
+
 -- ----------------------------
 -- Table structure for cg_test_activity
 -- ----------------------------
@@ -308,7 +310,6 @@ INSERT INTO "public"."cg_test_order_item" VALUES ('900000000000000212', '9000000
 DROP TABLE IF EXISTS "public"."profile_user_admin";
 CREATE TABLE "public"."profile_user_admin" (
   "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "name" varchar(64) COLLATE "pg_catalog"."default",
   "nickname" varchar(64) COLLATE "pg_catalog"."default",
   "avatar" text COLLATE "pg_catalog"."default",
   "signature" text COLLATE "pg_catalog"."default",
@@ -322,7 +323,6 @@ CREATE TABLE "public"."profile_user_admin" (
 )
 ;
 COMMENT ON COLUMN "public"."profile_user_admin"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."profile_user_admin"."name" IS '姓名';
 COMMENT ON COLUMN "public"."profile_user_admin"."nickname" IS '昵称';
 COMMENT ON COLUMN "public"."profile_user_admin"."avatar" IS '头像';
 COMMENT ON COLUMN "public"."profile_user_admin"."signature" IS '个性签名';
@@ -337,7 +337,7 @@ COMMENT ON COLUMN "public"."profile_user_admin"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of profile_user_admin
 -- ----------------------------
-INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
+INSERT INTO "public"."profile_user_admin" VALUES ('1', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886+00', NULL, '2026-08-08 13:17:41.018249+00', '1');
 
 -- ----------------------------
 -- Table structure for profile_user_portal
@@ -345,7 +345,6 @@ INSERT INTO "public"."profile_user_admin" VALUES ('1', '超级管理员', '超�
 DROP TABLE IF EXISTS "public"."profile_user_portal";
 CREATE TABLE "public"."profile_user_portal" (
   "account_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "name" varchar(64) COLLATE "pg_catalog"."default",
   "nickname" varchar(64) COLLATE "pg_catalog"."default",
   "avatar" text COLLATE "pg_catalog"."default",
   "signature" text COLLATE "pg_catalog"."default",
@@ -358,7 +357,6 @@ CREATE TABLE "public"."profile_user_portal" (
 )
 ;
 COMMENT ON COLUMN "public"."profile_user_portal"."account_id" IS '账户ID';
-COMMENT ON COLUMN "public"."profile_user_portal"."name" IS '姓名';
 COMMENT ON COLUMN "public"."profile_user_portal"."nickname" IS '昵称';
 COMMENT ON COLUMN "public"."profile_user_portal"."avatar" IS '头像';
 COMMENT ON COLUMN "public"."profile_user_portal"."signature" IS '个性签名';
@@ -372,8 +370,83 @@ COMMENT ON COLUMN "public"."profile_user_portal"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of profile_user_portal
 -- ----------------------------
-INSERT INTO "public"."profile_user_portal" VALUES ('7491872891940786176', NULL, 'user-a527e592', NULL, NULL, '17286916074', '3317229064@qq.com', '2026-08-08 15:08:09.699685+00', NULL, '2026-08-08 15:08:09.699685+00', NULL);
-INSERT INTO "public"."profile_user_portal" VALUES ('7491847383584804864', '', 'user-171fd244', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', NULL, NULL, 'jiangbyte@163.com', '2026-08-08 13:26:48.032837+00', NULL, '2026-08-08 13:48:45.931196+00', '7491847383584804864');
+INSERT INTO "public"."profile_user_portal" VALUES ('7491872891940786176', 'user-a527e592', NULL, NULL, '17286916074', '3317229064@qq.com', '2026-08-08 15:08:09.699685+00', NULL, '2026-08-08 15:08:09.699685+00', NULL);
+INSERT INTO "public"."profile_user_portal" VALUES ('7491847383584804864', 'user-171fd244', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', NULL, NULL, 'jiangbyte@163.com', '2026-08-08 13:26:48.032837+00', NULL, '2026-08-08 13:48:45.931196+00', '7491847383584804864');
+
+-- ----------------------------
+-- Table structure for profile_identity
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."real_name_case_record";
+DROP TABLE IF EXISTS "public"."real_name_case";
+DROP TABLE IF EXISTS "public"."profile_identity";
+CREATE TABLE "public"."profile_identity" (
+  "account_id" varchar(64) NOT NULL,
+  "status" varchar(32) NOT NULL DEFAULT 'UNVERIFIED',
+  "document_type" varchar(32),
+  "real_name_cipher" text,
+  "document_no_cipher" text,
+  "document_no_hash" varchar(128),
+  "verify_channel" varchar(32),
+  "provider" varchar(32),
+  "provider_order_no" varchar(128),
+  "verified_at" timestamptz(6),
+  "source_case_id" varchar(64),
+  "revoked_at" timestamptz(6),
+  "revoked_by" varchar(64),
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64),
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64)
+);
+CREATE TABLE "public"."real_name_case" (
+  "case_id" varchar(64) NOT NULL,
+  "business_type" varchar(64) NOT NULL,
+  "verify_channel" varchar(32) NOT NULL,
+  "status" varchar(32) NOT NULL,
+  "account_id" varchar(64),
+  "target_account_hint_cipher" text,
+  "applicant_contact_cipher" text,
+  "document_type" varchar(32),
+  "real_name_cipher" text,
+  "document_no_cipher" text,
+  "document_no_hash" varchar(128),
+  "attachment_ids" text,
+  "payload_cipher" text,
+  "handler_dept_id" varchar(64),
+  "provider" varchar(32),
+  "provider_order_no" varchar(128),
+  "submitter_id" varchar(64),
+  "reviewer_id" varchar(64),
+  "reviewed_at" timestamptz(6),
+  "reject_reason" varchar(512),
+  "expire_at" timestamptz(6),
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64),
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64)
+);
+CREATE TABLE "public"."real_name_case_record" (
+  "record_id" varchar(64) NOT NULL,
+  "case_id" varchar(64) NOT NULL,
+  "account_id" varchar(64),
+  "business_type" varchar(64) NOT NULL,
+  "action" varchar(32) NOT NULL,
+  "status_before" varchar(32),
+  "status_after" varchar(32),
+  "verify_channel" varchar(32),
+  "provider" varchar(32),
+  "operator_id" varchar(64),
+  "dept_id" varchar(64),
+  "remark" varchar(512),
+  "created_at" timestamptz(6) NOT NULL DEFAULT now()
+);
+ALTER TABLE "public"."profile_identity" ADD CONSTRAINT "pk_profile_identity" PRIMARY KEY ("account_id");
+ALTER TABLE "public"."real_name_case" ADD CONSTRAINT "pk_real_name_case" PRIMARY KEY ("case_id");
+ALTER TABLE "public"."real_name_case_record" ADD CONSTRAINT "pk_real_name_case_record" PRIMARY KEY ("record_id");
+CREATE UNIQUE INDEX "uk_profile_identity_document_hash" ON "public"."profile_identity" ("document_no_hash") WHERE document_no_hash IS NOT NULL;
+CREATE INDEX "idx_real_name_case_account" ON "public"."real_name_case" ("account_id");
+CREATE INDEX "idx_real_name_case_status" ON "public"."real_name_case" ("business_type", "status");
+CREATE INDEX "idx_real_name_case_record_case" ON "public"."real_name_case_record" ("case_id");
 
 -- ----------------------------
 -- Table structure for sys_account
@@ -719,21 +792,21 @@ CREATE TABLE "public"."sys_codegen_field" (
   "plan_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "table_role" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
   "column_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "column_comment" varchar(255) COLLATE "pg_catalog"."default",
+  "label" varchar(255) COLLATE "pg_catalog"."default",
   "db_type" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "data_type" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "frontend_type" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "form_widget" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "value_type" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "ui_type" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "widget" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "dict_code" varchar(128) COLLATE "pg_catalog"."default",
   "query_operator" varchar(32) COLLATE "pg_catalog"."default",
-  "show_in_table" bool NOT NULL,
-  "show_in_form" bool NOT NULL,
-  "show_in_detail" bool NOT NULL,
-  "show_in_query" bool NOT NULL,
-  "is_primary_key" bool NOT NULL,
-  "is_required" bool NOT NULL,
-  "is_unique" bool NOT NULL,
-  "is_nullable" bool NOT NULL,
+  "in_table" bool NOT NULL,
+  "in_form" bool NOT NULL,
+  "in_detail" bool NOT NULL,
+  "in_query" bool NOT NULL,
+  "primary_key" bool NOT NULL,
+  "required" bool NOT NULL,
+  "unique_flag" bool NOT NULL,
+  "nullable" bool NOT NULL,
   "max_length" int4,
   "sort" int4 NOT NULL,
   "created_at" timestamptz(6) NOT NULL DEFAULT now(),
@@ -746,21 +819,21 @@ COMMENT ON COLUMN "public"."sys_codegen_field"."id" IS '主键';
 COMMENT ON COLUMN "public"."sys_codegen_field"."plan_id" IS '方案ID';
 COMMENT ON COLUMN "public"."sys_codegen_field"."table_role" IS '表角色';
 COMMENT ON COLUMN "public"."sys_codegen_field"."column_name" IS '字段名';
-COMMENT ON COLUMN "public"."sys_codegen_field"."column_comment" IS '字段注释';
+COMMENT ON COLUMN "public"."sys_codegen_field"."label" IS '字段注释';
 COMMENT ON COLUMN "public"."sys_codegen_field"."db_type" IS '数据库类型';
-COMMENT ON COLUMN "public"."sys_codegen_field"."data_type" IS '语义数据类型';
-COMMENT ON COLUMN "public"."sys_codegen_field"."frontend_type" IS '前端类型';
-COMMENT ON COLUMN "public"."sys_codegen_field"."form_widget" IS '表单控件';
+COMMENT ON COLUMN "public"."sys_codegen_field"."value_type" IS '语义数据类型';
+COMMENT ON COLUMN "public"."sys_codegen_field"."ui_type" IS '前端类型';
+COMMENT ON COLUMN "public"."sys_codegen_field"."widget" IS '表单控件';
 COMMENT ON COLUMN "public"."sys_codegen_field"."dict_code" IS '字典编码';
 COMMENT ON COLUMN "public"."sys_codegen_field"."query_operator" IS '查询方式';
-COMMENT ON COLUMN "public"."sys_codegen_field"."show_in_table" IS '表格显示';
-COMMENT ON COLUMN "public"."sys_codegen_field"."show_in_form" IS '表单显示';
-COMMENT ON COLUMN "public"."sys_codegen_field"."show_in_detail" IS '详情显示';
-COMMENT ON COLUMN "public"."sys_codegen_field"."show_in_query" IS '查询显示';
-COMMENT ON COLUMN "public"."sys_codegen_field"."is_primary_key" IS '是否主键';
-COMMENT ON COLUMN "public"."sys_codegen_field"."is_required" IS '是否必填';
-COMMENT ON COLUMN "public"."sys_codegen_field"."is_unique" IS '是否唯一';
-COMMENT ON COLUMN "public"."sys_codegen_field"."is_nullable" IS '是否可空';
+COMMENT ON COLUMN "public"."sys_codegen_field"."in_table" IS '表格显示';
+COMMENT ON COLUMN "public"."sys_codegen_field"."in_form" IS '表单显示';
+COMMENT ON COLUMN "public"."sys_codegen_field"."in_detail" IS '详情显示';
+COMMENT ON COLUMN "public"."sys_codegen_field"."in_query" IS '查询显示';
+COMMENT ON COLUMN "public"."sys_codegen_field"."primary_key" IS '是否主键';
+COMMENT ON COLUMN "public"."sys_codegen_field"."required" IS '是否必填';
+COMMENT ON COLUMN "public"."sys_codegen_field"."unique_flag" IS '是否唯一';
+COMMENT ON COLUMN "public"."sys_codegen_field"."nullable" IS '是否可空';
 COMMENT ON COLUMN "public"."sys_codegen_field"."max_length" IS '最大长度';
 COMMENT ON COLUMN "public"."sys_codegen_field"."sort" IS '排序';
 COMMENT ON COLUMN "public"."sys_codegen_field"."created_at" IS '创建时间';
@@ -819,11 +892,11 @@ CREATE TABLE "public"."sys_codegen_plan" (
   "gen_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "author" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "description" text COLLATE "pg_catalog"."default",
-  "main_table" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "main_pk" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "main_entity_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "main_module_path" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "main_business_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "table_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "pk_column" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "entity_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "module_path" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "business_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
   "api_prefix" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
   "permission_prefix" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
   "resource_module_id" varchar(64) COLLATE "pg_catalog"."default",
@@ -851,11 +924,11 @@ COMMENT ON COLUMN "public"."sys_codegen_plan"."name" IS '方案名称';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."gen_type" IS '生成类型';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."author" IS '作者';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."description" IS '描述';
-COMMENT ON COLUMN "public"."sys_codegen_plan"."main_table" IS '主表名';
-COMMENT ON COLUMN "public"."sys_codegen_plan"."main_pk" IS '主表主键';
-COMMENT ON COLUMN "public"."sys_codegen_plan"."main_entity_name" IS '主实体类名';
-COMMENT ON COLUMN "public"."sys_codegen_plan"."main_module_path" IS '后端模块路径';
-COMMENT ON COLUMN "public"."sys_codegen_plan"."main_business_name" IS '主业务名称';
+COMMENT ON COLUMN "public"."sys_codegen_plan"."table_name" IS '主表名';
+COMMENT ON COLUMN "public"."sys_codegen_plan"."pk_column" IS '主表主键';
+COMMENT ON COLUMN "public"."sys_codegen_plan"."entity_name" IS '主实体类名';
+COMMENT ON COLUMN "public"."sys_codegen_plan"."module_path" IS '后端模块路径';
+COMMENT ON COLUMN "public"."sys_codegen_plan"."business_name" IS '主业务名称';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."api_prefix" IS '接口前缀';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."permission_prefix" IS '权限前缀';
 COMMENT ON COLUMN "public"."sys_codegen_plan"."resource_module_id" IS '资源模块ID';
@@ -1304,6 +1377,21 @@ INSERT INTO "public"."sys_dict" VALUES ('100080', 'BANNER_LINK_TYPE_NONE', '无�
 INSERT INTO "public"."sys_dict" VALUES ('100085', 'ACCOUNT_IDENTITY_BIND_STATUS', '账号身份绑定状态', 'ACCOUNT_IDENTITY_BIND_STATUS', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-06-29 00:00:00+00', NULL, '2026-06-29 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100086', 'ACCOUNT_IDENTITY_BIND_STATUS_BOUND', '已绑定', 'BOUND', '#18a058', 'SYS', '100085', 'ENABLED', 1, '2026-06-29 00:00:00+00', NULL, '2026-06-29 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100087', 'ACCOUNT_IDENTITY_BIND_STATUS_UNBOUND', '未绑定', 'UNBOUND', '#909399', 'SYS', '100085', 'ENABLED', 2, '2026-06-29 00:00:00+00', NULL, '2026-06-29 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101500', 'REAL_NAME_BUSINESS_TYPE', '实名业务类型', 'REAL_NAME_BUSINESS_TYPE', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101501', 'REAL_NAME_BUSINESS_ACCOUNT_VERIFY', '账号实名认证', 'ACCOUNT_VERIFY', '#18a058', 'SYS', '101500', 'ENABLED', 1, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101502', 'REAL_NAME_BUSINESS_ACCOUNT_RECOVERY', '实名找回账号', 'ACCOUNT_RECOVERY', '#909399', 'SYS', '101500', 'ENABLED', 2, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101510', 'IDENTITY_VERIFY_STATUS', '实名认证状态', 'IDENTITY_VERIFY_STATUS', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101511', 'IDENTITY_VERIFY_STATUS_UNVERIFIED', '未认证', 'UNVERIFIED', '#909399', 'SYS', '101510', 'ENABLED', 1, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101512', 'IDENTITY_VERIFY_STATUS_PENDING', '审核中', 'PENDING', '#f0a020', 'SYS', '101510', 'ENABLED', 2, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101513', 'IDENTITY_VERIFY_STATUS_VERIFIED', '已认证', 'VERIFIED', '#18a058', 'SYS', '101510', 'ENABLED', 3, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101514', 'IDENTITY_VERIFY_STATUS_REJECTED', '已驳回', 'REJECTED', '#d03050', 'SYS', '101510', 'ENABLED', 4, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101520', 'IDENTITY_DOCUMENT_TYPE', '证件类型', 'IDENTITY_DOCUMENT_TYPE', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101521', 'IDENTITY_DOCUMENT_ID_CARD', '居民身份证', 'ID_CARD', '#2080f0', 'SYS', '101520', 'ENABLED', 1, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101522', 'IDENTITY_DOCUMENT_PASSPORT', '护照', 'PASSPORT', '#2080f0', 'SYS', '101520', 'ENABLED', 2, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101523', 'IDENTITY_DOCUMENT_EID_CARD', '电子身份证', 'EID_CARD', '#722ed1', 'SYS', '101520', 'ENABLED', 3, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101530', 'IDENTITY_VERIFY_CHANNEL', '认证通道', 'IDENTITY_VERIFY_CHANNEL', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101531', 'IDENTITY_VERIFY_CHANNEL_THIRD_PARTY', '第三方实人', 'THIRD_PARTY', '#2080f0', 'SYS', '101530', 'ENABLED', 1, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('101532', 'IDENTITY_VERIFY_CHANNEL_MANUAL', '人工审核', 'MANUAL', '#f0a020', 'SYS', '101530', 'ENABLED', 2, '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100095', 'NOTIFICATION_SEVERITY', '通知严重级别', 'NOTIFICATION_SEVERITY', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100096', 'NOTIFICATION_SEVERITY_INFO', '信息', 'INFO', '#2080f0', 'SYS', '100095', 'ENABLED', 1, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
 INSERT INTO "public"."sys_dict" VALUES ('100097', 'NOTIFICATION_SEVERITY_SUCCESS', '成功', 'SUCCESS', '#18a058', 'SYS', '100095', 'ENABLED', 2, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
@@ -1574,6 +1662,7 @@ INSERT INTO "public"."sys_iam_relation" VALUES ('7212116468775288981', 'RESOURCE
 INSERT INTO "public"."sys_iam_relation" VALUES ('7560408972191285564', 'RESOURCE', '204013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:delete', 'CASCADE', 'ALL', '[]', 'f', 3, 'ENABLED', '删除任务', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('7873407408257995473', 'RESOURCE', '204014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:detail', 'CASCADE', 'ALL', '[]', 'f', 4, 'ENABLED', '任务详情', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('7792386902249912041', 'RESOURCE', '204015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:run', 'CASCADE', 'ALL', '[]', 'f', 5, 'ENABLED', '立即执行', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
+INSERT INTO "public"."sys_iam_relation" VALUES ('8106481288132251001', 'RESOURCE', '202231', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:realname:review:verify', 'CASCADE', 'ALL', '[]', 'f', 0, 'ENABLED', '审核实名认证', NULL, NULL, '{}', '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
 INSERT INTO "public"."sys_iam_relation" VALUES ('7740028803530587951', 'RESOURCE', '204016', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:joblog:page', 'CASCADE', 'ALL', '[]', 'f', 6, 'ENABLED', '执行日志', NULL, NULL, '{}', '2026-08-16 00:00:00+00', NULL, '2026-08-16 00:00:00+00', NULL);
 
 -- ----------------------------
@@ -1582,14 +1671,14 @@ INSERT INTO "public"."sys_iam_relation" VALUES ('7740028803530587951', 'RESOURCE
 DROP TABLE IF EXISTS "public"."sys_job";
 CREATE TABLE "public"."sys_job" (
   "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "execute_class" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "execute_type" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
+  "name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "handler" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
+  "trigger_type" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
   "trigger_config" varchar(255) COLLATE "pg_catalog"."default" NOT NULL,
-  "execute_param" json,
+  "params" json,
   "last_run_time" timestamptz(6),
   "next_run_time" timestamptz(6) NOT NULL,
-  "last_execute_result" varchar(500) COLLATE "pg_catalog"."default",
+  "last_result" varchar(500) COLLATE "pg_catalog"."default",
   "enabled" bool NOT NULL,
   "description" varchar(500) COLLATE "pg_catalog"."default",
   "sort" int4 NOT NULL,
@@ -1600,14 +1689,14 @@ CREATE TABLE "public"."sys_job" (
 )
 ;
 COMMENT ON COLUMN "public"."sys_job"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_job"."job_name" IS '任务名称';
-COMMENT ON COLUMN "public"."sys_job"."execute_class" IS '执行类（JobHandler 全限定类名）';
-COMMENT ON COLUMN "public"."sys_job"."execute_type" IS '触发类型：CRON（表达式）/ FIXED（固定间隔）';
+COMMENT ON COLUMN "public"."sys_job"."name" IS '任务名称';
+COMMENT ON COLUMN "public"."sys_job"."handler" IS '处理器标识（Boot 为 JobHandler 全限定类名，其他栈为注册 key）';
+COMMENT ON COLUMN "public"."sys_job"."trigger_type" IS '触发类型：CRON（表达式）/ FIXED（固定间隔）';
 COMMENT ON COLUMN "public"."sys_job"."trigger_config" IS '触发配置：CRON 表达式或固定间隔秒数';
-COMMENT ON COLUMN "public"."sys_job"."execute_param" IS '执行参数（JSON）';
+COMMENT ON COLUMN "public"."sys_job"."params" IS '执行参数（JSON）';
 COMMENT ON COLUMN "public"."sys_job"."last_run_time" IS '上次执行时间';
 COMMENT ON COLUMN "public"."sys_job"."next_run_time" IS '下次执行时间';
-COMMENT ON COLUMN "public"."sys_job"."last_execute_result" IS '上次执行结果摘要';
+COMMENT ON COLUMN "public"."sys_job"."last_result" IS '上次执行结果摘要';
 COMMENT ON COLUMN "public"."sys_job"."enabled" IS '启用状态';
 COMMENT ON COLUMN "public"."sys_job"."description" IS '任务描述';
 COMMENT ON COLUMN "public"."sys_job"."sort" IS '排序';
@@ -1633,12 +1722,11 @@ DROP TABLE IF EXISTS "public"."sys_job_log";
 CREATE TABLE "public"."sys_job_log" (
   "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
   "job_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "job_name" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-  "execute_param" json,
-  "execute_time" timestamptz(6) NOT NULL,
-  "execute_duration_ms" int8,
+  "params" json,
+  "started_at" timestamptz(6) NOT NULL,
+  "duration_ms" int8,
   "success" bool NOT NULL,
-  "execute_result" text COLLATE "pg_catalog"."default",
+  "result" text COLLATE "pg_catalog"."default",
   "executor" varchar(64) COLLATE "pg_catalog"."default",
   "ip" varchar(64) COLLATE "pg_catalog"."default",
   "process_id" varchar(32) COLLATE "pg_catalog"."default",
@@ -1651,12 +1739,11 @@ CREATE TABLE "public"."sys_job_log" (
 ;
 COMMENT ON COLUMN "public"."sys_job_log"."id" IS '主键';
 COMMENT ON COLUMN "public"."sys_job_log"."job_id" IS '任务ID';
-COMMENT ON COLUMN "public"."sys_job_log"."job_name" IS '任务名称';
-COMMENT ON COLUMN "public"."sys_job_log"."execute_param" IS '执行参数快照（JSON）';
-COMMENT ON COLUMN "public"."sys_job_log"."execute_time" IS '执行开始时间';
-COMMENT ON COLUMN "public"."sys_job_log"."execute_duration_ms" IS '执行用时（毫秒）';
+COMMENT ON COLUMN "public"."sys_job_log"."params" IS '执行参数快照（JSON）';
+COMMENT ON COLUMN "public"."sys_job_log"."started_at" IS '执行开始时间';
+COMMENT ON COLUMN "public"."sys_job_log"."duration_ms" IS '执行用时（毫秒）';
 COMMENT ON COLUMN "public"."sys_job_log"."success" IS '执行结果：是否成功';
-COMMENT ON COLUMN "public"."sys_job_log"."execute_result" IS '执行结果摘要 / 错误信息';
+COMMENT ON COLUMN "public"."sys_job_log"."result" IS '执行结果摘要 / 错误信息';
 COMMENT ON COLUMN "public"."sys_job_log"."executor" IS '执行人（人工触发为账号 id，调度触发为 system）';
 COMMENT ON COLUMN "public"."sys_job_log"."ip" IS '执行实例 IP';
 COMMENT ON COLUMN "public"."sys_job_log"."process_id" IS '执行实例进程 ID';
@@ -1669,12 +1756,12 @@ COMMENT ON COLUMN "public"."sys_job_log"."updated_by" IS '更新人';
 -- ----------------------------
 -- Records of sys_job_log
 -- ----------------------------
-INSERT INTO "public"."sys_job_log" VALUES ('2088927105711222785', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:53:27.057194+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.063199+00', NULL, '2026-08-16 09:53:27.063199+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927105841246210', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:53:27.057194+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.08054+00', NULL, '2026-08-16 09:53:27.08054+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681666', '7541000000000000004', '审计告警', '{}', '2026-08-16 09:53:27.059189+00', 78, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.143059+00', NULL, '2026-08-16 09:53:27.143059+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681668', '7541000000000000006', '注销账号清理', '{"retentionDays":15}', '2026-08-16 09:53:27.108262+00', 43, 'f', 'purged=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.156571+00', NULL, '2026-08-16 09:53:27.156571+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681667', '7541000000000000007', '任务执行日志清理', '{"retentionDays":30,"batchSize":1000}', '2026-08-16 09:53:27.104743+00', 24, 'f', 'deleted=0,retentionDays=30,batchSize=1000', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.149059+00', NULL, '2026-08-16 09:53:27.149059+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927107363778562', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:53:27.055208+00', 393, 'f', '执行失败: 
+INSERT INTO "public"."sys_job_log" VALUES ('2088927105711222785', '7541000000000000001', '{}', '2026-08-16 09:53:27.057194+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.063199+00', NULL, '2026-08-16 09:53:27.063199+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927105841246210', '7541000000000000003', '{}', '2026-08-16 09:53:27.057194+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.08054+00', NULL, '2026-08-16 09:53:27.08054+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681666', '7541000000000000004', '{}', '2026-08-16 09:53:27.059189+00', 78, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.143059+00', NULL, '2026-08-16 09:53:27.143059+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681668', '7541000000000000006', '{"retentionDays":15}', '2026-08-16 09:53:27.108262+00', 43, 'f', 'purged=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.156571+00', NULL, '2026-08-16 09:53:27.156571+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927106109681667', '7541000000000000007', '{"retentionDays":30,"batchSize":1000}', '2026-08-16 09:53:27.104743+00', 24, 'f', 'deleted=0,retentionDays=30,batchSize=1000', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.149059+00', NULL, '2026-08-16 09:53:27.149059+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927107363778562', '7541000000000000002', '{}', '2026-08-16 09:53:27.055208+00', 393, 'f', '执行失败: 
 ### Error updating database.  Cause: org.postgresql.util.PSQLException: ERROR: relation "sys_banner" does not exist
   Position: 9
 ### The error may exist in github/jiangbyte/io/sys/modules/banner/mapper/SysBannerMapper.java (best guess)
@@ -1684,99 +1771,99 @@ INSERT INTO "public"."sys_job_log" VALUES ('2088927107363778562', '7541000000000
 ### Cause: org.postgresql.util.PSQLException: ERROR: relation "sys_banner" does not exist
   Position: 9
 ; bad SQL grammar []', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:53:27.452823+00', NULL, '2026-08-16 09:53:27.452823+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815489', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:54:27.891935+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.900684+00', NULL, '2026-08-16 09:54:27.900684+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815490', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:54:27.895819+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.904202+00', NULL, '2026-08-16 09:54:27.904202+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927360984952833', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:54:27.895819+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.912183+00', NULL, '2026-08-16 09:54:27.912183+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545538', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:55:28.752201+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.762236+00', NULL, '2026-08-16 09:55:28.762236+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545537', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:55:28.752201+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.761184+00', NULL, '2026-08-16 09:55:28.761184+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927616246099970', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:55:28.750203+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.7684+00', NULL, '2026-08-16 09:55:28.7684+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989441', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:56:29.281856+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.288857+00', NULL, '2026-08-16 09:56:29.288857+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989442', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:56:29.285852+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.289371+00', NULL, '2026-08-16 09:56:29.289371+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989443', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:56:29.284857+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.297382+00', NULL, '2026-08-16 09:56:29.297382+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928124180508674', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.884391+00', NULL, '2026-08-16 09:57:29.884391+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617537', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.885615+00', NULL, '2026-08-16 09:57:29.885615+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617538', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:57:29.879395+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.887615+00', NULL, '2026-08-16 09:57:29.887615+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928365785001986', '7541000000000000004', '审计告警', '{}', '2026-08-16 09:58:27.458677+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:27.476045+00', NULL, '2026-08-16 09:58:27.476045+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928378409857025', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:58:30.49088+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928378460188673', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:58:30.49188+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928378464382977', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:58:30.49188+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.498381+00', NULL, '2026-08-16 09:58:30.498381+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933889', '7541000000000000001', '示例任务', '{}', '2026-08-16 09:59:31.244234+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933890', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 09:59:31.244234+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933891', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 09:59:31.242237+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.257338+00', NULL, '2026-08-16 09:59:31.257338+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906946', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:00:31.961377+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.966934+00', NULL, '2026-08-16 10:00:31.966934+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906947', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:00:31.964457+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.970929+00', NULL, '2026-08-16 10:00:31.970929+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088928888001015810', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:00:31.964457+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.978208+00', NULL, '2026-08-16 10:00:31.978208+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543297', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:01:32.701165+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.708191+00', NULL, '2026-08-16 10:01:32.708191+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543298', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:01:32.702203+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.709678+00', NULL, '2026-08-16 10:01:32.709678+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929142750457858', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:01:32.703456+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.717355+00', NULL, '2026-08-16 10:01:32.717355+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929397172744194', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:02:33.383666+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.388188+00', NULL, '2026-08-16 10:02:33.388188+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853058', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:02:33.384973+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.393205+00', NULL, '2026-08-16 10:02:33.393205+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853059', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:02:33.384973+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.395612+00', NULL, '2026-08-16 10:02:33.395612+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929626609561601', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:03:28.055669+00', 18, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:28.079276+00', NULL, '2026-08-16 10:03:28.079276+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432451', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:03:34.140859+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467523', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:04:34.8138+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.820209+00', NULL, '2026-08-16 10:04:34.820209+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098818', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:05:35.576894+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043393', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:06:36.305621+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.306939+00', NULL, '2026-08-16 10:06:36.306939+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736707', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:07:37.023242+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932547', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:08:37.737872+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.749604+00', NULL, '2026-08-16 10:08:37.749604+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432452', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:03:34.13769+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.150764+00', NULL, '2026-08-16 10:03:34.150764+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467522', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:04:34.807801+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.816192+00', NULL, '2026-08-16 10:04:34.816192+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098819', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:05:35.580523+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043395', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:06:36.306939+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.315414+00', NULL, '2026-08-16 10:06:36.315414+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736706', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:07:37.022249+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932546', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:08:37.740066+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.744113+00', NULL, '2026-08-16 10:08:37.744113+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739777', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:09:38.440697+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.447166+00', NULL, '2026-08-16 10:09:38.447166+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495107', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:10:39.12234+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.130045+00', NULL, '2026-08-16 10:10:39.130045+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804866', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:11:39.828285+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.831652+00', NULL, '2026-08-16 10:11:39.831652+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459588', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:12:40.625177+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.637277+00', NULL, '2026-08-16 10:12:40.637277+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932147981856770', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:13:29.213709+00', 14, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:29.23146+00', NULL, '2026-08-16 10:13:29.23146+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095937', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:13:41.35542+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424067', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:14:42.125253+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932708277956610', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:15:42.797756+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.80824+00', NULL, '2026-08-16 10:15:42.80824+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048641', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:16:43.460235+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.466772+00', NULL, '2026-08-16 10:16:43.466772+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410305', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:17:44.175377+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890946', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395011', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:19:45.529981+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.536951+00', NULL, '2026-08-16 10:19:45.536951+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739778', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:09:38.440697+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.448163+00', NULL, '2026-08-16 10:09:38.448163+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495106', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:10:39.12234+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.128031+00', NULL, '2026-08-16 10:10:39.128031+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804867', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:11:39.826288+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.83265+00', NULL, '2026-08-16 10:11:39.83265+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459586', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:12:40.622833+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.628181+00', NULL, '2026-08-16 10:12:40.628181+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095939', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:13:41.358507+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.372395+00', NULL, '2026-08-16 10:13:41.372395+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424068', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:14:42.125253+00', 2, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.130252+00', NULL, '2026-08-16 10:14:42.130252+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042051', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:15:42.797756+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048642', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:16:43.463127+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.467775+00', NULL, '2026-08-16 10:16:43.467775+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410306', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:17:44.177343+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933471846805505', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:18:44.847336+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395012', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:19:45.527979+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.540749+00', NULL, '2026-08-16 10:19:45.540749+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739779', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:09:38.439683+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.45217+00', NULL, '2026-08-16 10:09:38.45217+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931434505580545', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:10:39.12133+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.125343+00', NULL, '2026-08-16 10:10:39.125343+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804865', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:11:39.828285+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.829485+00', NULL, '2026-08-16 10:11:39.829485+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459587', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:12:40.629287+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.63219+00', NULL, '2026-08-16 10:12:40.63219+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095938', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:13:41.357445+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424066', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:14:42.124254+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042050', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:15:42.797756+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048643', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:16:43.463127+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.47477+00', NULL, '2026-08-16 10:16:43.47477+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410307', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:17:44.177343+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.185609+00', NULL, '2026-08-16 10:17:44.185609+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933408345042945', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:18:29.691565+00', 26, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:29.722212+00', NULL, '2026-08-16 10:18:29.722212+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890945', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395010', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:19:45.528984+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.530984+00', NULL, '2026-08-16 10:19:45.530984+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935281412177921', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:25:56.241705+00', 38, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.286976+00', NULL, '2026-08-16 10:25:56.286976+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348801', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:25:56.241705+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935281437343746', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:25:56.244268+00', 39, 'f', 'done fired=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.293494+00', NULL, '2026-08-16 10:25:56.293494+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050370', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:26:57.11642+00', 2, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.129211+00', NULL, '2026-08-16 10:26:57.129211+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050371', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:26:57.119242+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.132257+00', NULL, '2026-08-16 10:26:57.132257+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935536648159234', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:26:57.11642+00', 18, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.141369+00', NULL, '2026-08-16 10:26:57.141369+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562689', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:27:57.95913+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.965126+00', NULL, '2026-08-16 10:27:57.965126+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562690', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:27:57.95913+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.968132+00', NULL, '2026-08-16 10:27:57.968132+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935791791865857', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:27:57.95913+00', 11, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.976625+00', NULL, '2026-08-16 10:27:57.976625+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348802', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:25:56.244268+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432450', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:03:34.140859+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088929906558382081', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:04:34.810807+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.823206+00', NULL, '2026-08-16 10:04:34.823206+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930161328795649', '7541000000000000001', '示例任务', '{}', '2026-08-16 10:05:35.575834+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.57943+00', NULL, '2026-08-16 10:05:35.57943+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043394', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:06:36.305621+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.310887+00', NULL, '2026-08-16 10:06:36.310887+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736708', '7541000000000000002', 'Banner 状态同步', '{}', '2026-08-16 10:07:37.023242+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.035507+00', NULL, '2026-08-16 10:07:37.035507+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930887169880066', '7541000000000000004', '审计告警', '{}', '2026-08-16 10:08:28.610841+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:28.621044+00', NULL, '2026-08-16 10:08:28.621044+00', NULL);
-INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932545', '7541000000000000003', 'Banner 互动计数刷库', '{}', '2026-08-16 10:08:37.736858+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.743081+00', NULL, '2026-08-16 10:08:37.743081+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815489', '7541000000000000001', '{}', '2026-08-16 09:54:27.891935+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.900684+00', NULL, '2026-08-16 09:54:27.900684+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360938815490', '7541000000000000003', '{}', '2026-08-16 09:54:27.895819+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.904202+00', NULL, '2026-08-16 09:54:27.904202+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927360984952833', '7541000000000000002', '{}', '2026-08-16 09:54:27.895819+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:54:27.912183+00', NULL, '2026-08-16 09:54:27.912183+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545538', '7541000000000000003', '{}', '2026-08-16 09:55:28.752201+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.762236+00', NULL, '2026-08-16 09:55:28.762236+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616212545537', '7541000000000000001', '{}', '2026-08-16 09:55:28.752201+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.761184+00', NULL, '2026-08-16 09:55:28.761184+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927616246099970', '7541000000000000002', '{}', '2026-08-16 09:55:28.750203+00', 12, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:55:28.7684+00', NULL, '2026-08-16 09:55:28.7684+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989441', '7541000000000000003', '{}', '2026-08-16 09:56:29.281856+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.288857+00', NULL, '2026-08-16 09:56:29.288857+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989442', '7541000000000000001', '{}', '2026-08-16 09:56:29.285852+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.289371+00', NULL, '2026-08-16 09:56:29.289371+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088927870076989443', '7541000000000000002', '{}', '2026-08-16 09:56:29.284857+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:56:29.297382+00', NULL, '2026-08-16 09:56:29.297382+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124180508674', '7541000000000000001', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.884391+00', NULL, '2026-08-16 09:57:29.884391+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617537', '7541000000000000003', '{}', '2026-08-16 09:57:29.881393+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.885615+00', NULL, '2026-08-16 09:57:29.885615+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928124247617538', '7541000000000000002', '{}', '2026-08-16 09:57:29.879395+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:57:29.887615+00', NULL, '2026-08-16 09:57:29.887615+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928365785001986', '7541000000000000004', '{}', '2026-08-16 09:58:27.458677+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:27.476045+00', NULL, '2026-08-16 09:58:27.476045+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378409857025', '7541000000000000003', '{}', '2026-08-16 09:58:30.49088+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378460188673', '7541000000000000001', '{}', '2026-08-16 09:58:30.49188+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.494351+00', NULL, '2026-08-16 09:58:30.494351+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928378464382977', '7541000000000000002', '{}', '2026-08-16 09:58:30.49188+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:58:30.498381+00', NULL, '2026-08-16 09:58:30.498381+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933889', '7541000000000000001', '{}', '2026-08-16 09:59:31.244234+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933890', '7541000000000000003', '{}', '2026-08-16 09:59:31.244234+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.248923+00', NULL, '2026-08-16 09:59:31.248923+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928633280933891', '7541000000000000002', '{}', '2026-08-16 09:59:31.242237+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 09:59:31.257338+00', NULL, '2026-08-16 09:59:31.257338+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906946', '7541000000000000001', '{}', '2026-08-16 10:00:31.961377+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.966934+00', NULL, '2026-08-16 10:00:31.966934+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928887933906947', '7541000000000000003', '{}', '2026-08-16 10:00:31.964457+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.970929+00', NULL, '2026-08-16 10:00:31.970929+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088928888001015810', '7541000000000000002', '{}', '2026-08-16 10:00:31.964457+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:00:31.978208+00', NULL, '2026-08-16 10:00:31.978208+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543297', '7541000000000000001', '{}', '2026-08-16 10:01:32.701165+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.708191+00', NULL, '2026-08-16 10:01:32.708191+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142687543298', '7541000000000000003', '{}', '2026-08-16 10:01:32.702203+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.709678+00', NULL, '2026-08-16 10:01:32.709678+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929142750457858', '7541000000000000002', '{}', '2026-08-16 10:01:32.703456+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:01:32.717355+00', NULL, '2026-08-16 10:01:32.717355+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397172744194', '7541000000000000001', '{}', '2026-08-16 10:02:33.383666+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.388188+00', NULL, '2026-08-16 10:02:33.388188+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853058', '7541000000000000003', '{}', '2026-08-16 10:02:33.384973+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.393205+00', NULL, '2026-08-16 10:02:33.393205+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929397239853059', '7541000000000000002', '{}', '2026-08-16 10:02:33.384973+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:02:33.395612+00', NULL, '2026-08-16 10:02:33.395612+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929626609561601', '7541000000000000004', '{}', '2026-08-16 10:03:28.055669+00', 18, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:28.079276+00', NULL, '2026-08-16 10:03:28.079276+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432451', '7541000000000000001', '{}', '2026-08-16 10:03:34.140859+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467523', '7541000000000000001', '{}', '2026-08-16 10:04:34.8138+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.820209+00', NULL, '2026-08-16 10:04:34.820209+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098818', '7541000000000000002', '{}', '2026-08-16 10:05:35.576894+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043393', '7541000000000000001', '{}', '2026-08-16 10:06:36.305621+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.306939+00', NULL, '2026-08-16 10:06:36.306939+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736707', '7541000000000000001', '{}', '2026-08-16 10:07:37.023242+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932547', '7541000000000000002', '{}', '2026-08-16 10:08:37.737872+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.749604+00', NULL, '2026-08-16 10:08:37.749604+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432452', '7541000000000000002', '{}', '2026-08-16 10:03:34.13769+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.150764+00', NULL, '2026-08-16 10:03:34.150764+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906495467522', '7541000000000000003', '{}', '2026-08-16 10:04:34.807801+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.816192+00', NULL, '2026-08-16 10:04:34.816192+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161400098819', '7541000000000000003', '{}', '2026-08-16 10:05:35.580523+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.589373+00', NULL, '2026-08-16 10:05:35.589373+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043395', '7541000000000000002', '{}', '2026-08-16 10:06:36.306939+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.315414+00', NULL, '2026-08-16 10:06:36.315414+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736706', '7541000000000000003', '{}', '2026-08-16 10:07:37.022249+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.028469+00', NULL, '2026-08-16 10:07:37.028469+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932546', '7541000000000000001', '{}', '2026-08-16 10:08:37.740066+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.744113+00', NULL, '2026-08-16 10:08:37.744113+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739777', '7541000000000000001', '{}', '2026-08-16 10:09:38.440697+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.447166+00', NULL, '2026-08-16 10:09:38.447166+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495107', '7541000000000000002', '{}', '2026-08-16 10:10:39.12234+00', 4, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.130045+00', NULL, '2026-08-16 10:10:39.130045+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804866', '7541000000000000003', '{}', '2026-08-16 10:11:39.828285+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.831652+00', NULL, '2026-08-16 10:11:39.831652+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459588', '7541000000000000002', '{}', '2026-08-16 10:12:40.625177+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.637277+00', NULL, '2026-08-16 10:12:40.637277+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932147981856770', '7541000000000000004', '{}', '2026-08-16 10:13:29.213709+00', 14, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:29.23146+00', NULL, '2026-08-16 10:13:29.23146+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095937', '7541000000000000003', '{}', '2026-08-16 10:13:41.35542+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424067', '7541000000000000001', '{}', '2026-08-16 10:14:42.125253+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708277956610', '7541000000000000002', '{}', '2026-08-16 10:15:42.797756+00', 6, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.80824+00', NULL, '2026-08-16 10:15:42.80824+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048641', '7541000000000000003', '{}', '2026-08-16 10:16:43.460235+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.466772+00', NULL, '2026-08-16 10:16:43.466772+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410305', '7541000000000000003', '{}', '2026-08-16 10:17:44.175377+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890946', '7541000000000000001', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395011', '7541000000000000003', '{}', '2026-08-16 10:19:45.529981+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.536951+00', NULL, '2026-08-16 10:19:45.536951+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739778', '7541000000000000003', '{}', '2026-08-16 10:09:38.440697+00', 4, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.448163+00', NULL, '2026-08-16 10:09:38.448163+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434568495106', '7541000000000000003', '{}', '2026-08-16 10:10:39.12234+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.128031+00', NULL, '2026-08-16 10:10:39.128031+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804867', '7541000000000000002', '{}', '2026-08-16 10:11:39.826288+00', 3, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.83265+00', NULL, '2026-08-16 10:11:39.83265+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459586', '7541000000000000003', '{}', '2026-08-16 10:12:40.622833+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.628181+00', NULL, '2026-08-16 10:12:40.628181+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095939', '7541000000000000002', '{}', '2026-08-16 10:13:41.358507+00', 9, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.372395+00', NULL, '2026-08-16 10:13:41.372395+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424068', '7541000000000000002', '{}', '2026-08-16 10:14:42.125253+00', 2, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.130252+00', NULL, '2026-08-16 10:14:42.130252+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042051', '7541000000000000003', '{}', '2026-08-16 10:15:42.797756+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048642', '7541000000000000001', '{}', '2026-08-16 10:16:43.463127+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.467775+00', NULL, '2026-08-16 10:16:43.467775+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410306', '7541000000000000001', '{}', '2026-08-16 10:17:44.177343+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.183342+00', NULL, '2026-08-16 10:17:44.183342+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471846805505', '7541000000000000002', '{}', '2026-08-16 10:18:44.847336+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395012', '7541000000000000002', '{}', '2026-08-16 10:19:45.527979+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.540749+00', NULL, '2026-08-16 10:19:45.540749+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931180049739779', '7541000000000000002', '{}', '2026-08-16 10:09:38.439683+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:09:38.45217+00', NULL, '2026-08-16 10:09:38.45217+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931434505580545', '7541000000000000001', '{}', '2026-08-16 10:10:39.12133+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:10:39.125343+00', NULL, '2026-08-16 10:10:39.125343+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931689120804865', '7541000000000000001', '{}', '2026-08-16 10:11:39.828285+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:11:39.829485+00', NULL, '2026-08-16 10:11:39.829485+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088931944155459587', '7541000000000000001', '{}', '2026-08-16 10:12:40.629287+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:12:40.63219+00', NULL, '2026-08-16 10:12:40.63219+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932198909095938', '7541000000000000001', '{}', '2026-08-16 10:13:41.357445+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:13:41.362956+00', NULL, '2026-08-16 10:13:41.362956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932453742424066', '7541000000000000003', '{}', '2026-08-16 10:14:42.124254+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:14:42.127254+00', NULL, '2026-08-16 10:14:42.127254+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932708215042050', '7541000000000000001', '{}', '2026-08-16 10:15:42.797756+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:15:42.803956+00', NULL, '2026-08-16 10:15:42.803956+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088932962696048643', '7541000000000000002', '{}', '2026-08-16 10:16:43.463127+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:16:43.47477+00', NULL, '2026-08-16 10:16:43.47477+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933217357410307', '7541000000000000002', '{}', '2026-08-16 10:17:44.177343+00', 5, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:17:44.185609+00', NULL, '2026-08-16 10:17:44.185609+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933408345042945', '7541000000000000004', '{}', '2026-08-16 10:18:29.691565+00', 26, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:29.722212+00', NULL, '2026-08-16 10:18:29.722212+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933471783890945', '7541000000000000003', '{}', '2026-08-16 10:18:44.847336+00', 0, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:18:44.852872+00', NULL, '2026-08-16 10:18:44.852872+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088933726340395010', '7541000000000000001', '{}', '2026-08-16 10:19:45.528984+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:19:45.530984+00', NULL, '2026-08-16 10:19:45.530984+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281412177921', '7541000000000000002', '{}', '2026-08-16 10:25:56.241705+00', 38, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.286976+00', NULL, '2026-08-16 10:25:56.286976+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348801', '7541000000000000001', '{}', '2026-08-16 10:25:56.241705+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281437343746', '7541000000000000004', '{}', '2026-08-16 10:25:56.244268+00', 39, 'f', 'done fired=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.293494+00', NULL, '2026-08-16 10:25:56.293494+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050370', '7541000000000000001', '{}', '2026-08-16 10:26:57.11642+00', 2, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.129211+00', NULL, '2026-08-16 10:26:57.129211+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536581050371', '7541000000000000003', '{}', '2026-08-16 10:26:57.119242+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.132257+00', NULL, '2026-08-16 10:26:57.132257+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935536648159234', '7541000000000000002', '{}', '2026-08-16 10:26:57.11642+00', 18, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:26:57.141369+00', NULL, '2026-08-16 10:26:57.141369+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562689', '7541000000000000001', '{}', '2026-08-16 10:27:57.95913+00', 1, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.965126+00', NULL, '2026-08-16 10:27:57.965126+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791720562690', '7541000000000000003', '{}', '2026-08-16 10:27:57.95913+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.968132+00', NULL, '2026-08-16 10:27:57.968132+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935791791865857', '7541000000000000002', '{}', '2026-08-16 10:27:57.95913+00', 11, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:27:57.976625+00', NULL, '2026-08-16 10:27:57.976625+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088935281286348802', '7541000000000000003', '{}', '2026-08-16 10:25:56.244268+00', 3, 'f', 'flushed=0', 'system', '192.168.10.4', '8828', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:25:56.257657+00', NULL, '2026-08-16 10:25:56.257657+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929652035432450', '7541000000000000003', '{}', '2026-08-16 10:03:34.140859+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:03:34.147752+00', NULL, '2026-08-16 10:03:34.147752+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088929906558382081', '7541000000000000002', '{}', '2026-08-16 10:04:34.810807+00', 7, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:04:34.823206+00', NULL, '2026-08-16 10:04:34.823206+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930161328795649', '7541000000000000001', '{}', '2026-08-16 10:05:35.575834+00', 0, 'f', 'echo: (无参数)', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:05:35.57943+00', NULL, '2026-08-16 10:05:35.57943+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930416074043394', '7541000000000000003', '{}', '2026-08-16 10:06:36.305621+00', 1, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:06:36.310887+00', NULL, '2026-08-16 10:06:36.310887+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930670785736708', '7541000000000000002', '{}', '2026-08-16 10:07:37.023242+00', 8, 'f', 'expired=0,activated=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:07:37.035507+00', NULL, '2026-08-16 10:07:37.035507+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930887169880066', '7541000000000000004', '{}', '2026-08-16 10:08:28.610841+00', 8, 'f', 'done fired=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:28.621044+00', NULL, '2026-08-16 10:08:28.621044+00', NULL);
+INSERT INTO "public"."sys_job_log" VALUES ('2088930925421932545', '7541000000000000003', '{}', '2026-08-16 10:08:37.736858+00', 2, 'f', 'flushed=0', 'system', '192.168.10.4', '1464', 'E:\projects\mine\hei\hei-boot', '2026-08-16 10:08:37.743081+00', NULL, '2026-08-16 10:08:37.743081+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -2171,6 +2258,8 @@ INSERT INTO "public"."sys_resource" VALUES ('200025', '200003', 'sys-session', '
 INSERT INTO "public"."sys_resource" VALUES ('200027', '200003', 'sys-audit-api', '操作审计接口', 'API_GROUP', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 'f', 'f', 'f', 'ENABLED', '操作审计后端权限组', NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
 INSERT INTO "public"."sys_resource" VALUES ('200028', '200003', 'sys-login-log', '登录日志', 'MENU', '210001', '/sys/login-log', '/sys/login-log/index.vue', NULL, 'icon-park-outline:log', NULL, NULL, 5, 't', 'f', 'f', 'ENABLED', '登录成功/失败历史记录', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
 INSERT INTO "public"."sys_resource" VALUES ('200029', '200003', 'sys-audit', '操作审计', 'MENU', '210001', '/sys/audit', '/sys/audit/index.vue', NULL, 'icon-park-outline:audit', NULL, NULL, 7, 't', 'f', 'f', 'ENABLED', '系统操作审计日志', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202230', '200003', 'sys-real-name', '实名认证审核', 'MENU', '210001', '/sys/real-name', '/sys/real-name/index.vue', NULL, 'icon-park-outline:id-card', NULL, NULL, 8, 't', 'f', 'f', 'ENABLED', '实名认证待审队列与审核', NULL, '{}', '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource" VALUES ('202231', '202230', 'sys-real-name-review', '审核实名认证', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'f', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-22 00:00:00+00', NULL, '2026-08-22 00:00:00+00', NULL);
 INSERT INTO "public"."sys_resource" VALUES ('200031', '200041', 'iam-clientmodule', '客户端模块管理', 'MENU', '210001', '/iam/client_module', '/iam/client_module/index.vue', NULL, 'icon-park-outline:application-one', NULL, NULL, 1, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
 INSERT INTO "public"."sys_resource" VALUES ('200032', '200041', 'iam-clientresource', '客户端资源管理', 'MENU', '210001', '/iam/client_resource', '/iam/client_resource/index.vue', NULL, 'icon-park-outline:page-template', NULL, NULL, 2, 't', 'f', 'f', 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
 INSERT INTO "public"."sys_resource" VALUES ('200040', NULL, 'resource-auth', '资源授权', 'CATALOG', '210001', '/resource-auth', NULL, NULL, 'icon-park-outline:all-application', NULL, NULL, 15, 't', 'f', 'f', 'ENABLED', '菜单资源与资源模块授权配置', NULL, '{}', '2026-08-09 00:00:00+00', NULL, '2026-08-09 00:00:00+00', NULL);
@@ -2622,8 +2711,8 @@ ALTER TABLE "public"."sys_codegen_field" ADD CONSTRAINT "pk_sys_codegen_field" P
 CREATE INDEX "ix_sys_codegen_plan_gen_type" ON "public"."sys_codegen_plan" USING btree (
   "gen_type" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
 );
-CREATE INDEX "ix_sys_codegen_plan_main_table" ON "public"."sys_codegen_plan" USING btree (
-  "main_table" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+CREATE INDEX "ix_sys_codegen_plan_table_name" ON "public"."sys_codegen_plan" USING btree (
+  "table_name" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
 );
 
 -- ----------------------------
@@ -2746,8 +2835,8 @@ ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "pk_sys_iam_relation" PRI
 -- ----------------------------
 -- Indexes structure for table sys_job_log
 -- ----------------------------
-CREATE INDEX "idx_sys_job_log_execute_time" ON "public"."sys_job_log" USING btree (
-  "execute_time" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
+CREATE INDEX "idx_sys_job_log_started_at" ON "public"."sys_job_log" USING btree (
+  "started_at" "pg_catalog"."timestamptz_ops" ASC NULLS LAST
 );
 
 -- ----------------------------

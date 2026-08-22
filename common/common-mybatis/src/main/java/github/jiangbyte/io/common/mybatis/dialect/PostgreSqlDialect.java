@@ -91,8 +91,8 @@ public final class PostgreSqlDialect implements DbDialect {
                 DELETE FROM sys_job_log
                 WHERE id IN (
                   SELECT id FROM sys_job_log
-                  WHERE execute_time < #{cutoff}
-                  ORDER BY execute_time
+                  WHERE started_at < #{cutoff}
+                  ORDER BY started_at
                   LIMIT #{limit}
                 )
                 """;

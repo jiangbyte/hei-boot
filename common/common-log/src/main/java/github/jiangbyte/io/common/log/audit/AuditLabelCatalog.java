@@ -17,7 +17,12 @@ public final class AuditLabelCatalog {
     private static final Set<String> SENSITIVE_KEYS = Set.of(
             "password", "passwordhash", "password_hash", "oldpassword", "old_password",
             "newpassword", "new_password", "token", "secret", "accesskey",
-            "access_key", "privatekey", "private_key", "cryptokey", "crypto_key");
+            "access_key", "privatekey", "private_key", "cryptokey", "crypto_key",
+            "realname", "real_name", "realnamecipher", "real_name_cipher",
+            "documentno", "document_no", "documentnocipher", "document_no_cipher",
+            "documentnohash", "document_no_hash", "applicantcontact", "applicant_contact",
+            "attachmentids", "attachment_ids", "providerorderno", "provider_order_no",
+            "providerpayload", "provider_payload", "reviewremark", "review_remark");
 
     /** 常见字段中文名（展示用；未知字段回退原 key）。 */
     private static final Map<String, String> FIELD_LABELS = Map.ofEntries(
@@ -75,7 +80,17 @@ public final class AuditLabelCatalog {
             Map.entry("grantInfoList", "授权资源"),
             Map.entry("grant_info_list", "授权资源"),
             Map.entry("passwordHash", "密码"),
-            Map.entry("password_hash", "密码"));
+            Map.entry("password_hash", "密码"),
+            Map.entry("businessType", "认证方式"),
+            Map.entry("business_type", "认证方式"),
+            Map.entry("documentType", "证件类型"),
+            Map.entry("document_type", "证件类型"),
+            Map.entry("caseId", "工单编号"),
+            Map.entry("case_id", "工单编号"),
+            Map.entry("reviewRemark", "审核意见"),
+            Map.entry("review_remark", "审核意见"),
+            Map.entry("providerCode", "认证渠道"),
+            Map.entry("provider_code", "认证渠道"));
 
     private AuditLabelCatalog() {
     }
@@ -106,6 +121,8 @@ public final class AuditLabelCatalog {
             case "sys_codegen" -> "系统 - 代码生成";
             case "sys_weakpassword" -> "系统 - 弱密码";
             case "profile_center" -> "个人中心";
+            case "real_name_case" -> "实名认证 - 工单";
+            case "profile_identity" -> "实名认证 - 身份";
             case "workspace_shortcut" -> "工作台 - 快捷应用";
             default -> {
                 if (key.startsWith("biz_")) {
@@ -154,6 +171,10 @@ public final class AuditLabelCatalog {
             case "enabled", "enable" -> "启用" + shortModule;
             case "run" -> "执行" + shortModule;
             case "submit" -> "提交" + shortModule;
+            case "approve" -> "审核通过" + shortModule;
+            case "reject" -> "审核驳回" + shortModule;
+            case "init_third_party", "init-third-party" -> "发起第三方实名";
+            case "callback" -> "第三方实名回调";
             case "batch-save", "batch_save" -> "批量保存" + shortModule;
             case "forgot_password", "forgot-password" -> "忘记密码";
             case "reset_password", "reset-password" -> "重置密码";
@@ -188,6 +209,7 @@ public final class AuditLabelCatalog {
             case "update", "update_password", "update-password", "update_profile", "update-profile",
                     "update_phone", "update-phone", "update_email", "update-email",
                     "batch-save", "batch_save", "pin", "publish", "revoke", "enabled", "enable",
+                    "approve", "reject",
                     "grant", "grant_resources", "grant-resources", "grant_users", "grant-users",
                     "grant_roles", "grant-roles", "grant_groups", "grant-groups",
                     "grant_depts", "grant-depts", "grant_client_resources", "grant-client-resources",
@@ -200,7 +222,8 @@ public final class AuditLabelCatalog {
             case "upload", "upload_avatar", "upload-avatar", "import", "run", "interaction",
                     "forgot_password", "forgot-password", "reset_password", "reset-password",
                     "send_login_code", "send-login-code", "exit", "token_exit", "token-exit",
-                    "oauth_bind_authorize", "oauth_unbind", "test_webhook", "test_push" -> "OTHER";
+                    "oauth_bind_authorize", "oauth_unbind", "test_webhook", "test_push",
+                    "init_third_party", "init-third-party", "callback" -> "OTHER";
             default -> "OTHER";
         };
     }
@@ -220,6 +243,13 @@ public final class AuditLabelCatalog {
         String entity = entityShortName(resourceType);
         String subjectPart = StringUtils.hasText(subject) ? " 【" + subject.trim() + "】" : "";
         String result = success ? "成功" : "失败";
+        String resourceKey = resourceType == null ? "" : resourceType.trim().toLowerCase(Locale.ROOT);
+
+        String identityContent = buildIdentityContent(
+                act, resourceKey, subjectPart, success, beforeData, afterData);
+        if (StringUtils.hasText(identityContent)) {
+            return identityContent;
+        }
 
         if ("login".equals(act)) {
             return "账号" + subjectPart + "登录" + result;
@@ -258,7 +288,7 @@ public final class AuditLabelCatalog {
             case "create", "submit" -> "创建了";
             case "update", "update_profile", "update-profile", "update_phone", "update-phone",
                     "update_email", "update-email", "batch-save", "batch_save", "enabled", "enable",
-                    "pin", "publish", "revoke" -> "更新了";
+                    "pin", "publish", "revoke", "approve", "reject" -> "更新了";
             case "upload", "upload_avatar", "upload-avatar" -> "上传了";
             case "run" -> "执行了";
             case "read", "read_all", "read-all" -> "阅读了";
@@ -445,5 +475,101 @@ public final class AuditLabelCatalog {
 
     private static String normalize(String action) {
         return action == null ? "" : action.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String buildIdentityContent(
+            String act,
+            String resourceKey,
+            String subjectPart,
+            boolean success,
+            Map<String, Object> beforeData,
+            Map<String, Object> afterData) {
+        String result = success ? "成功" : "失败";
+        if ("real_name_case".equals(resourceKey)) {
+            return switch (act) {
+                case "submit" -> "提交实名认证" + subjectPart + identityHint(afterData) + result;
+                case "approve" -> "通过实名认证审核" + subjectPart + result;
+                case "reject" -> {
+                    String remark = identityReviewRemark(afterData, beforeData);
+                    if (StringUtils.hasText(remark)) {
+                        yield "驳回实名认证" + subjectPart + "：" + remark + result;
+                    }
+                    yield "驳回实名认证" + subjectPart + result;
+                }
+                case "init_third_party", "init-third-party" ->
+                        "发起第三方实名认证" + subjectPart + identityHint(afterData) + result;
+                case "callback" -> "第三方实名认证回调" + subjectPart + result;
+                default -> null;
+            };
+        }
+        if ("profile_identity".equals(resourceKey) && "revoke".equals(act)) {
+            return "撤销实名认证" + subjectPart + result;
+        }
+        return null;
+    }
+
+    private static String identityHint(Map<String, Object> data) {
+        if (data == null || data.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        appendIdentityHint(sb, data, "businessType", "business_type");
+        appendIdentityHint(sb, data, "documentType", "document_type");
+        appendIdentityHint(sb, data, "providerCode", "provider_code");
+        if (sb.isEmpty()) {
+            return "";
+        }
+        return "（" + sb + "）";
+    }
+
+    private static void appendIdentityHint(StringBuilder sb, Map<String, Object> data, String... keys) {
+        for (String key : keys) {
+            Object value = data.get(key);
+            if (value != null && StringUtils.hasText(String.valueOf(value))) {
+                if (!sb.isEmpty()) {
+                    sb.append("，");
+                }
+                sb.append(fieldLabel(key)).append("：").append(identityEnumLabel(String.valueOf(value)));
+                return;
+            }
+        }
+    }
+
+    private static String identityReviewRemark(Map<String, Object> afterData, Map<String, Object> beforeData) {
+        Object value = firstPresentValue(afterData, "reviewRemark", "review_remark");
+        if (value == null) {
+            value = firstPresentValue(beforeData, "reviewRemark", "review_remark");
+        }
+        if (value == null || !StringUtils.hasText(String.valueOf(value))) {
+            return null;
+        }
+        return "【审核意见】" + String.valueOf(value).trim();
+    }
+
+    private static Object firstPresentValue(Map<String, Object> map, String... keys) {
+        if (map == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (map.containsKey(key)) {
+                return map.get(key);
+            }
+        }
+        return null;
+    }
+
+    private static String identityEnumLabel(String raw) {
+        String value = raw == null ? "" : raw.trim();
+        if (!StringUtils.hasText(value)) {
+            return "空";
+        }
+        return switch (value.toUpperCase(Locale.ROOT)) {
+            case "ID_CARD" -> "身份证";
+            case "PASSPORT" -> "护照";
+            case "ACCOUNT_VERIFY" -> "人工审核";
+            case "THIRD_PARTY" -> "第三方认证";
+            case "EID" -> "电子身份证";
+            default -> value;
+        };
     }
 }

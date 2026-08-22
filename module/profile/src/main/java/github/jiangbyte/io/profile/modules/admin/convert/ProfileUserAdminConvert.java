@@ -30,15 +30,16 @@ public interface ProfileUserAdminConvert {
     @Mapping(target = "groupIds", source = "loginUser.groupIds")
     @Mapping(target = "permissionKeys", source = "loginUser.permissions")
     @Mapping(target = "passwordExpired", source = "loginUser.passwordExpired")
-    @Mapping(target = "name", source = "profile.name")
     @Mapping(target = "nickname", source = "profile.nickname")
     @Mapping(target = "avatar", source = "profile.avatar")
     @Mapping(target = "profile", source = "profile")
+    @Mapping(target = "identity", ignore = true)
     @Mapping(target = "roleIdNames", ignore = true)
     @Mapping(target = "deptIdNames", ignore = true)
     @Mapping(target = "groupIdNames", ignore = true)
     @Mapping(target = "forceBindEmail", ignore = true)
     @Mapping(target = "forceBindPhone", ignore = true)
+    @Mapping(target = "forceBindIdentity", ignore = true)
     MeResult toMe(LoginUser loginUser, UserProfileResult profile);
 
     /** 实体转为用户中心资料 DTO。 */
@@ -49,8 +50,8 @@ public interface ProfileUserAdminConvert {
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     ProfileUserAdminInfo toInfo(ProfileUserAdmin profile);
 
-    /** 用 Info 覆盖实体可变字段（保留主键与审计字段）。 */
-    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    /** 用 Info 覆盖实体可变字段（保留主键与审计字段；name 不再写入 profile 表）。 */
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE, ignoreUnmappedSourceProperties = {"name"})
     @Mapping(target = "accountId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

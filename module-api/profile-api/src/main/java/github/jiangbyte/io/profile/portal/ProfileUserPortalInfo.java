@@ -3,8 +3,8 @@ package github.jiangbyte.io.profile.portal;
 import lombok.Data;
 
 /**
- * 门户端用户档案跨模块快照：姓名、昵称、头像与联系方式等展示字段。
- * 非 HTTP 结果，亦非持久化实体。
+ * 门户端用户档案跨模块快照：昵称、头像与联系方式等展示字段。
+ * {@code name} 保留供 IAM 展示，来源于 {@link github.jiangbyte.io.profile.ProfileIdentityApi}，不从 profile 表映射。
  *
  * Author: Charlie
  */

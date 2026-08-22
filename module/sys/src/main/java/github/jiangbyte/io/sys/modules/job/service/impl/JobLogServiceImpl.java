@@ -31,7 +31,7 @@ public class JobLogServiceImpl extends ServiceImpl<SysJobLogMapper, SysJobLog> i
                 Wrappers.<SysJobLog>lambdaQuery()
                         .eq(StringUtils.hasText(param.getJobId()), SysJobLog::getJobId, param.getJobId())
                         .eq(param.getSuccess() != null, SysJobLog::getSuccess, param.getSuccess())
-                        .orderByDesc(SysJobLog::getExecuteTime));
+                        .orderByDesc(SysJobLog::getStartedAt));
     }
 
     @Override

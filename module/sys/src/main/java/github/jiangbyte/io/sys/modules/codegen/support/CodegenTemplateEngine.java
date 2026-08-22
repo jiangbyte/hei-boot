@@ -62,12 +62,12 @@ public class CodegenTemplateEngine {
         Map<String, Object> ctx = buildContext(plan, mainFields, subFields == null ? List.of() : subFields);
         List<SysCodegenPreviewFileResult> files = new ArrayList<>();
 
-        String moduleRoot = "module/" + firstModuleSegment(plan.getMainModulePath());
+        String moduleRoot = "module/" + firstModuleSegment(plan.getModulePath());
         String basePackage = (String) ctx.get("basePackage");
         String packagePath = CodegenNaming.pathFromPackage(basePackage);
         String paramPackage = (String) ctx.get("paramPackage");
         String paramPath = CodegenNaming.pathFromPackage(paramPackage);
-        String entityName = plan.getMainEntityName();
+        String entityName = plan.getEntityName();
 
         // 对齐 iam/dept：module 内 entity/mapper/convert/param/service(+impl)/controller
         files.add(file(moduleRoot + "/src/main/java/" + packagePath + "/entity/" + entityName + ".java",
@@ -150,7 +150,7 @@ public class CodegenTemplateEngine {
         model.put("subForeignProperty", ctx.get("subForeignProperty"));
         model.put("subEntityName", ctx.get("subEntityName"));
         model.put("subVarName", ctx.get("subVarName"));
-        model.put("mainEntityName", ctx.get("mainEntityName"));
+        model.put("entityName", ctx.get("entityName"));
         model.put("mainVarName", ctx.get("mainVarName"));
 
         Map<String, Object> entity = sub
@@ -160,7 +160,7 @@ public class CodegenTemplateEngine {
         model.put("entityName", entityName);
         model.put("tableName", entity.get("table_name"));
         model.put("varName", entity.get("var_name"));
-        model.put("businessName", sub ? ctx.get("subBusinessName") : ctx.get("mainBusinessName"));
+        model.put("businessName", sub ? ctx.get("subBusinessName") : ctx.get("businessName"));
         model.put("pkProperty", CodegenNaming.snakeToCamel(String.valueOf(entity.get("pk_name"))));
 
         List<Map<String, Object>> javaFields = (List<Map<String, Object>>) entity.get("java_fields");
@@ -212,7 +212,7 @@ public class CodegenTemplateEngine {
             apiPrefix = apiPrefix.substring("/api/v1/admin".length());
         }
         if (apiPrefix == null || apiPrefix.isBlank()) {
-            apiPrefix = "/biz/" + CodegenNaming.apiPathSegment(plan.getMainBusinessName());
+            apiPrefix = "/biz/" + CodegenNaming.apiPathSegment(plan.getBusinessName());
         }
         if (!apiPrefix.startsWith("/")) {
             apiPrefix = "/" + apiPrefix;
@@ -224,7 +224,7 @@ public class CodegenTemplateEngine {
         }
 
         Map<String, Object> main = entityContext(
-                plan.getMainEntityName(), plan.getMainTable(), plan.getMainPk(), mainFields, mainTableExclude);
+                plan.getEntityName(), plan.getTableName(), plan.getPkColumn(), mainFields, mainTableExclude);
         Map<String, Object> sub = hasSub
                 ? entityContext(plan.getSubEntityName(), plan.getSubTable(), plan.getSubPk(), subFields, Set.of())
                 : Map.of();
@@ -239,23 +239,23 @@ public class CodegenTemplateEngine {
         String viewDir = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/')) : "hei-admin/src/views";
         String viewComponentDir = viewDir + "/components";
         String apiFile = resolveApiFile(plan, componentPath);
-        String apiExportName = CodegenNaming.snakeToCamel(toSnake(plan.getMainEntityName())) + "Api";
+        String apiExportName = CodegenNaming.snakeToCamel(toSnake(plan.getEntityName())) + "Api";
         if (apiExportName.length() > 0) {
             apiExportName = Character.toLowerCase(apiExportName.charAt(0)) + apiExportName.substring(1);
             // 保持 cgTestActivityApi 风格：实体 Pascal → camel + Api
-            apiExportName = Character.toLowerCase(plan.getMainEntityName().charAt(0))
-                    + plan.getMainEntityName().substring(1) + "Api";
+            apiExportName = Character.toLowerCase(plan.getEntityName().charAt(0))
+                    + plan.getEntityName().substring(1) + "Api";
         }
 
         Map<String, Object> planMap = new LinkedHashMap<>();
         planMap.put("author", plan.getAuthor());
         planMap.put("gen_type", genType);
         planMap.put("description", plan.getDescription());
-        planMap.put("main_table", plan.getMainTable());
-        planMap.put("main_pk", plan.getMainPk());
-        planMap.put("main_entity_name", plan.getMainEntityName());
-        planMap.put("main_module_path", plan.getMainModulePath());
-        planMap.put("main_business_name", plan.getMainBusinessName());
+        planMap.put("table_name", plan.getTableName());
+        planMap.put("pk_column", plan.getPkColumn());
+        planMap.put("entity_name", plan.getEntityName());
+        planMap.put("module_path", plan.getModulePath());
+        planMap.put("business_name", plan.getBusinessName());
         planMap.put("api_prefix", apiPrefix);
         planMap.put("permission_prefix", plan.getPermissionPrefix());
         planMap.put("resource_module_id", nullToEmpty(plan.getResourceModuleId()));
@@ -299,7 +299,7 @@ public class CodegenTemplateEngine {
         ctx.put("view_component_dir", viewComponentDir);
         ctx.put("child_view_component_dir", viewComponentDir + "/children");
 
-        String basePackage = CodegenNaming.packageFromModulePath(plan.getMainModulePath());
+        String basePackage = CodegenNaming.packageFromModulePath(plan.getModulePath());
         ctx.put("basePackage", basePackage);
         ctx.put("paramPackage", basePackage + ".param");
         // 三段式权限码段内不允许 - / _，统一清洗后再下发，保证生成代码与运行期权限校验一致。
@@ -308,13 +308,13 @@ public class CodegenTemplateEngine {
         ctx.put("permissionPrefix", permissionPrefix);
         ctx.put("apiPrefix", apiPrefix);
         String auditResourceType = plan.getPermissionPrefix() == null
-                ? toSnake(plan.getMainEntityName())
+                ? toSnake(plan.getEntityName())
                 : permissionPrefix.replace(':', '_');
         ctx.put("auditResourceType", auditResourceType);
-        ctx.put("mainEntityName", plan.getMainEntityName());
-        ctx.put("mainVarName", Character.toLowerCase(plan.getMainEntityName().charAt(0))
-                + plan.getMainEntityName().substring(1));
-        ctx.put("mainBusinessName", plan.getMainBusinessName());
+        ctx.put("entityName", plan.getEntityName());
+        ctx.put("mainVarName", Character.toLowerCase(plan.getEntityName().charAt(0))
+                + plan.getEntityName().substring(1));
+        ctx.put("businessName", plan.getBusinessName());
         ctx.put("subBusinessName", plan.getSubBusinessName());
         ctx.put("subEntityName", plan.getSubEntityName());
         ctx.put("subVarName", StringUtils.hasText(plan.getSubEntityName())
@@ -364,22 +364,22 @@ public class CodegenTemplateEngine {
             if (isFormField(field)) {
                 formFields.add(fc);
             }
-            if (Boolean.TRUE.equals(field.getShowInQuery()) && !Boolean.TRUE.equals(field.getIsPrimaryKey())) {
+            if (Boolean.TRUE.equals(field.getInQuery()) && !Boolean.TRUE.equals(field.getPrimaryKey())) {
                 queryFields.add(fc);
             }
-            if (Boolean.TRUE.equals(field.getShowInTable())
+            if (Boolean.TRUE.equals(field.getInTable())
                     && !AUDIT.contains(field.getColumnName())
                     && !tableExclude.contains(field.getColumnName())) {
                 tableFields.add(fc);
             }
-            if (Boolean.TRUE.equals(field.getShowInDetail()) && !AUDIT.contains(field.getColumnName())) {
+            if (Boolean.TRUE.equals(field.getInDetail()) && !AUDIT.contains(field.getColumnName())) {
                 detailFields.add(fc);
             }
 
             if ("id".equals(field.getColumnName()) || AUDIT.contains(field.getColumnName())) {
                 continue;
             }
-            String javaType = DbTypeMapper.toJavaType(field.getDataType());
+            String javaType = DbTypeMapper.toJavaType(field.getValueType());
             String simpleType = DbTypeMapper.toSimpleJavaName(javaType);
             if (javaType.startsWith("java.") && !javaType.startsWith("java.lang.") && !javaType.contains("<")) {
                 javaImports.add(javaType);
@@ -391,20 +391,20 @@ public class CodegenTemplateEngine {
             Map<String, Object> jf = new HashMap<>();
             jf.put("columnName", field.getColumnName());
             jf.put("propertyName", CodegenNaming.snakeToCamel(field.getColumnName()));
-            jf.put("comment", field.getColumnComment() == null ? "" : field.getColumnComment());
+            jf.put("comment", field.getLabel() == null ? "" : field.getLabel());
             jf.put("javaType", simpleType);
             jf.put("fullJavaType", javaType);
-            jf.put("isJson", "dict".equals(field.getDataType()) || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json")));
-            jf.put("showInQuery", Boolean.TRUE.equals(field.getShowInQuery()));
-            jf.put("showInForm", Boolean.TRUE.equals(field.getShowInForm()));
+            jf.put("isJson", "dict".equals(field.getValueType()) || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json")));
+            jf.put("inQuery", Boolean.TRUE.equals(field.getInQuery()));
+            jf.put("inForm", Boolean.TRUE.equals(field.getInForm()));
             jf.put("queryOperator", field.getQueryOperator());
-            jf.put("isRequired", Boolean.TRUE.equals(field.getIsRequired()));
+            jf.put("required", Boolean.TRUE.equals(field.getRequired()));
             jf.put("maxLength", field.getMaxLength());
             javaFields.add(jf);
-            if (Boolean.TRUE.equals(field.getShowInForm()) && !Boolean.TRUE.equals(field.getIsPrimaryKey())) {
+            if (Boolean.TRUE.equals(field.getInForm()) && !Boolean.TRUE.equals(field.getPrimaryKey())) {
                 javaFormFields.add(jf);
             }
-            if (Boolean.TRUE.equals(field.getShowInQuery())) {
+            if (Boolean.TRUE.equals(field.getInQuery())) {
                 javaQueryFields.add(jf);
             }
         }
@@ -423,9 +423,21 @@ public class CodegenTemplateEngine {
         entity.put("has_form_datetime", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_datetime"))));
         entity.put("has_form_json", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_json"))));
         entity.put("has_form_bool", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_bool"))));
-        entity.put("has_form_int", formFields.stream().anyMatch(f -> "int".equals(f.get("data_type"))));
-        entity.put("has_form_float", formFields.stream().anyMatch(f -> "float".equals(f.get("data_type"))));
+        entity.put("has_form_richtext", formFields.stream().anyMatch(f -> "richtext".equals(f.get("widget"))));
+        entity.put("has_form_markdown", formFields.stream().anyMatch(f -> "markdown".equals(f.get("widget"))));
+        entity.put("has_form_code", formFields.stream().anyMatch(f -> "code".equals(f.get("widget"))));
+        entity.put("has_form_icon", formFields.stream().anyMatch(f -> "icon".equals(f.get("widget"))));
+        entity.put("has_form_editor", formFields.stream().anyMatch(f ->
+                Set.of("richtext", "markdown", "code").contains(String.valueOf(f.get("widget")))));
+        entity.put("has_form_int", formFields.stream().anyMatch(f -> "int".equals(f.get("value_type"))));
+        entity.put("has_form_float", formFields.stream().anyMatch(f -> "float".equals(f.get("value_type"))));
         entity.put("has_detail_json", detailFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_json"))));
+        entity.put("has_detail_richtext", detailFields.stream().anyMatch(f -> "richtext".equals(f.get("widget"))));
+        entity.put("has_detail_markdown", detailFields.stream().anyMatch(f -> "markdown".equals(f.get("widget"))));
+        entity.put("has_detail_code", detailFields.stream().anyMatch(f -> "code".equals(f.get("widget"))));
+        entity.put("has_detail_icon", detailFields.stream().anyMatch(f -> "icon".equals(f.get("widget"))));
+        entity.put("has_detail_editor", detailFields.stream().anyMatch(f ->
+                Set.of("richtext", "markdown", "code").contains(String.valueOf(f.get("widget")))));
         entity.put("has_query_dict", queryFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
         entity.put("has_table_dict", tableFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
         entity.put("has_table_bool", tableFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_bool"))));
@@ -446,30 +458,31 @@ public class CodegenTemplateEngine {
     }
 
     private Map<String, Object> fieldContext(SysCodegenField field) {
-        String dataType = field.getDataType() == null ? "str" : field.getDataType();
-        boolean isDatetime = "datetime".equals(field.getFormWidget()) || "datetime".equals(dataType);
-        boolean isJson = "dict".equals(dataType)
+        String valueType = field.getValueType() == null ? "str" : field.getValueType();
+        boolean isDatetime = "datetime".equals(field.getWidget()) || "datetime".equals(valueType);
+        boolean isJson = "dict".equals(valueType)
                 || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json"));
-        boolean isBool = "bool".equals(dataType);
+        boolean isBool = "bool".equals(valueType);
         Map<String, Object> fc = new LinkedHashMap<>();
         fc.put("name", field.getColumnName());
-        fc.put("label", StringUtils.hasText(field.getColumnComment()) ? field.getColumnComment() : field.getColumnName());
-        fc.put("comment", field.getColumnComment());
+        fc.put("label", StringUtils.hasText(field.getLabel()) ? field.getLabel() : field.getColumnName());
+        fc.put("comment", field.getLabel());
         fc.put("db_type", field.getDbType());
-        fc.put("data_type", dataType);
-        fc.put("frontend_type", field.getFrontendType());
-        fc.put("form_widget", field.getFormWidget());
+        fc.put("value_type", valueType);
+        fc.put("ui_type", field.getUiType());
+        fc.put("widget", field.getWidget());
         fc.put("dict_code", field.getDictCode());
+        fc.put("code_language", codeLanguage(field));
         fc.put("query_operator", field.getQueryOperator() == null ? "LIKE" : field.getQueryOperator());
-        fc.put("show_in_table", field.getShowInTable());
-        fc.put("show_in_form", field.getShowInForm());
-        fc.put("show_in_detail", field.getShowInDetail());
-        fc.put("show_in_query", field.getShowInQuery());
-        fc.put("is_primary_key", field.getIsPrimaryKey());
-        fc.put("is_required", field.getIsRequired());
-        fc.put("is_nullable", field.getIsNullable());
+        fc.put("in_table", field.getInTable());
+        fc.put("in_form", field.getInForm());
+        fc.put("in_detail", field.getInDetail());
+        fc.put("in_query", field.getInQuery());
+        fc.put("primary_key", field.getPrimaryKey());
+        fc.put("required", field.getRequired());
+        fc.put("nullable", field.getNullable());
         fc.put("max_length", field.getMaxLength());
-        fc.put("vue_default", vueDefault(field, isDatetime, isJson, isBool, dataType));
+        fc.put("vue_default", vueDefault(field, isDatetime, isJson, isBool, valueType));
         fc.put("is_datetime", isDatetime);
         fc.put("is_json", isJson);
         fc.put("is_bool", isBool);
@@ -477,11 +490,11 @@ public class CodegenTemplateEngine {
     }
 
     private static String vueDefault(
-            SysCodegenField field, boolean isDatetime, boolean isJson, boolean isBool, String dataType) {
-        if (isDatetime || "datetime".equals(field.getFormWidget())) {
+            SysCodegenField field, boolean isDatetime, boolean isJson, boolean isBool, String valueType) {
+        if (isDatetime || "datetime".equals(field.getWidget())) {
             return "null";
         }
-        if ("int".equals(dataType) || "float".equals(dataType)) {
+        if ("int".equals(valueType) || "float".equals(valueType)) {
             return "0";
         }
         if (isBool) {
@@ -493,9 +506,24 @@ public class CodegenTemplateEngine {
         return "''";
     }
 
+    private static String codeLanguage(SysCodegenField field) {
+        if ("dict".equals(field.getValueType())
+                || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json"))) {
+            return "json";
+        }
+        String columnName = field.getColumnName() == null ? "" : field.getColumnName().toLowerCase(Locale.ROOT);
+        if (columnName.contains("sql")) {
+            return "sql";
+        }
+        if (columnName.contains("script") || columnName.contains("code") || columnName.contains("template")) {
+            return "typescript";
+        }
+        return "plaintext";
+    }
+
     private static boolean isFormField(SysCodegenField field) {
-        return Boolean.TRUE.equals(field.getShowInForm())
-                && !Boolean.TRUE.equals(field.getIsPrimaryKey())
+        return Boolean.TRUE.equals(field.getInForm())
+                && !Boolean.TRUE.equals(field.getPrimaryKey())
                 && !AUDIT.contains(field.getColumnName());
     }
 
@@ -541,7 +569,7 @@ public class CodegenTemplateEngine {
             }
             return sb + ".ts";
         }
-        return "hei-admin/src/api/" + toSnake(plan.getMainEntityName()) + ".ts";
+        return "hei-admin/src/api/" + toSnake(plan.getEntityName()) + ".ts";
     }
 
     private static String toSnake(String value) {

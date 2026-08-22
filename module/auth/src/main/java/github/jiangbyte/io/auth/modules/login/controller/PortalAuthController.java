@@ -62,7 +62,6 @@ public class PortalAuthController {
     /** 发送门户登录 OTP。 */
     @PostMapping("/v1/portal/send-login-code")
     @RateLimit(key = "portal:send-login-code", permits = 10, windowSeconds = 60)
-    @OperationAudit(resourceType = "auth", action = "send_login_code")
     public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
         authService.sendLoginCode(request, AccountType.PORTAL);
         return ApiResponse.ok();
@@ -79,7 +78,6 @@ public class PortalAuthController {
 
     /** 刷新门户会话 Token。 */
     @PostMapping("/v1/portal/auth/refresh")
-    @OperationAudit(resourceType = "auth", action = "refresh")
     public ApiResponse<LoginResult> refresh() {
         return ApiResponse.ok(authService.refreshSession());
     }
@@ -95,7 +93,6 @@ public class PortalAuthController {
     /** 发送门户注册 OTP。 */
     @PostMapping("/v1/portal/register/send-code")
     @RateLimit(key = "portal:register-send-code", permits = 10, windowSeconds = 60)
-    @OperationAudit(resourceType = "auth", action = "send_register_code")
     public ApiResponse<Void> sendRegisterCode(@Valid @RequestBody SendLoginCodeParam request) {
         authService.sendRegisterCode(request);
         return ApiResponse.ok();

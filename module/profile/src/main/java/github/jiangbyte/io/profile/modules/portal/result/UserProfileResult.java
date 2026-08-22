@@ -12,7 +12,6 @@ import java.time.OffsetDateTime;
 @Data
 public class UserProfileResult {
     private String accountId;
-    private String name;
     private String nickname;
     private String avatar;
     private String signature;

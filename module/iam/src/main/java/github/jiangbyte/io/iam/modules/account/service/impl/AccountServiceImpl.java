@@ -379,7 +379,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 param.getEmailIdentityVerified(), param.getEmailIdentityBindStatus(),
                 param.getPhoneLoginEnabled(), param.getPhoneIdentity(), param.getPhone(),
                 param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
-        upsertProfile(account, param.getName(), param.getNickname(), param.getAvatar(),
+        upsertProfile(account, param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
         AuditSnapshots.created(account);
     }
@@ -438,7 +438,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 param.getEmailIdentityVerified(), param.getEmailIdentityBindStatus(),
                 param.getPhoneLoginEnabled(), param.getPhoneIdentity(), param.getPhone(),
                 param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
-        upsertProfile(account, param.getName(), param.getNickname(), param.getAvatar(),
+        upsertProfile(account, param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
         AuditSnapshots.after(account);
         String nextStatus = account.getAccountStatus();
@@ -914,7 +914,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             if (AccountType.ADMIN.name().equals(type)) {
                 ProfileUserAdminInfo profile = adminProfiles.get(account.getId());
                 if (profile != null) {
-                    result.setName(profile.getName());
                     result.setNickname(profile.getNickname());
                     result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
                     result.setSignature(profile.getSignature());
@@ -925,7 +924,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             } else if (AccountType.PORTAL.name().equals(type)) {
                 ProfileUserPortalInfo profile = portalProfiles.get(account.getId());
                 if (profile != null) {
-                    result.setName(profile.getName());                    result.setNickname(profile.getNickname());
+                    result.setNickname(profile.getNickname());
                     result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
                     result.setSignature(profile.getSignature());
                     result.setPhone(profile.getPhone());
@@ -946,7 +945,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
 
     private void upsertProfile(
             SysAccount account,
-            String name,
             String nickname,
             String avatar,
             String signature,
@@ -959,7 +957,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (AccountType.ADMIN.name().equals(type)) {
             ProfileUserAdminInfo info = new ProfileUserAdminInfo();
             info.setAccountId(account.getId());
-            info.setName(name);
             info.setNickname(nickname);
             info.setAvatar(fileApi.normalizeObjectName(avatar));
             info.setSignature(signature);
@@ -972,7 +969,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (AccountType.PORTAL.name().equals(type)) {
             ProfileUserPortalInfo info = new ProfileUserPortalInfo();
             info.setAccountId(account.getId());
-            info.setName(name);
             info.setNickname(nickname);
             info.setAvatar(fileApi.normalizeObjectName(avatar));
             info.setSignature(signature);

@@ -51,14 +51,12 @@ public class PortalProfileController {
 
     /** 上传并替换当前用户头像。 */
     @PostMapping("/v1/portal/profile/avatar/upload")
-    @OperationAudit(resourceType = "profile_center", action = "upload_avatar")
     public ApiResponse<AvatarUpdateResult> uploadAvatar(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(portalUserProfileService.uploadAvatar(file));
     }
 
     /** 按系统配置向绑定邮箱/手机发送改密验证码。 */
     @PostMapping("/v1/portal/profile/password/send-code")
-    @OperationAudit(resourceType = "profile_center", action = "send_password_code")
     public ApiResponse<Void> sendPasswordCode() {
         authApi.sendChangePasswordCode();
         return ApiResponse.ok();
@@ -78,7 +76,6 @@ public class PortalProfileController {
 
     /** 向待绑定手机发送验证码。 */
     @PostMapping("/v1/portal/profile/phone/send-code")
-    @OperationAudit(resourceType = "profile_center", action = "send_bind_phone_code")
     public ApiResponse<Void> sendPhoneCode(@Valid @RequestBody BindCodeParam request) {
         authApi.sendBindPhoneCode(request.getTarget());
         return ApiResponse.ok();
@@ -99,7 +96,6 @@ public class PortalProfileController {
 
     /** 向待绑定邮箱发送验证码。 */
     @PostMapping("/v1/portal/profile/email/send-code")
-    @OperationAudit(resourceType = "profile_center", action = "send_bind_email_code")
     public ApiResponse<Void> sendEmailCode(@Valid @RequestBody BindCodeParam request) {
         authApi.sendBindEmailCode(request.getTarget());
         return ApiResponse.ok();

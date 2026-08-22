@@ -23,15 +23,15 @@ public final class JobCronUtil {
     }
 
     /** 校验触发配置合法性；不合法抛出 BizException。 */
-    public static void validate(String executeType, String triggerConfig) {
-        if (TYPE_FIXED.equalsIgnoreCase(executeType)) {
+    public static void validate(String triggerType, String triggerConfig) {
+        if (TYPE_FIXED.equalsIgnoreCase(triggerType)) {
             if (triggerConfig == null || !triggerConfig.trim().matches("\\d+")
                     || Long.parseLong(triggerConfig.trim()) <= 0) {
                 throw new BizException("固定间隔必须为正整数（秒）");
             }
             return;
         }
-        if (!TYPE_CRON.equalsIgnoreCase(executeType)) {
+        if (!TYPE_CRON.equalsIgnoreCase(triggerType)) {
             throw new BizException("触发类型仅支持 " + TYPE_CRON + " 或 " + TYPE_FIXED);
         }
         try {
@@ -44,8 +44,8 @@ public final class JobCronUtil {
     }
 
     /** 基于 from 计算下一次触发时间（调用前需先通过 validate）。 */
-    public static OffsetDateTime computeNextRunTime(String executeType, String triggerConfig, OffsetDateTime from) {
-        if (TYPE_FIXED.equalsIgnoreCase(executeType)) {
+    public static OffsetDateTime computeNextRunTime(String triggerType, String triggerConfig, OffsetDateTime from) {
+        if (TYPE_FIXED.equalsIgnoreCase(triggerType)) {
             return from.plusSeconds(Long.parseLong(triggerConfig.trim()));
         }
         ZonedDateTime next = CronExpression.parse(triggerConfig).next(from.toZonedDateTime());

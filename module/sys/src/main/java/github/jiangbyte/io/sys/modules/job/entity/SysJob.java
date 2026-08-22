@@ -21,20 +21,20 @@ import java.util.Map;
 public class SysJob extends BaseEntity {
 
     /** 任务名称。 */
-    private String jobName;
+    private String name;
 
-    /** 执行类全限定名（容器中实现 JobHandler 的 Bean 类名）。 */
-    private String executeClass;
+    /** 处理器标识（Boot 为 JobHandler 全限定类名，其他栈为注册 key）。 */
+    private String handler;
 
     /** 触发类型：CRON（表达式）/ FIXED（固定间隔）。 */
-    private String executeType;
+    private String triggerType;
 
     /** 触发配置：CRON 表达式或固定间隔秒数。 */
     private String triggerConfig;
 
     /** 执行参数（JSON 存储）。 */
     @TableField(typeHandler = JacksonJsonTypeHandler.class)
-    private Map<String, Object> executeParam;
+    private Map<String, Object> params;
 
     /** 上次执行时间。 */
     private OffsetDateTime lastRunTime;
@@ -43,7 +43,7 @@ public class SysJob extends BaseEntity {
     private OffsetDateTime nextRunTime;
 
     /** 上次执行结果摘要。 */
-    private String lastExecuteResult;
+    private String lastResult;
 
     /** 启用状态。 */
     private Boolean enabled;

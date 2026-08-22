@@ -70,17 +70,17 @@ public class JobExecutionService {
         boolean success = false;
         String result;
         try {
-            JobHandler handler = jobInvoker.resolve(job.getExecuteClass());
-            result = handler.execute(paramJson(job.getExecuteParam()));
+            JobHandler handler = jobInvoker.resolve(job.getHandler());
+            result = handler.execute(paramJson(job.getParams()));
             success = true;
         } catch (Exception ex) {
-            log.error("Job execute failed, id={}, name={}", job.getId(), job.getJobName(), ex);
-            result = "执行失败: " + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
+            log.error("Job execute failed, id={}, name={}", job.getId(), job.getName(), ex);
+            result = "failed: " + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
         }
 
         long durationMs = Duration.between(start, OffsetDateTime.now()).toMillis();
         OffsetDateTime nextRunTime = JobCronUtil.computeNextRunTime(
-                job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now());
+                job.getTriggerType(), job.getTriggerConfig(), OffsetDateTime.now());
         String operator = executor == null || executor.isBlank() ? EXECUTOR_SYSTEM : executor;
         OffsetDateTime finalStart = start;
         boolean finalSuccess = success;
@@ -90,24 +90,23 @@ public class JobExecutionService {
                     .eq(SysJob::getId, job.getId())
                     .set(SysJob::getLastRunTime, finalStart)
                     .set(SysJob::getNextRunTime, nextRunTime)
-                    .set(SysJob::getLastExecuteResult, truncate(finalResult, 500))
+                    .set(SysJob::getLastResult, truncate(finalResult, 500))
                     .set(SysJob::getUpdatedAt, OffsetDateTime.now()));
             jobLogMapper.insert(buildLog(job, operator, finalStart, durationMs, finalSuccess, finalResult));
         });
         log.info("Job done, id={}, name={}, success={}, result={}",
-                job.getId(), job.getJobName(), success, result);
+                job.getId(), job.getName(), success, result);
     }
 
     private SysJobLog buildLog(SysJob job, String executor, OffsetDateTime start, long durationMs,
                                boolean success, String result) {
         SysJobLog jobLog = new SysJobLog();
         jobLog.setJobId(job.getId());
-        jobLog.setJobName(job.getJobName());
-        jobLog.setExecuteParam(job.getExecuteParam());
-        jobLog.setExecuteTime(start);
-        jobLog.setExecuteDurationMs(durationMs);
+        jobLog.setParams(job.getParams());
+        jobLog.setStartedAt(start);
+        jobLog.setDurationMs(durationMs);
         jobLog.setSuccess(success);
-        jobLog.setExecuteResult(result);
+        jobLog.setResult(result);
         jobLog.setExecutor(executor);
         jobLog.setIp(IP);
         jobLog.setProcessId(PROCESS_ID);

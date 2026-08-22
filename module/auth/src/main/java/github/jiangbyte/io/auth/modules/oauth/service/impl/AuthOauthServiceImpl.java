@@ -241,7 +241,7 @@ public class AuthOauthServiceImpl implements AuthOauthService {
         String nickname = StringUtils.hasText(profile.getNickname())
                 ? profile.getNickname()
                 : "user-" + created.getId().substring(Math.max(0, created.getId().length() - 8));
-        portalUserProfileApi.createProfile(created.getId(), null, nickname, null);
+        portalUserProfileApi.createProfile(created.getId(), nickname, null);
         if (StringUtils.hasText(profile.getAvatar())) {
             // 档案头像若需对象存储，此处仅存 URL 字符串由前端展示；createProfile 无 avatar 参数时跳过
         }

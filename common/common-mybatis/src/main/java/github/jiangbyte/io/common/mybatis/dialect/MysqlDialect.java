@@ -90,8 +90,8 @@ public final class MysqlDialect implements DbDialect {
                 WHERE id IN (
                   SELECT id FROM (
                     SELECT id FROM sys_job_log
-                    WHERE execute_time < #{cutoff}
-                    ORDER BY execute_time
+                    WHERE started_at < #{cutoff}
+                    ORDER BY started_at
                     LIMIT #{limit}
                   ) AS _hei_expired
                 )

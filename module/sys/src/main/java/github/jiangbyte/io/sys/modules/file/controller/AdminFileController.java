@@ -46,7 +46,6 @@ public class AdminFileController {
     /** 上传文件。 */
     @PostMapping("/v1/admin/sys/file/upload")
     @SaCheckPermission(value = "sys:file:upload", type = StpKit.TYPE_ADMIN)
-    @OperationAudit(resourceType = "sys_file", action = "upload")
     public ApiResponse<SysFile> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "storage_provider", required = false) String storageProvider) {

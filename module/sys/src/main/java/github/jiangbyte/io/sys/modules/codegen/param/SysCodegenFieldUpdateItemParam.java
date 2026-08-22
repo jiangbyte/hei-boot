@@ -22,7 +22,7 @@ public class SysCodegenFieldUpdateItemParam {
     @Size(max = 128)
     private String columnName;
 
-    private String columnComment;
+    private String label;
 
     @NotBlank
     @Size(max = 128)
@@ -30,42 +30,42 @@ public class SysCodegenFieldUpdateItemParam {
 
     @NotBlank
     @Size(max = 64)
-    private String dataType = "str";
+    private String valueType = "str";
 
     @NotBlank
     @Size(max = 64)
-    private String frontendType = "string";
+    private String uiType = "string";
 
     @NotBlank
     @Size(max = 32)
-    private String formWidget = "input";
+    private String widget = "input";
 
     private String dictCode;
     private String queryOperator;
 
     @NotNull
-    private Boolean showInTable = true;
+    private Boolean inTable = true;
 
     @NotNull
-    private Boolean showInForm = true;
+    private Boolean inForm = true;
 
     @NotNull
-    private Boolean showInDetail = true;
+    private Boolean inDetail = true;
 
     @NotNull
-    private Boolean showInQuery = false;
+    private Boolean inQuery = false;
 
     @NotNull
-    private Boolean isPrimaryKey = false;
+    private Boolean primaryKey = false;
 
     @NotNull
-    private Boolean isRequired = false;
+    private Boolean required = false;
 
     @NotNull
-    private Boolean isUnique = false;
+    private Boolean uniqueFlag = false;
 
     @NotNull
-    private Boolean isNullable = true;
+    private Boolean nullable = true;
 
     private Integer maxLength;
 

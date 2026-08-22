@@ -60,7 +60,6 @@ public class AdminAuthController {
     /** 发送管理端登录 OTP。 */
     @PostMapping("/v1/admin/send-login-code")
     @RateLimit(key = "admin:send-login-code", permits = 10, windowSeconds = 60)
-    @OperationAudit(resourceType = "auth", action = "send_login_code")
     public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
         authService.sendLoginCode(request, AccountType.ADMIN);
         return ApiResponse.ok();
@@ -77,7 +76,6 @@ public class AdminAuthController {
 
     /** 刷新管理端会话 Token。 */
     @PostMapping("/v1/admin/auth/refresh")
-    @OperationAudit(resourceType = "auth", action = "refresh")
     public ApiResponse<LoginResult> refresh() {
         return ApiResponse.ok(authService.refreshSession());
     }

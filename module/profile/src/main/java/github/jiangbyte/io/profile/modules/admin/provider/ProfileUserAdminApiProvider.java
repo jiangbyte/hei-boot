@@ -54,8 +54,8 @@ public class ProfileUserAdminApiProvider implements ProfileUserAdminApi {
     }
 
     @Override
-    public void createProfile(String accountId, String name, String nickname, String email) {
-        adminUserProfileService.createProfile(accountId, name, nickname, email);
+    public void createProfile(String accountId, String nickname, String email) {
+        adminUserProfileService.createProfile(accountId, nickname, email);
     }
 
     @Override

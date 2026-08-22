@@ -2,7 +2,6 @@ package github.jiangbyte.io.sys.modules.notice.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
-import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.sys.modules.notice.entity.SysNotice;
 import github.jiangbyte.io.sys.modules.notice.param.SysNoticePageParam;
@@ -55,7 +54,6 @@ public class PortalNoticeController {
 
     /** 标记指定消息为已读。 */
     @PostMapping("/v1/portal/sys/notices/read")
-    @OperationAudit(resourceType = "sys_notice", action = "read")
     public ApiResponse<Void> read(@Valid @RequestBody SysNoticeReadParam param) {
         noticeService.markRead(param);
         return ApiResponse.ok();
@@ -63,7 +61,6 @@ public class PortalNoticeController {
 
     /** 将全部可见消息标记为已读。 */
     @PostMapping("/v1/portal/sys/notices/read-all")
-    @OperationAudit(resourceType = "sys_notice", action = "read_all")
     public ApiResponse<Void> readAll() {
         noticeService.markAllRead();
         return ApiResponse.ok();

@@ -13,6 +13,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SysCodegenPlanPageParam extends PageQuery {
     private String name;
-    private String mainTable;
+    private String tableName;
     private String genType;
 }

@@ -17,23 +17,24 @@ public class SysCodegenField extends BaseEntity {
     private String planId;
     private String tableRole;
     private String columnName;
-    private String columnComment;
+    /** 字段展示标签（通常来自库表注释）。 */
+    private String label;
     private String dbType;
-    /** 语义数据类型（如 str / int / bool / datetime / dict） */
-    private String dataType;
-    /** 前端类型（如 string / number / boolean） */
-    private String frontendType;
-    private String formWidget;
+    /** 语义值类型（如 str / int / bool / datetime / dict）。 */
+    private String valueType;
+    /** UI 类型（如 string / number / boolean）。 */
+    private String uiType;
+    private String widget;
     private String dictCode;
     private String queryOperator;
-    private Boolean showInTable;
-    private Boolean showInForm;
-    private Boolean showInDetail;
-    private Boolean showInQuery;
-    private Boolean isPrimaryKey;
-    private Boolean isRequired;
-    private Boolean isUnique;
-    private Boolean isNullable;
+    private Boolean inTable;
+    private Boolean inForm;
+    private Boolean inDetail;
+    private Boolean inQuery;
+    private Boolean primaryKey;
+    private Boolean required;
+    private Boolean uniqueFlag;
+    private Boolean nullable;
     private Integer maxLength;
     private Integer sort;
 }

@@ -46,7 +46,7 @@ public class JobTaskScheduler {
                 } catch (Exception ex) {
                     // 锁获取超时（其他实例执行中）或执行期异常，下个周期重试
                     log.debug("Job skipped, id={}, name={}, msg={}",
-                            job.getId(), job.getJobName(), ex.getMessage());
+                            job.getId(), job.getName(), ex.getMessage());
                 }
             });
         }

@@ -1,0 +1,37 @@
+-- sys_job / sys_job_log generic field migration
+-- Run against existing databases after deploying hei-boot job model changes.
+--
+-- PostgreSQL:
+--   psql -U <user> -d <db> -f migrate_sys_job_generic_fields.postgresql.sql
+-- MySQL:
+--   mysql -u <user> -p <db> < migrate_sys_job_generic_fields.mysql.sql
+
+-- ========== PostgreSQL ==========
+-- ALTER TABLE sys_job RENAME COLUMN job_name TO name;
+-- ALTER TABLE sys_job RENAME COLUMN execute_class TO handler;
+-- ALTER TABLE sys_job RENAME COLUMN execute_type TO trigger_type;
+-- ALTER TABLE sys_job RENAME COLUMN execute_param TO params;
+-- ALTER TABLE sys_job RENAME COLUMN last_execute_result TO last_result;
+--
+-- ALTER TABLE sys_job_log RENAME COLUMN execute_param TO params;
+-- ALTER TABLE sys_job_log RENAME COLUMN execute_time TO started_at;
+-- ALTER TABLE sys_job_log RENAME COLUMN execute_duration_ms TO duration_ms;
+-- ALTER TABLE sys_job_log RENAME COLUMN execute_result TO result;
+-- ALTER TABLE sys_job_log DROP COLUMN IF EXISTS job_name;
+-- DROP INDEX IF EXISTS idx_sys_job_log_execute_time;
+-- CREATE INDEX IF NOT EXISTS idx_sys_job_log_started_at ON sys_job_log (started_at);
+
+-- ========== MySQL ==========
+-- ALTER TABLE sys_job CHANGE COLUMN job_name name varchar(128) NOT NULL COMMENT '任务名称';
+-- ALTER TABLE sys_job CHANGE COLUMN execute_class handler varchar(255) NOT NULL COMMENT '处理器标识';
+-- ALTER TABLE sys_job CHANGE COLUMN execute_type trigger_type varchar(16) NOT NULL COMMENT '触发类型：CRON / FIXED';
+-- ALTER TABLE sys_job CHANGE COLUMN execute_param params json NULL COMMENT '执行参数（JSON）';
+-- ALTER TABLE sys_job CHANGE COLUMN last_execute_result last_result varchar(500) NULL COMMENT '上次执行结果摘要';
+--
+-- ALTER TABLE sys_job_log CHANGE COLUMN execute_param params json NULL COMMENT '执行参数快照（JSON）';
+-- ALTER TABLE sys_job_log CHANGE COLUMN execute_time started_at datetime(6) NOT NULL COMMENT '执行开始时间';
+-- ALTER TABLE sys_job_log CHANGE COLUMN execute_duration_ms duration_ms bigint NULL COMMENT '执行用时（毫秒）';
+-- ALTER TABLE sys_job_log CHANGE COLUMN execute_result result text NULL COMMENT '执行结果摘要 / 错误信息';
+-- ALTER TABLE sys_job_log DROP COLUMN job_name;
+-- DROP INDEX idx_sys_job_log_execute_time ON sys_job_log;
+-- CREATE INDEX idx_sys_job_log_started_at ON sys_job_log (started_at);

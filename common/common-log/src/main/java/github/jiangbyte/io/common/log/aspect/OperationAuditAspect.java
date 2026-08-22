@@ -9,6 +9,7 @@ import github.jiangbyte.io.common.log.audit.AuditEventMessage;
 import github.jiangbyte.io.common.log.audit.AuditEventPublisher;
 import github.jiangbyte.io.common.log.audit.AuditLabelCatalog;
 import github.jiangbyte.io.common.log.audit.AuditOutboxWriter;
+import github.jiangbyte.io.common.log.audit.AuditSkipCatalog;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -83,11 +84,14 @@ public class OperationAuditAspect {
             long durationMs,
             boolean success,
             String errorMessage) {
-        LoginUser loginUser = LoginHelper.currentUser().orElse(null);
         String action = operationAudit.action();
         if (action == null || action.isBlank()) {
             action = request != null ? request.getMethod().toLowerCase() : "unknown";
         }
+        if (AuditSkipCatalog.shouldSkip(operationAudit.resourceType(), action)) {
+            return;
+        }
+        LoginUser loginUser = LoginHelper.currentUser().orElse(null);
         String resourceType = operationAudit.resourceType();
         String actionName = AuditLabelCatalog.actionName(resourceType, action, operationAudit.name());
         String actionType = AuditLabelCatalog.actionType(action, operationAudit.actionType());
@@ -129,6 +133,15 @@ public class OperationAuditAspect {
             operatorName = subject;
         }
 
+        String accountId = loginUser != null ? loginUser.getAccountId() : null;
+        String accountType = loginUser != null && loginUser.getAccountType() != null
+                ? loginUser.getAccountType().name().toLowerCase()
+                : null;
+        // logout 在业务层会先清 session，finally 中 currentUser 为空，用 resourceId 兜底
+        if (!StringUtils.hasText(accountId) && "logout".equalsIgnoreCase(action) && StringUtils.hasText(resourceId)) {
+            accountId = resourceId;
+        }
+
         AuditEventMessage message = AuditEventMessage.builder()
                 .resourceType(resourceType)
                 .resourceId(resourceId)
@@ -144,10 +157,8 @@ public class OperationAuditAspect {
                 .method(request != null ? request.getMethod() : null)
                 .path(path)
                 .statusCode(success ? 200 : 500)
-                .accountId(loginUser != null ? loginUser.getAccountId() : null)
-                .accountType(loginUser != null && loginUser.getAccountType() != null
-                        ? loginUser.getAccountType().name().toLowerCase()
-                        : null)
+                .accountId(accountId)
+                .accountType(accountType)
                 .requestId(resolveRequestId())
                 .ip(request != null ? request.getRemoteAddr() : null)
                 .userAgent(request != null ? request.getHeader("User-Agent") : null)

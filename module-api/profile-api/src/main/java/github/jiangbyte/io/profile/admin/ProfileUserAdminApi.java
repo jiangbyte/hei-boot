@@ -18,7 +18,7 @@ public interface ProfileUserAdminApi {
     /** 批量获取档案，key 为 accountId。 */
     Map<String, ProfileUserAdminInfo> getProfiles(Collection<String> accountIds);
 
-    /** 展示名映射：优先 name，否则 nickname。 */
+    /** 展示名映射：已认证姓名优先，否则 nickname。 */
     Map<String, String> getDisplayNames(Collection<String> accountIds);
 
     /** 按 accountId 插入或更新档案。 */
@@ -30,15 +30,8 @@ public interface ProfileUserAdminApi {
     /** 更新档案邮箱。 */
     void updateEmail(String accountId, String email);
 
-    /**
-     * 创建管理端档案基础字段。
-     *
-     * @param accountId 账号 id
-     * @param name      姓名
-     * @param nickname  昵称
-     * @param email     邮箱
-     */
-    void createProfile(String accountId, String name, String nickname, String email);
+    /** 创建管理端档案基础字段（昵称/邮箱）。 */
+    void createProfile(String accountId, String nickname, String email);
 
     /** 按账号 id 集合删除档案。 */
     void deleteProfiles(Collection<String> accountIds);

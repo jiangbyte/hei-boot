@@ -7,6 +7,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 
 
+
+
 -- ----------------------------
 -- Table structure for cg_test_activity
 -- ----------------------------
@@ -196,7 +198,6 @@ INSERT INTO `cg_test_order_item` VALUES ('900000000000000212', '9000000000000002
 DROP TABLE IF EXISTS `profile_user_admin`;
 CREATE TABLE `profile_user_admin` (
   `account_id` varchar(64) NOT NULL,
-  `name` varchar(64),
   `nickname` varchar(64),
   `avatar` text,
   `signature` text,
@@ -212,7 +213,7 @@ CREATE TABLE `profile_user_admin` (
 -- ----------------------------
 -- Records of profile_user_admin
 -- ----------------------------
-INSERT INTO `profile_user_admin` VALUES ('1', '超级管理员', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886', NULL, '2026-08-08 13:17:41.018249', '1');
+INSERT INTO `profile_user_admin` VALUES ('1', '超管', 'uploads/2026/08/09/02acc3dee5454d34913b07f49fe59cac.png', NULL, NULL, 'jiangbytebb@163.com', '系统内置超管账户', '2026-08-08 11:56:13.747886', NULL, '2026-08-08 13:17:41.018249', '1');
 
 -- ----------------------------
 -- Table structure for profile_user_portal
@@ -220,7 +221,6 @@ INSERT INTO `profile_user_admin` VALUES ('1', '超级管理员', '超管', 'uplo
 DROP TABLE IF EXISTS `profile_user_portal`;
 CREATE TABLE `profile_user_portal` (
   `account_id` varchar(64) NOT NULL,
-  `name` varchar(64),
   `nickname` varchar(64),
   `avatar` text,
   `signature` text,
@@ -235,8 +235,83 @@ CREATE TABLE `profile_user_portal` (
 -- ----------------------------
 -- Records of profile_user_portal
 -- ----------------------------
-INSERT INTO `profile_user_portal` VALUES ('7491872891940786176', NULL, 'user-a527e592', NULL, NULL, '17286916074', '3317229064@qq.com', '2026-08-08 15:08:09.699685', NULL, '2026-08-08 15:08:09.699685', NULL);
-INSERT INTO `profile_user_portal` VALUES ('7491847383584804864', '', 'user-171fd244', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', NULL, NULL, 'jiangbyte@163.com', '2026-08-08 13:26:48.032837', NULL, '2026-08-08 13:48:45.931196', '7491847383584804864');
+INSERT INTO `profile_user_portal` VALUES ('7491872891940786176', 'user-a527e592', NULL, NULL, '17286916074', '3317229064@qq.com', '2026-08-08 15:08:09.699685', NULL, '2026-08-08 15:08:09.699685', NULL);
+INSERT INTO `profile_user_portal` VALUES ('7491847383584804864', 'user-171fd244', 'uploads/2026/08/09/85e1b98acfc9465abbbba86ef3b4fec8.jpg', NULL, NULL, 'jiangbyte@163.com', '2026-08-08 13:26:48.032837', NULL, '2026-08-08 13:48:45.931196', '7491847383584804864');
+
+-- ----------------------------
+-- Table structure for profile_identity
+-- ----------------------------
+DROP TABLE IF EXISTS `real_name_case_record`;
+DROP TABLE IF EXISTS `real_name_case`;
+DROP TABLE IF EXISTS `profile_identity`;
+CREATE TABLE `profile_identity` (
+  `account_id` varchar(64) NOT NULL,
+  `status` varchar(32) NOT NULL DEFAULT 'UNVERIFIED',
+  `document_type` varchar(32),
+  `real_name_cipher` text,
+  `document_no_cipher` text,
+  `document_no_hash` varchar(128),
+  `verify_channel` varchar(32),
+  `provider` varchar(32),
+  `provider_order_no` varchar(128),
+  `verified_at` datetime(6),
+  `source_case_id` varchar(64),
+  `revoked_at` datetime(6),
+  `revoked_by` varchar(64),
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `created_by` varchar(64),
+  `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_by` varchar(64)
+);
+CREATE TABLE `real_name_case` (
+  `case_id` varchar(64) NOT NULL,
+  `business_type` varchar(64) NOT NULL,
+  `verify_channel` varchar(32) NOT NULL,
+  `status` varchar(32) NOT NULL,
+  `account_id` varchar(64),
+  `target_account_hint_cipher` text,
+  `applicant_contact_cipher` text,
+  `document_type` varchar(32),
+  `real_name_cipher` text,
+  `document_no_cipher` text,
+  `document_no_hash` varchar(128),
+  `attachment_ids` text,
+  `payload_cipher` text,
+  `handler_dept_id` varchar(64),
+  `provider` varchar(32),
+  `provider_order_no` varchar(128),
+  `submitter_id` varchar(64),
+  `reviewer_id` varchar(64),
+  `reviewed_at` datetime(6),
+  `reject_reason` varchar(512),
+  `expire_at` datetime(6),
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `created_by` varchar(64),
+  `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_by` varchar(64)
+);
+CREATE TABLE `real_name_case_record` (
+  `record_id` varchar(64) NOT NULL,
+  `case_id` varchar(64) NOT NULL,
+  `account_id` varchar(64),
+  `business_type` varchar(64) NOT NULL,
+  `action` varchar(32) NOT NULL,
+  `status_before` varchar(32),
+  `status_after` varchar(32),
+  `verify_channel` varchar(32),
+  `provider` varchar(32),
+  `operator_id` varchar(64),
+  `dept_id` varchar(64),
+  `remark` varchar(512),
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+);
+ALTER TABLE `profile_identity` ADD CONSTRAINT `pk_profile_identity` PRIMARY KEY (`account_id`);
+ALTER TABLE `real_name_case` ADD CONSTRAINT `pk_real_name_case` PRIMARY KEY (`case_id`);
+ALTER TABLE `real_name_case_record` ADD CONSTRAINT `pk_real_name_case_record` PRIMARY KEY (`record_id`);
+CREATE UNIQUE INDEX `uk_profile_identity_document_hash` ON `profile_identity` (`document_no_hash`);
+CREATE INDEX `idx_real_name_case_account` ON `real_name_case` (`account_id`);
+CREATE INDEX `idx_real_name_case_status` ON `real_name_case` (`business_type`, `status`);
+CREATE INDEX `idx_real_name_case_record_case` ON `real_name_case_record` (`case_id`);
 
 -- ----------------------------
 -- Table structure for sys_account
@@ -471,21 +546,21 @@ CREATE TABLE `sys_codegen_field` (
   `plan_id` varchar(64) NOT NULL,
   `table_role` varchar(16) NOT NULL,
   `column_name` varchar(128) NOT NULL,
-  `column_comment` varchar(255),
+  `label` varchar(255),
   `db_type` varchar(128) NOT NULL,
-  `data_type` varchar(64) NOT NULL,
-  `frontend_type` varchar(64) NOT NULL,
-  `form_widget` varchar(32) NOT NULL,
+  `value_type` varchar(64) NOT NULL,
+  `ui_type` varchar(64) NOT NULL,
+  `widget` varchar(32) NOT NULL,
   `dict_code` varchar(128),
   `query_operator` varchar(32),
-  `show_in_table` tinyint(1) NOT NULL,
-  `show_in_form` tinyint(1) NOT NULL,
-  `show_in_detail` tinyint(1) NOT NULL,
-  `show_in_query` tinyint(1) NOT NULL,
-  `is_primary_key` tinyint(1) NOT NULL,
-  `is_required` tinyint(1) NOT NULL,
-  `is_unique` tinyint(1) NOT NULL,
-  `is_nullable` tinyint(1) NOT NULL,
+  `in_table` tinyint(1) NOT NULL,
+  `in_form` tinyint(1) NOT NULL,
+  `in_detail` tinyint(1) NOT NULL,
+  `in_query` tinyint(1) NOT NULL,
+  `primary_key` tinyint(1) NOT NULL,
+  `required` tinyint(1) NOT NULL,
+  `unique_flag` tinyint(1) NOT NULL,
+  `nullable` tinyint(1) NOT NULL,
   `max_length` int,
   `sort` int NOT NULL,
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -545,11 +620,11 @@ CREATE TABLE `sys_codegen_plan` (
   `gen_type` varchar(32) NOT NULL,
   `author` varchar(64) NOT NULL,
   `description` text,
-  `main_table` varchar(128) NOT NULL,
-  `main_pk` varchar(128) NOT NULL,
-  `main_entity_name` varchar(128) NOT NULL,
-  `main_module_path` varchar(255) NOT NULL,
-  `main_business_name` varchar(128) NOT NULL,
+  `table_name` varchar(128) NOT NULL,
+  `pk_column` varchar(128) NOT NULL,
+  `entity_name` varchar(128) NOT NULL,
+  `module_path` varchar(255) NOT NULL,
+  `business_name` varchar(128) NOT NULL,
   `api_prefix` varchar(255) NOT NULL,
   `permission_prefix` varchar(128) NOT NULL,
   `resource_module_id` varchar(64),
@@ -686,7 +761,7 @@ INSERT INTO `sys_config` VALUES ('7812345678901234553', 'SITE_PSB_NUMBER', '', '
 INSERT INTO `sys_config` VALUES ('7812345678901234554', 'SITE_PSB_URL', '', 'SYS', '公安备案链接', 7, 'STRING', '公安备案查询链接', NULL, NULL, 0, '{}', '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7642474443917569970', 'MAIL_ALIYUN_ACCESS_KEY_ID', '', 'MAIL', '阿里云邮件 AccessKeyId', 20, 'STRING', '阿里云邮件 AccessKeyId', NULL, NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7377151897664869996', 'AUDIT_ALERT_NOTIFY_PUSH', 'TRUE', 'AUDIT_ALERT', '推送通知', 3, 'BOOL', '推送通知', NULL, NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
-INSERT INTO `sys_config` VALUES ('7387934960432348080', 'MAIL_TEMPLATE_RESET_PASSWORD_CODE', '{"subject": "{{app_name}} 密码重置", "body": "请点击以下链接重置密码，该链接将在 {{expire_minutes}} 分钟内有效。\\\\n\\\\n{{reset_link}}"}', 'MAIL_TEMPLATE', '重置密码邮件模板', 1, 'JSON', '重置密码邮件模板', NULL, 'RESET_PASSWORD_CODE', 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
+INSERT INTO `sys_config` VALUES ('7387934960432348080', 'MAIL_TEMPLATE_RESET_PASSWORD_CODE', '{"subject": "{{app_name}} 密码重置", "body": "请点击以下链接重置密码，该链接将在 {{expire_minutes}} 分钟内有效。\\n\\n{{reset_link}}"}', 'MAIL_TEMPLATE', '重置密码邮件模板', 1, 'JSON', '重置密码邮件模板', NULL, 'RESET_PASSWORD_CODE', 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7639638206762559428', 'AUTH_PASSWORD_RESET_URL_PORTAL', 'http://localhost:5174/auth/forgot-password', 'AUTH_TOKEN', 'PORTAL 密码重置页完整 URL', 4, 'STRING', 'PORTAL 密码重置页完整 URL', 'PORTAL', NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7491104580893387509', 'SMS_TEMPLATE_LOGIN_CODE', '{"code": "", "content": "登录验证码 {{code}}"}', 'SMS_TEMPLATE', '登录验证码短信模板', 1, 'JSON', '登录验证码短信模板', NULL, 'LOGIN_CODE', 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7971733830500536612', 'PASSWORD_FORBID_HISTORICAL', 'TRUE', 'AUTH_PASSWORD', '禁止复用历史密码', 15, 'BOOL', '禁止复用历史密码', NULL, NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
@@ -705,8 +780,8 @@ INSERT INTO `sys_config` VALUES ('7975896582003472913', 'MAIL_TENCENT_REGION', '
 INSERT INTO `sys_config` VALUES ('7509581770976973374', 'SMS_TENCENT_SDK_APP_ID', '', 'SMS', '腾讯云短信 SdkAppId', 22, 'STRING', '腾讯云短信 SdkAppId', NULL, NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7317566250917157196', 'MAIL_TEMPLATE_CHANGE_PASSWORD_CODE', '{"subject": "{{app_name}} 修改密码验证码", "body": "验证码 {{code}}，{{expire_minutes}} 分钟内有效。"}', 'MAIL_TEMPLATE', '修改密码邮件模板', 3, 'JSON', '修改密码邮件模板', NULL, 'CHANGE_PASSWORD_CODE', 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7214189881608199926', 'AUDIT_ALERT_RULE_BRUTE_FORCE', 'TRUE', 'AUDIT_ALERT', '暴力破解检测', 10, 'BOOL', '暴力破解检测', NULL, NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', NULL);
-INSERT INTO `sys_config` VALUES ('7316084524318600148', 'MAIL_TEMPLATE_ACCOUNT_CANCELLED', '{"subject": "{{app_name}} 账号注销确认", "body": "您好，您的账号已申请注销。\\\\n\\\\n我们将在 {{retention_days}} 天内保留账号数据；到期且期间未再登录使用后，系统将彻底删除账号及相关数据。\\\\n\\\\n预计清理时间：{{purge_at}}\\\\n如非本人操作，请尽快联系管理员。"}', 'MAIL_TEMPLATE', '账号注销确认邮件模板', 20, 'JSON', '账号注销确认邮件模板', NULL, 'ACCOUNT_CANCELLED', 0, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
-INSERT INTO `sys_config` VALUES ('7440617985015094217', 'MAIL_TEMPLATE_ACCOUNT_PURGED', '{"subject": "{{app_name}} 账号已彻底删除", "body": "您好，您此前注销的账号已完成保留期清理，账号及相关个人数据已彻底删除。\\\\n\\\\n清理时间：{{purged_at}}\\\\n感谢您曾使用 {{app_name}}。"}', 'MAIL_TEMPLATE', '账号彻底删除邮件模板', 21, 'JSON', '账号彻底删除邮件模板', NULL, 'ACCOUNT_PURGED', 0, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
+INSERT INTO `sys_config` VALUES ('7316084524318600148', 'MAIL_TEMPLATE_ACCOUNT_CANCELLED', '{"subject": "{{app_name}} 账号注销确认", "body": "您好，您的账号已申请注销。\\n\\n我们将在 {{retention_days}} 天内保留账号数据；到期且期间未再登录使用后，系统将彻底删除账号及相关数据。\\n\\n预计清理时间：{{purge_at}}\\n如非本人操作，请尽快联系管理员。"}', 'MAIL_TEMPLATE', '账号注销确认邮件模板', 20, 'JSON', '账号注销确认邮件模板', NULL, 'ACCOUNT_CANCELLED', 0, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
+INSERT INTO `sys_config` VALUES ('7440617985015094217', 'MAIL_TEMPLATE_ACCOUNT_PURGED', '{"subject": "{{app_name}} 账号已彻底删除", "body": "您好，您此前注销的账号已完成保留期清理，账号及相关个人数据已彻底删除。\\n\\n清理时间：{{purged_at}}\\n感谢您曾使用 {{app_name}}。"}', 'MAIL_TEMPLATE', '账号彻底删除邮件模板', 21, 'JSON', '账号彻底删除邮件模板', NULL, 'ACCOUNT_PURGED', 0, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7932451368437798893', 'SMS_TEMPLATE_ACCOUNT_CANCELLED', '{"code": "", "content": "账号已申请注销，将于{{retention_days}}天后彻底删除。"}', 'SMS_TEMPLATE', '账号注销确认短信模板', 20, 'JSON', '账号注销确认短信模板', NULL, 'ACCOUNT_CANCELLED', 0, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_config` VALUES ('7490352982435195735', 'AUTH_REGISTER_PORTAL_DEFAULT_ROLE_ID', '', 'AUTH_REGISTER', 'PORTAL 注册默认角色', 9, 'STRING', 'PORTAL 注册默认角色', 'PORTAL', NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', '1');
 INSERT INTO `sys_config` VALUES ('7924936151245798814', 'AUTH_LOGIN_ADMIN_EMAIL_NO_USER_POLICY', 'DENY', 'AUTH_LOGIN', 'ADMIN 邮箱无用户策略', 16, 'STRING', 'ADMIN 邮箱无用户策略', 'ADMIN', NULL, 0, '{}', '2026-08-08 00:00:00', NULL, '2026-08-08 00:00:00', '1');
@@ -824,11 +899,8 @@ CREATE TABLE `sys_workspace_shortcut` (
   `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `created_by` varchar(64),
   `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `updated_by` varchar(64),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_sys_workspace_shortcut_account_resource` (`account_id`,`resource_id`),
-  KEY `ix_sys_workspace_shortcut_account_sort` (`account_id`,`sort`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作台个人快捷应用';
+  `updated_by` varchar(64)
+);
 
 -- ----------------------------
 -- Table structure for sys_dept
@@ -944,6 +1016,21 @@ INSERT INTO `sys_dict` VALUES ('100080', 'BANNER_LINK_TYPE_NONE', '无链接', '
 INSERT INTO `sys_dict` VALUES ('100085', 'ACCOUNT_IDENTITY_BIND_STATUS', '账号身份绑定状态', 'ACCOUNT_IDENTITY_BIND_STATUS', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-06-29 00:00:00', NULL, '2026-06-29 00:00:00', NULL);
 INSERT INTO `sys_dict` VALUES ('100086', 'ACCOUNT_IDENTITY_BIND_STATUS_BOUND', '已绑定', 'BOUND', '#18a058', 'SYS', '100085', 'ENABLED', 1, '2026-06-29 00:00:00', NULL, '2026-06-29 00:00:00', NULL);
 INSERT INTO `sys_dict` VALUES ('100087', 'ACCOUNT_IDENTITY_BIND_STATUS_UNBOUND', '未绑定', 'UNBOUND', '#909399', 'SYS', '100085', 'ENABLED', 2, '2026-06-29 00:00:00', NULL, '2026-06-29 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101500', 'REAL_NAME_BUSINESS_TYPE', '实名业务类型', 'REAL_NAME_BUSINESS_TYPE', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101501', 'REAL_NAME_BUSINESS_ACCOUNT_VERIFY', '账号实名认证', 'ACCOUNT_VERIFY', '#18a058', 'SYS', '101500', 'ENABLED', 1, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101502', 'REAL_NAME_BUSINESS_ACCOUNT_RECOVERY', '实名找回账号', 'ACCOUNT_RECOVERY', '#909399', 'SYS', '101500', 'ENABLED', 2, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101510', 'IDENTITY_VERIFY_STATUS', '实名认证状态', 'IDENTITY_VERIFY_STATUS', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101511', 'IDENTITY_VERIFY_STATUS_UNVERIFIED', '未认证', 'UNVERIFIED', '#909399', 'SYS', '101510', 'ENABLED', 1, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101512', 'IDENTITY_VERIFY_STATUS_PENDING', '审核中', 'PENDING', '#f0a020', 'SYS', '101510', 'ENABLED', 2, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101513', 'IDENTITY_VERIFY_STATUS_VERIFIED', '已认证', 'VERIFIED', '#18a058', 'SYS', '101510', 'ENABLED', 3, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101514', 'IDENTITY_VERIFY_STATUS_REJECTED', '已驳回', 'REJECTED', '#d03050', 'SYS', '101510', 'ENABLED', 4, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101520', 'IDENTITY_DOCUMENT_TYPE', '证件类型', 'IDENTITY_DOCUMENT_TYPE', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101521', 'IDENTITY_DOCUMENT_ID_CARD', '居民身份证', 'ID_CARD', '#2080f0', 'SYS', '101520', 'ENABLED', 1, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101522', 'IDENTITY_DOCUMENT_PASSPORT', '护照', 'PASSPORT', '#2080f0', 'SYS', '101520', 'ENABLED', 2, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101523', 'IDENTITY_DOCUMENT_EID_CARD', '电子身份证', 'EID_CARD', '#722ed1', 'SYS', '101520', 'ENABLED', 3, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101530', 'IDENTITY_VERIFY_CHANNEL', '认证通道', 'IDENTITY_VERIFY_CHANNEL', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101531', 'IDENTITY_VERIFY_CHANNEL_THIRD_PARTY', '第三方实人', 'THIRD_PARTY', '#2080f0', 'SYS', '101530', 'ENABLED', 1, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_dict` VALUES ('101532', 'IDENTITY_VERIFY_CHANNEL_MANUAL', '人工审核', 'MANUAL', '#f0a020', 'SYS', '101530', 'ENABLED', 2, '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
 INSERT INTO `sys_dict` VALUES ('100095', 'NOTIFICATION_SEVERITY', '通知严重级别', 'NOTIFICATION_SEVERITY', '#2080f0', 'SYS', NULL, 'ENABLED', 0, '2026-06-30 00:00:00', NULL, '2026-06-30 00:00:00', NULL);
 INSERT INTO `sys_dict` VALUES ('100096', 'NOTIFICATION_SEVERITY_INFO', '信息', 'INFO', '#2080f0', 'SYS', '100095', 'ENABLED', 1, '2026-06-30 00:00:00', NULL, '2026-06-30 00:00:00', NULL);
 INSERT INTO `sys_dict` VALUES ('100097', 'NOTIFICATION_SEVERITY_SUCCESS', '成功', 'SUCCESS', '#18a058', 'SYS', '100095', 'ENABLED', 2, '2026-06-30 00:00:00', NULL, '2026-06-30 00:00:00', NULL);
@@ -1109,7 +1196,7 @@ CREATE TABLE `sys_iam_relation` (
 -- Records of sys_iam_relation
 -- ----------------------------
 INSERT INTO `sys_iam_relation` VALUES ('1', 'ACCOUNT', '1', 'ADMIN', 'ACCOUNT_ROLE', 'ROLE', '1', '', 'CASCADE', 'SELF', '[]', 0, 99, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-08 11:56:13.747886', NULL, '2026-08-08 11:56:13.747886', NULL);
-INSERT INTO `sys_iam_relation` VALUES ('7100000000000002002', 'RESOURCE', '200002', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'workspace:overview:view', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', '工作台总览', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
+INSERT INTO `sys_iam_relation` VALUES ('7100000000000002002', 'RESOURCE', '200002', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'workspace:overview:view', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', '工作台总览', NULL, NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7859474578876774469', 'RESOURCE', '201061', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7109538496802851524', 'RESOURCE', '201060', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:detail', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7606481288132251344', 'RESOURCE', '200029', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:audit:page', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', NULL, NULL, NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
@@ -1150,6 +1237,7 @@ INSERT INTO `sys_iam_relation` VALUES ('7212116468775288981', 'RESOURCE', '20401
 INSERT INTO `sys_iam_relation` VALUES ('7560408972191285564', 'RESOURCE', '204013', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:delete', 'CASCADE', 'ALL', '[]', 0, 3, 'ENABLED', '删除任务', NULL, NULL, '{}', '2026-08-16 00:00:00', NULL, '2026-08-16 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7873407408257995473', 'RESOURCE', '204014', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:detail', 'CASCADE', 'ALL', '[]', 0, 4, 'ENABLED', '任务详情', NULL, NULL, '{}', '2026-08-16 00:00:00', NULL, '2026-08-16 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7792386902249912041', 'RESOURCE', '204015', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:job:run', 'CASCADE', 'ALL', '[]', 0, 5, 'ENABLED', '立即执行', NULL, NULL, '{}', '2026-08-16 00:00:00', NULL, '2026-08-16 00:00:00', NULL);
+INSERT INTO `sys_iam_relation` VALUES ('8106481288132251001', 'RESOURCE', '202231', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:realname:review:verify', 'CASCADE', 'ALL', '[]', 0, 0, 'ENABLED', '审核实名认证', NULL, NULL, '{}', '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
 INSERT INTO `sys_iam_relation` VALUES ('7740028803530587951', 'RESOURCE', '204016', 'ADMIN', 'RESOURCE_PERMISSION', 'PERMISSION', '', 'sys:joblog:page', 'CASCADE', 'ALL', '[]', 0, 6, 'ENABLED', '执行日志', NULL, NULL, '{}', '2026-08-16 00:00:00', NULL, '2026-08-16 00:00:00', NULL);
 
 -- ----------------------------
@@ -1158,14 +1246,14 @@ INSERT INTO `sys_iam_relation` VALUES ('7740028803530587951', 'RESOURCE', '20401
 DROP TABLE IF EXISTS `sys_job`;
 CREATE TABLE `sys_job` (
   `id` varchar(64) NOT NULL,
-  `job_name` varchar(128) NOT NULL,
-  `execute_class` varchar(255) NOT NULL,
-  `execute_type` varchar(16) NOT NULL,
+  `name` varchar(128) NOT NULL,
+  `handler` varchar(255) NOT NULL,
+  `trigger_type` varchar(16) NOT NULL,
   `trigger_config` varchar(255) NOT NULL,
-  `execute_param` json,
+  `params` json,
   `last_run_time` datetime(6),
   `next_run_time` datetime(6) NOT NULL,
-  `last_execute_result` varchar(500),
+  `last_result` varchar(500),
   `enabled` tinyint(1) NOT NULL,
   `description` varchar(500),
   `sort` int NOT NULL,
@@ -1191,12 +1279,11 @@ DROP TABLE IF EXISTS `sys_job_log`;
 CREATE TABLE `sys_job_log` (
   `id` varchar(64) NOT NULL,
   `job_id` varchar(64) NOT NULL,
-  `job_name` varchar(128) NOT NULL,
-  `execute_param` json,
-  `execute_time` datetime(6) NOT NULL,
-  `execute_duration_ms` bigint,
+  `params` json,
+  `started_at` datetime(6) NOT NULL,
+  `duration_ms` bigint,
   `success` tinyint(1) NOT NULL,
-  `execute_result` text,
+  `result` text,
   `executor` varchar(64),
   `ip` varchar(64),
   `process_id` varchar(32),
@@ -1505,6 +1592,8 @@ INSERT INTO `sys_resource` VALUES ('200025', '200003', 'sys-session', '在线会
 INSERT INTO `sys_resource` VALUES ('200027', '200003', 'sys-audit-api', '操作审计接口', 'API_GROUP', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 6, 0, 0, 0, 'ENABLED', '操作审计后端权限组', NULL, '{}', '2026-07-03 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_resource` VALUES ('200028', '200003', 'sys-login-log', '登录日志', 'MENU', '210001', '/sys/login-log', '/sys/login-log/index.vue', NULL, 'icon-park-outline:log', NULL, NULL, 5, 1, 0, 0, 'ENABLED', '登录成功/失败历史记录', NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_resource` VALUES ('200029', '200003', 'sys-audit', '操作审计', 'MENU', '210001', '/sys/audit', '/sys/audit/index.vue', NULL, 'icon-park-outline:audit', NULL, NULL, 7, 1, 0, 0, 'ENABLED', '系统操作审计日志', NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
+INSERT INTO `sys_resource` VALUES ('202230', '200003', 'sys-real-name', '实名认证审核', 'MENU', '210001', '/sys/real-name', '/sys/real-name/index.vue', NULL, 'icon-park-outline:id-card', NULL, NULL, 8, 1, 0, 0, 'ENABLED', '实名认证待审队列与审核', NULL, '{}', '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
+INSERT INTO `sys_resource` VALUES ('202231', '202230', 'sys-real-name-review', '审核实名认证', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, NULL, 1, 0, 0, 0, 'ENABLED', NULL, NULL, '{}', '2026-08-22 00:00:00', NULL, '2026-08-22 00:00:00', NULL);
 INSERT INTO `sys_resource` VALUES ('200031', '200041', 'iam-clientmodule', '客户端模块管理', 'MENU', '210001', '/iam/client_module', '/iam/client_module/index.vue', NULL, 'icon-park-outline:application-one', NULL, NULL, 1, 1, 0, 0, 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_resource` VALUES ('200032', '200041', 'iam-clientresource', '客户端资源管理', 'MENU', '210001', '/iam/client_resource', '/iam/client_resource/index.vue', NULL, 'icon-park-outline:page-template', NULL, NULL, 2, 1, 0, 0, 'ENABLED', NULL, NULL, '{}', '2026-08-08 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
 INSERT INTO `sys_resource` VALUES ('200040', NULL, 'resource-auth', '资源授权', 'CATALOG', '210001', '/resource-auth', NULL, NULL, 'icon-park-outline:all-application', NULL, NULL, 15, 1, 0, 0, 'ENABLED', '菜单资源与资源模块授权配置', NULL, '{}', '2026-08-09 00:00:00', NULL, '2026-08-09 00:00:00', NULL);
@@ -1918,8 +2007,8 @@ ALTER TABLE `sys_codegen_field` ADD CONSTRAINT `pk_sys_codegen_field` PRIMARY KE
 CREATE INDEX `ix_sys_codegen_plan_gen_type` ON `sys_codegen_plan` (
   `gen_type`
 );
-CREATE INDEX `ix_sys_codegen_plan_main_table` ON `sys_codegen_plan` (
-  `main_table`
+CREATE INDEX `ix_sys_codegen_plan_table_name` ON `sys_codegen_plan` (
+  `table_name`
 );
 
 -- ----------------------------
@@ -1951,6 +2040,17 @@ CREATE UNIQUE INDEX `idx_sys_config_key` ON `sys_config` (
 -- Primary Key structure for table sys_config
 -- ----------------------------
 ALTER TABLE `sys_config` ADD CONSTRAINT `pk_sys_config` PRIMARY KEY (`id`);
+
+
+-- ----------------------------
+-- Primary Key structure for table sys_workspace_shortcut
+-- ----------------------------
+ALTER TABLE `sys_workspace_shortcut` ADD CONSTRAINT `pk_sys_workspace_shortcut` PRIMARY KEY (`id`);
+ALTER TABLE `sys_workspace_shortcut` ADD CONSTRAINT `uq_sys_workspace_shortcut_account_resource` UNIQUE (`account_id`, `resource_id`);
+CREATE INDEX `ix_sys_workspace_shortcut_account_sort` ON `sys_workspace_shortcut` (
+  `account_id`,
+  `sort`
+);
 
 -- ----------------------------
 -- Primary Key structure for table sys_dept
@@ -2031,8 +2131,8 @@ ALTER TABLE `sys_iam_relation` ADD CONSTRAINT `pk_sys_iam_relation` PRIMARY KEY 
 -- ----------------------------
 -- Indexes structure for table sys_job_log
 -- ----------------------------
-CREATE INDEX `idx_sys_job_log_execute_time` ON `sys_job_log` (
-  `execute_time`
+CREATE INDEX `idx_sys_job_log_started_at` ON `sys_job_log` (
+  `started_at`
 );
 
 -- ----------------------------

@@ -75,6 +75,9 @@ hei:
   # 与种子 Fernet 密文 / hei-fastapi APP__CONFIG_CRYPTO_KEY 对齐（仅开发；生产用环境变量）
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:XV1rJ-UPAbWeYjprihKNS3ZCCHdBuVbIc0WXmYc70ck=}}
+  profile:
+    identity:
+      crypto-key: ${HEI_PROFILE_IDENTITY_CRYPTO_KEY:${hei.config.crypto-key:}}
   log:
     audit:
       consume-enabled: ${HEI_LOG_AUDIT_CONSUME_ENABLED:${HEI_MQ_AUDIT_CONSUME_ENABLED:true}}

@@ -243,6 +243,7 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
             LoginResult result = issueSession(account, accountType, request.getRememberMe(), request.getAccount());
+            AuditSnapshots.resourceId(account.getId());
             loginProtectionService.recordSuccess(accountType, request.getAccount(), clientIp);
             return result;
         } catch (BizException ex) {
@@ -322,7 +323,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String nickname = "user-" + account.getId().substring(Math.max(0, account.getId().length() - 8));
-        portalUserProfileApi.createProfile(account.getId(), null, nickname, email);
+        portalUserProfileApi.createProfile(account.getId(), nickname, email);
         if (StringUtils.hasText(phone)) {
             portalUserProfileApi.updatePhone(account.getId(), phone);
         }
@@ -474,8 +475,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout() {
-        LoginHelper.currentUser().ifPresent(user -> AuditSnapshots.subject(
-                StringUtils.hasText(user.getAccount()) ? user.getAccount() : user.getAccountId()));
+        LoginHelper.currentUser().ifPresent(user -> {
+            AuditSnapshots.subject(StringUtils.hasText(user.getAccount()) ? user.getAccount() : user.getAccountId());
+            AuditSnapshots.resourceId(user.getAccountId());
+        });
         LoginHelper.currentUser().ifPresent(user -> LoginHelper.logout(user.getAccountType()));
     }
 

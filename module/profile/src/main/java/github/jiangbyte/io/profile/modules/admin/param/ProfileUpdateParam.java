@@ -9,7 +9,6 @@ import lombok.Data;
  */
 @Data
 public class ProfileUpdateParam {
-    private String name;
     private String nickname;
     private String avatar;
     private String signature;

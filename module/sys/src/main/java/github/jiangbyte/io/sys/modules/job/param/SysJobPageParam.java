@@ -14,10 +14,10 @@ import lombok.EqualsAndHashCode;
 public class SysJobPageParam extends PageQuery {
 
     /** 任务名称（模糊）。 */
-    private String jobName;
+    private String name;
 
     /** 触发类型：CRON / FIXED。 */
-    private String executeType;
+    private String triggerType;
 
     /** 启用状态。 */
     private Boolean enabled;

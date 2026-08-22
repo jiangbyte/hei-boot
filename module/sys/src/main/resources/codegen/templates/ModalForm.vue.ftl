@@ -15,6 +15,12 @@ import { ${api_export_name} } from '@/api'
 import { ${_wires?join(", ")} } from '@/utils/wire'
 </#if>
 import { createRequiredRule<#if target.has_form_datetime>, toApiDateTime, toFormDateTime</#if> } from '@/utils'
+<#if target.has_form_icon>
+import IconSelect from '@/components/common/IconSelect.vue'
+</#if>
+<#if target.has_form_editor>
+import { <#if target.has_form_richtext>RichTextEditor, </#if><#if target.has_form_markdown>MdEditor, </#if><#if target.has_form_code>MonacoEditor</#if> } from '@/components/editor'
+</#if>
 import { computed, reactive, ref } from 'vue'
 
 const emit = defineEmits<{
@@ -52,23 +58,23 @@ const parentTreeOptions = computed(() =>
 )
 </#if>
 const rules = computed<FormRules>(() => ({
-<#list target.form_fields as field><#if field.is_required || field.is_json>
+<#list target.form_fields as field><#if field.required || field.is_json>
   ${field.name}: [
-<#if field.is_required>
-<#if field.data_type == "bool">
+<#if field.required>
+<#if field.value_type == "bool">
     {
       validator: () => typeof state.formModel.${field.name} === 'boolean',
       message: '请选择${field.label}',
       trigger: 'change',
     },
-<#elseif (field.data_type == "int" || field.data_type == "float")>
+<#elseif (field.value_type == "int" || field.value_type == "float")>
     {
       validator: () => typeof state.formModel.${field.name} === 'number' && Number.isFinite(state.formModel.${field.name}),
       message: '请输入${field.label}',
       trigger: ['input', 'blur'],
     },
 <#else>
-    createRequiredRule('${field.label}', <#if field.form_widget == "dict" || field.data_type == "bool" || field.is_datetime>'change'<#else>'input'</#if>),
+    createRequiredRule('${field.label}', <#if field.widget == "dict" || field.value_type == "bool" || field.is_datetime || field.widget == "icon">'change'<#else>'input'</#if>),
 </#if>
 </#if>
 <#if field.is_json>
@@ -123,10 +129,10 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
 <#list target.form_fields as field><#if field.is_bool>
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireBool(String(data.${field.name})),
 </#if></#list>
-<#list target.form_fields as field><#if field.data_type == "int">
+<#list target.form_fields as field><#if field.value_type == "int">
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireInt(String(data.${field.name})),
 </#if></#list>
-<#list target.form_fields as field><#if field.data_type == "float">
+<#list target.form_fields as field><#if field.value_type == "float">
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireFloat(String(data.${field.name})),
 </#if></#list>
 <#list target.form_fields as field><#if field.is_datetime>
@@ -243,7 +249,7 @@ defineExpose({
     draggable
     :mask-closable="false"
     :title="modalTitle"
-    style="width: 720px"
+    style="width: <#if target.has_form_editor>960px<#else>720px</#if>"
     :segmented="{ content: true, action: true }"
   >
     <NSpin :show="state.loading<#if has_tree_parent_form> || state.treeLoading</#if>">
@@ -263,17 +269,25 @@ defineExpose({
               children-field="children"
               class="w-full"
             />
-<#elseif field.form_widget == "number" || (field.data_type == "int" || field.data_type == "float")>
+<#elseif field.widget == "number" || (field.value_type == "int" || field.value_type == "float")>
             <NInputNumber v-model:value="state.formModel.${field.name}" class="w-full" />
-<#elseif field.form_widget == "textarea">
+<#elseif field.widget == "richtext">
+            <RichTextEditor v-model:value="state.formModel.${field.name}" :height="360" class="w-full" />
+<#elseif field.widget == "markdown">
+            <MdEditor v-model:value="state.formModel.${field.name}" :height="360" class="w-full" />
+<#elseif field.widget == "code">
+            <MonacoEditor v-model:value="state.formModel.${field.name}" language="${field.code_language}" :height="360" class="w-full" />
+<#elseif field.widget == "icon">
+            <IconSelect v-model:value="state.formModel.${field.name}" class="w-full" />
+<#elseif field.widget == "textarea">
             <NInput v-model:value="state.formModel.${field.name}" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
-<#elseif field.form_widget == "dict" && field.dict_code>
+<#elseif field.widget == "dict" && field.dict_code>
             <DictSelect v-model="state.formModel.${field.name}" dict-code="${field.dict_code}" />
 <#elseif field.is_json>
             <NInput v-model:value="state.formModel.${field.name}" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
-<#elseif field.data_type == "bool">
+<#elseif field.value_type == "bool">
             <NSwitch v-model:value="state.formModel.${field.name}" />
-<#elseif field.form_widget == "datetime" || field.data_type == "datetime">
+<#elseif field.widget == "datetime" || field.value_type == "datetime">
             <NDatePicker v-model:formatted-value="state.formModel.${field.name}" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
 <#else>
             <NInput v-model:value="state.formModel.${field.name}" />

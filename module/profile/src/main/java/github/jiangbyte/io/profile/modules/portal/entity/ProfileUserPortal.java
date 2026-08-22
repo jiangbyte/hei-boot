@@ -19,7 +19,6 @@ import java.time.OffsetDateTime;
 public class ProfileUserPortal {
     @TableId(value = "account_id", type = IdType.INPUT)
     private String accountId;
-    private String name;
     private String nickname;
     private String avatar;
     private String signature;

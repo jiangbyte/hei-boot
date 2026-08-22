@@ -16,6 +16,6 @@ public class SysJobSample implements JobHandler {
     @Override
     public String execute(String params) {
         log.info("SysJobSample execute, params={}", params);
-        return "echo: " + (params == null ? "(无参数)" : params);
+        return "echo: " + (params == null ? "(empty)" : params);
     }
 }

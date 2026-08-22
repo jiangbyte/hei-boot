@@ -10,11 +10,11 @@ import lombok.Data;
 @Data
 public class SysCodegenDatabaseColumnResult {
     private String columnName;
-    private String columnComment;
+    private String label;
     private String dbType;
-    private String dataType;
-    private String frontendType;
-    private Boolean isPrimaryKey;
-    private Boolean isNullable;
+    private String valueType;
+    private String uiType;
+    private Boolean primaryKey;
+    private Boolean nullable;
     private Integer maxLength;
 }

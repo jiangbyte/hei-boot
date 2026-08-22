@@ -10,8 +10,10 @@ import lombok.Data;
 @Data
 public class PublicProfileResult {
     private String accountId;
-    private String name;
+    /** 对外展示昵称（不含登录账号兜底）。 */
     private String nickname;
+    /** 登录账号（资料页单独展示，如 @account）。 */
+    private String account;
     private String avatar;
     private String signature;
 }

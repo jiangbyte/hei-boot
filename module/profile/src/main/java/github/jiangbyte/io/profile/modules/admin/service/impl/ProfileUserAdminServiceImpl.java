@@ -12,6 +12,7 @@ import github.jiangbyte.io.iam.org.OrgNameApi;
 import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.sys.file.FileApi;
 import github.jiangbyte.io.sys.file.FileInfo;
+import github.jiangbyte.io.profile.modules.identity.service.ProfileIdentityService;
 import github.jiangbyte.io.profile.admin.ProfileUserAdminInfo;
 import github.jiangbyte.io.profile.modules.admin.convert.ProfileUserAdminConvert;
 import github.jiangbyte.io.profile.modules.admin.entity.ProfileUserAdmin;
@@ -39,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,6 +60,7 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
     private final AccountIdentityApi accountIdentityApi;
     private final OrgNameApi orgNameApi;
     private final ConfigApi configApi;
+    private final ProfileIdentityService profileIdentityService;
     private final ProfileUserAdminConvert adminUserProfileConvert;
 
     @Override
@@ -72,6 +73,7 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
         fillOrgIdNames(response, loginUser);
         response.setAvatar(profile.getAvatar());
         fillForceBindFlags(response, loginUser);
+        response.setIdentity(profileIdentityService.getUserStatusForAccount(loginUser.getAccountId()));
         return response;
     }
 
@@ -172,14 +174,15 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
     @Override
     @ReadDataSource
     public Map<String, String> getDisplayNames(Collection<String> accountIds) {
-        // 批量查资料，优先姓名否则昵称
         Map<String, String> map = new HashMap<>();
         if (accountIds == null || accountIds.isEmpty()) {
             return map;
         }
-        adminProfileMapper.selectByIds(accountIds).forEach(profile ->
-                map.put(profile.getAccountId(),
-                        Objects.requireNonNullElse(profile.getName(), profile.getNickname())));
+        adminProfileMapper.selectByIds(accountIds).forEach(profile -> {
+            if (StringUtils.hasText(profile.getNickname())) {
+                map.put(profile.getAccountId(), profile.getNickname().trim());
+            }
+        });
         return map;
     }
 
@@ -237,13 +240,12 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
 
     @Override
     @Transactional
-    public void createProfile(String accountId, String name, String nickname, String email) {
+    public void createProfile(String accountId, String nickname, String email) {
         if (!StringUtils.hasText(accountId)) {
             return;
         }
         ProfileUserAdminInfo info = new ProfileUserAdminInfo();
         info.setAccountId(accountId);
-        info.setName(name);
         info.setNickname(nickname);
         info.setEmail(email);
         upsertProfile(info);
@@ -283,12 +285,7 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
     }
 
     private Set<String> accountIdsByName(String name) {
-        return adminProfileMapper.selectList(Wrappers.<ProfileUserAdmin>lambdaQuery()
-                        .like(ProfileUserAdmin::getName, name)
-                        .select(ProfileUserAdmin::getAccountId))
-                .stream()
-                .map(ProfileUserAdmin::getAccountId)
-                .collect(Collectors.toCollection(HashSet::new));
+        return profileIdentityService.findAccountIdsByRealName(name);
     }
 
     private Set<String> accountIdsByPhone(String phone) {
@@ -340,8 +337,11 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
                 && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "EMAIL");
         boolean forcePhone = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_PHONE", false)
                 && !accountIdentityApi.hasIdentity(loginUser.getAccountId(), "PHONE");
+        boolean forceIdentity = configApi.getBoolean("AUTH_FORCE_BIND_" + typeName + "_IDENTITY", false)
+                && !profileIdentityService.isVerified(loginUser.getAccountId());
         response.setForceBindEmail(forceEmail);
         response.setForceBindPhone(forcePhone);
+        response.setForceBindIdentity(forceIdentity);
     }
 
     private UserProfileResult withResolvedAvatar(UserProfileResult dto) {

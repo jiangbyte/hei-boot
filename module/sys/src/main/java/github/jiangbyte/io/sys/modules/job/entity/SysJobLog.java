@@ -23,24 +23,21 @@ public class SysJobLog extends BaseEntity {
     /** 任务 ID。 */
     private String jobId;
 
-    /** 任务名称（冗余便于展示）。 */
-    private String jobName;
-
     /** 执行参数快照（JSON 存储）。 */
     @TableField(typeHandler = JacksonJsonTypeHandler.class)
-    private Map<String, Object> executeParam;
+    private Map<String, Object> params;
 
     /** 执行开始时间。 */
-    private OffsetDateTime executeTime;
+    private OffsetDateTime startedAt;
 
     /** 执行用时（毫秒）。 */
-    private Long executeDurationMs;
+    private Long durationMs;
 
     /** 执行结果：是否成功。 */
     private Boolean success;
 
     /** 执行结果摘要 / 错误信息。 */
-    private String executeResult;
+    private String result;
 
     /** 执行人（人工触发为账号 id，调度触发为 system）。 */
     private String executor;

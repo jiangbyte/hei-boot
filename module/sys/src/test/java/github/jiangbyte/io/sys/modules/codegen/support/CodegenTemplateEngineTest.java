@@ -64,7 +64,7 @@ class CodegenTemplateEngineTest {
         for (SysCodegenField field : fields) {
             if ("status".equals(field.getColumnName())) {
                 field.setDictCode("COMMON_STATUS");
-                field.setFormWidget("dict");
+                field.setWidget("dict");
                 field.setQueryOperator("EQ");
             }
         }
@@ -228,13 +228,11 @@ class CodegenTemplateEngineTest {
         plan.setName(entity);
         plan.setGenType(genType);
         plan.setAuthor("Charlie");
-        plan.setMainTable(table);
-        plan.setMainPk("id");
-        plan.setMainEntityName(entity);
-        plan.setMainModulePath("biz/" + table.replace("cg_test_", "cg_test_"));
-        // module path like biz/cg_test_activity
-        plan.setMainModulePath("biz/" + table);
-        plan.setMainBusinessName(entity.replace("CgTest", ""));
+        plan.setTableName(table);
+        plan.setPkColumn("id");
+        plan.setEntityName(entity);
+        plan.setModulePath("biz/" + table);
+        plan.setBusinessName(entity.replace("CgTest", ""));
         plan.setApiPrefix("/biz/" + kebab);
         plan.setPermissionPrefix("biz:" + kebab.replace("-", ""));
         plan.setMenuName(entity);
@@ -248,7 +246,7 @@ class CodegenTemplateEngineTest {
     private static List<SysCodegenField> sampleFields(String role) {
         List<SysCodegenField> fields = new ArrayList<>();
         fields.add(field(role, "id", "str", false, false));
-        fields.get(0).setIsPrimaryKey(true);
+        fields.get(0).setPrimaryKey(true);
         fields.add(field(role, "name", "str", true, true));
         fields.add(field(role, "status", "str", true, true));
         fields.add(field(role, "created_at", "datetime", false, false));
@@ -398,63 +396,63 @@ class CodegenTemplateEngineTest {
     }
 
     private static SysCodegenField col(
-            String name, String py, boolean pk, boolean form, boolean table, boolean query) {
-        SysCodegenField field = field("MAIN", name, py, form, query);
-        field.setIsPrimaryKey(pk);
-        field.setShowInTable(table);
-        field.setShowInDetail(true);
+            String name, String valueType, boolean pk, boolean form, boolean table, boolean query) {
+        SysCodegenField field = field("MAIN", name, valueType, form, query);
+        field.setPrimaryKey(pk);
+        field.setInTable(table);
+        field.setInDetail(true);
         if ("status".equals(name)) {
-            field.setFormWidget("dict");
+            field.setWidget("dict");
             field.setDictCode("COMMON_STATUS");
             field.setQueryOperator("EQ");
-        } else if ("bool".equals(py)) {
-            field.setFormWidget("switch");
+        } else if ("bool".equals(valueType)) {
+            field.setWidget("switch");
             field.setQueryOperator("EQ");
-        } else if ("datetime".equals(py)) {
-            field.setFormWidget("datetime");
-        } else if ("int".equals(py) || "float".equals(py)) {
-            field.setFormWidget("number");
+        } else if ("datetime".equals(valueType)) {
+            field.setWidget("datetime");
+        } else if ("int".equals(valueType) || "float".equals(valueType)) {
+            field.setWidget("number");
             field.setQueryOperator("EQ");
         } else if (name.contains("description") || name.contains("content") || name.contains("remark") || name.contains("summary")) {
-            field.setFormWidget("textarea");
+            field.setWidget("textarea");
         } else {
-            field.setFormWidget("input");
+            field.setWidget("input");
             if (query) {
                 field.setQueryOperator("LIKE");
             }
         }
-        if ("dict".equals(py)) {
+        if ("dict".equals(valueType)) {
             field.setDbType("json");
         }
         return field;
     }
 
-    private static SysCodegenField field(String role, String name, String py, boolean form, boolean query) {
+    private static SysCodegenField field(String role, String name, String valueType, boolean form, boolean query) {
         SysCodegenField field = new SysCodegenField();
         field.setTableRole(role);
         field.setColumnName(name);
-        field.setColumnComment(name);
-        field.setPythonType(py);
-        field.setTypescriptType("str".equals(py) ? "string" : "number");
-        if ("bool".equals(py)) {
-            field.setTypescriptType("boolean");
-        }
-        if ("datetime".equals(py)) {
-            field.setTypescriptType("string");
-        }
-        if ("dict".equals(py)) {
-            field.setTypescriptType("Record<string, any>");
-        }
-        field.setShowInForm(form);
-        field.setShowInTable(true);
-        field.setShowInDetail(true);
-        field.setShowInQuery(query);
-        field.setIsPrimaryKey("id".equals(name));
-        field.setIsRequired(form && !"id".equals(name));
-        field.setIsNullable(!field.getIsRequired());
-        field.setFormWidget("input");
+        field.setLabel(name);
+        field.setValueType(valueType);
+        field.setUiType(toUiType(valueType));
+        field.setInForm(form);
+        field.setInTable(true);
+        field.setInDetail(true);
+        field.setInQuery(query);
+        field.setPrimaryKey("id".equals(name));
+        field.setRequired(form && !"id".equals(name));
+        field.setNullable(!Boolean.TRUE.equals(field.getRequired()));
+        field.setWidget("input");
         field.setSort(10);
         return field;
+    }
+
+    private static String toUiType(String valueType) {
+        return switch (valueType) {
+            case "int", "float" -> "number";
+            case "bool" -> "boolean";
+            case "dict" -> "Record<string, any>";
+            default -> "string";
+        };
     }
 
     private static Set<String> paths(List<SysCodegenPreviewFileResult> files) {

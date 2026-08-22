@@ -18,11 +18,11 @@ public class SysCodegenPlan extends BaseEntity {
     private String genType;
     private String author;
     private String description;
-    private String mainTable;
-    private String mainPk;
-    private String mainEntityName;
-    private String mainModulePath;
-    private String mainBusinessName;
+    private String tableName;
+    private String pkColumn;
+    private String entityName;
+    private String modulePath;
+    private String businessName;
     private String apiPrefix;
     private String permissionPrefix;
     private String resourceModuleId;

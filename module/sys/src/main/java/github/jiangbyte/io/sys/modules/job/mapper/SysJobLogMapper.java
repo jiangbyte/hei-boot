@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
 public interface SysJobLogMapper extends BaseMapper<SysJobLog> {
 
     /**
-     * 删除执行时间早于 cutoff 的日志，最多 limit 条（按 execute_time 升序优先删最旧）。
+     * 删除执行时间早于 cutoff 的日志，最多 limit 条（按 started_at 升序优先删最旧）。
      */
     @DeleteProvider(type = SysJobLogSqlProvider.class, method = "deleteExpired")
     int deleteExpired(@Param("cutoff") OffsetDateTime cutoff, @Param("limit") int limit);

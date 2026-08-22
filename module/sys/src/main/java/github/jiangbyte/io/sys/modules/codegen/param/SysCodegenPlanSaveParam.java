@@ -30,23 +30,23 @@ public class SysCodegenPlanSaveParam {
 
     @NotBlank
     @Size(max = 128)
-    private String mainTable;
+    private String tableName;
 
     @NotBlank
     @Size(max = 128)
-    private String mainPk = "id";
+    private String pkColumn = "id";
 
     @NotBlank
     @Size(max = 128)
-    private String mainEntityName;
+    private String entityName;
 
     @NotBlank
     @Size(max = 255)
-    private String mainModulePath;
+    private String modulePath;
 
     @NotBlank
     @Size(max = 128)
-    private String mainBusinessName;
+    private String businessName;
 
     @NotBlank
     @Size(max = 255)

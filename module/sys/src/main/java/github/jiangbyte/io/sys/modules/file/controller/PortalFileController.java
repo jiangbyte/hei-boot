@@ -3,7 +3,6 @@ package github.jiangbyte.io.sys.modules.file.controller;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
-import github.jiangbyte.io.common.log.annotation.OperationAudit;
 import github.jiangbyte.io.sys.modules.file.entity.SysFile;
 import github.jiangbyte.io.sys.modules.file.param.SysFileObjectNameParam;
 import github.jiangbyte.io.sys.modules.file.result.SysFileUrlResult;
@@ -40,7 +39,6 @@ public class PortalFileController {
 
     /** 上传文件。 */
     @PostMapping("/v1/portal/sys/file/upload")
-    @OperationAudit(resourceType = "sys_file", action = "upload")
     public ApiResponse<SysFile> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "storage_provider", required = false) String storageProvider) {

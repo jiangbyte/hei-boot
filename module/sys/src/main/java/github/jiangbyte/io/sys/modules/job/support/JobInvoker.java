@@ -29,12 +29,12 @@ public class JobInvoker {
         this.handlerMap = Map.copyOf(indexed);
     }
 
-    /** 按执行类全限定名解析处理器；不存在时抛出业务异常。 */
-    public JobHandler resolve(String executeClass) {
-        JobHandler handler = handlerMap.get(executeClass);
-        if (handler == null) {
-            throw new BizException("未找到任务处理器: " + executeClass);
+    /** 按处理器标识解析 JobHandler；不存在时抛出业务异常。 */
+    public JobHandler resolve(String handler) {
+        JobHandler resolved = handlerMap.get(handler);
+        if (resolved == null) {
+            throw new BizException("Job handler not found: " + handler);
         }
-        return handler;
+        return resolved;
     }
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.Map;
 
 /**
- * 更新任务入参。
+ * 编辑任务入参。
  *
  * Author: Charlie
  */
@@ -15,22 +15,21 @@ import java.util.Map;
 public class SysJobEditParam {
 
     @NotBlank
-    @Size(max = 64)
     private String id;
 
     @NotBlank
     @Size(max = 128)
-    private String jobName;
+    private String name;
 
-    /** 执行类全限定名（容器中实现 JobHandler 的 Bean 类名）。 */
+    /** 处理器标识（Boot 为 JobHandler 全限定类名，其他栈为注册 key）。 */
     @NotBlank
     @Size(max = 255)
-    private String executeClass;
+    private String handler;
 
     /** 触发类型：CRON（表达式）/ FIXED（固定间隔）。 */
     @NotBlank
     @Size(max = 16)
-    private String executeType;
+    private String triggerType;
 
     /** 触发配置：CRON 表达式或固定间隔秒数。 */
     @NotBlank
@@ -38,7 +37,7 @@ public class SysJobEditParam {
     private String triggerConfig;
 
     /** 执行参数（JSON）。 */
-    private Map<String, Object> executeParam;
+    private Map<String, Object> params;
 
     /** 任务描述。 */
     @Size(max = 500)

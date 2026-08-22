@@ -137,6 +137,9 @@ hei:
   # 与 hei-fastapi 共享的 Fernet 密钥（APP__CONFIG_CRYPTO_KEY）；解密 STORAGE_*/MAIL_*/SMS_* 敏感配置
   config:
     crypto-key: ${HEI_CONFIG_CRYPTO_KEY:${APP__CONFIG_CRYPTO_KEY:}}
+  profile:
+    identity:
+      crypto-key: ${HEI_PROFILE_IDENTITY_CRYPTO_KEY:${hei.config.crypto-key:}}
   logging:
     # true → Logstash JSON；false → 键值控制台（对齐 hei-fastapi LOG_JSON）
     json: ${LOG_JSON:true}

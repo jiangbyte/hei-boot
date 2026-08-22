@@ -7,6 +7,9 @@
 <script setup lang="ts">
 import { ${api_export_name} } from '@/api'
 import { <#if target.has_detail_dict>createTagColor, dictTypeColor, dictTypeData, </#if>displayValue, formatDateTime } from '@/utils'
+<#if target.has_detail_editor>
+import { <#if target.has_detail_richtext>RichTextPreview, </#if><#if target.has_detail_markdown>MdPreview, </#if><#if target.has_detail_code>MonacoPreview</#if> } from '@/components/editor'
+</#if>
 import { reactive } from 'vue'
 
 const state = reactive({
@@ -53,7 +56,7 @@ defineExpose({
 </script>
 
 <template>
-  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="${plan.main_business_name}详情" style="width: 680px">
+  <NModal v-model:show="state.showModal" preset="card" draggable :mask-closable="false" title="${plan.main_business_name}详情" style="width: <#if target.has_detail_editor>960px<#else>680px</#if>">
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
@@ -65,8 +68,20 @@ defineExpose({
             <NTag :color="createTagColor(dictTypeColor('${field.dict_code}', state.detail.${field.name}))" :bordered="false">
               ${"{{"} dictTypeData('${field.dict_code}', state.detail.${field.name}) || displayValue(state.detail.${field.name}) ${"}" }}
             </NTag>
-<#elseif field.data_type == "datetime">
+<#elseif field.value_type == "datetime">
             ${"{{"} formatDateTime(state.detail.${field.name}) ${"}" }}
+<#elseif field.widget == "richtext">
+            <RichTextPreview :value="state.detail.${field.name}" />
+<#elseif field.widget == "markdown">
+            <MdPreview :value="state.detail.${field.name}" />
+<#elseif field.widget == "code">
+            <MonacoPreview :value="state.detail.${field.name}" language="${field.code_language}" height="240px" />
+<#elseif field.widget == "icon">
+            <NFlex v-if="state.detail.${field.name}" align="center" :size="8">
+              <NovaIcon :icon="String(state.detail.${field.name})" :size="18" />
+              ${"{{"} displayValue(state.detail.${field.name}) ${"}" }}
+            </NFlex>
+            <span v-else>-</span>
 <#elseif field.is_json>
             <NCode :code="formatJsonValue(state.detail.${field.name})" language="json" word-wrap />
 <#else>

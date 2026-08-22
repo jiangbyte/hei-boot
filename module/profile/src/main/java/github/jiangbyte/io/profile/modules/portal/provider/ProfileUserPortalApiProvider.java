@@ -54,8 +54,8 @@ public class ProfileUserPortalApiProvider implements ProfileUserPortalApi {
     }
 
     @Override
-    public void createProfile(String accountId, String name, String nickname, String email) {
-        portalUserProfileService.createProfile(accountId, name, nickname, email);
+    public void createProfile(String accountId, String nickname, String email) {
+        portalUserProfileService.createProfile(accountId, nickname, email);
     }
 
     @Override

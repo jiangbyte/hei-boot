@@ -140,7 +140,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<SysCodegenPlan>lambdaQuery()
                         .like(StringUtils.hasText(param.getName()), SysCodegenPlan::getName, param.getName())
-                        .like(StringUtils.hasText(param.getMainTable()), SysCodegenPlan::getMainTable, param.getMainTable())
+                        .like(StringUtils.hasText(param.getTableName()), SysCodegenPlan::getTableName, param.getTableName())
                         .eq(StringUtils.hasText(param.getGenType()), SysCodegenPlan::getGenType, param.getGenType())
                         .orderByDesc(SysCodegenPlan::getUpdatedAt));
     }
@@ -282,14 +282,14 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
 
     private void validatePlan(SysCodegenPlanSaveParam request) {
         // 加载主表列并校验主键存在
-        List<SysCodegenDatabaseColumnResult> mainColumns = loadColumns(request.getMainTable()).stream()
+        List<SysCodegenDatabaseColumnResult> mainColumns = loadColumns(request.getTableName()).stream()
                 .map(this::toColumnResult).toList();
         Set<String> mainNames = new HashSet<>();
         for (SysCodegenDatabaseColumnResult column : mainColumns) {
             mainNames.add(column.getColumnName());
         }
-        if (!mainNames.contains(request.getMainPk())) {
-            throw new BizException("Main primary key field does not exist");
+        if (!mainNames.contains(request.getPkColumn())) {
+            throw new BizException("Primary key field does not exist");
         }
         // 树类型：校验父字段与标签字段
         if (TREE_TYPES.contains(request.getGenType())) {
@@ -322,7 +322,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
 
     private void syncReflectedFields(SysCodegenPlan plan) {
         // 同步主表反射字段
-        upsertReflected(plan.getId(), "MAIN", loadColumns(plan.getMainTable()));
+        upsertReflected(plan.getId(), "MAIN", loadColumns(plan.getTableName()));
         // 关联类型再同步子表
         if (RELATION_TYPES.contains(plan.getGenType()) && StringUtils.hasText(plan.getSubTable())) {
             upsertReflected(plan.getId(), "SUB", loadColumns(plan.getSubTable()));
@@ -356,23 +356,23 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
                 field.setPlanId(planId);
                 field.setTableRole(tableRole);
                 field.setColumnName(columnName);
-                field.setShowInTable(!isAudit);
-                field.setShowInForm(!isPk && !isAudit);
-                field.setShowInDetail(true);
-                field.setShowInQuery(Set.of("name", "title", "code", "status", "category", "type").contains(columnName));
-                field.setFormWidget(widget);
+                field.setInTable(!isAudit);
+                field.setInForm(!isPk && !isAudit);
+                field.setInDetail(true);
+                field.setInQuery(Set.of("name", "title", "code", "status", "category", "type").contains(columnName));
+                field.setWidget(widget);
                 field.setDictCode("status".equals(columnName) ? "COMMON_STATUS" : null);
                 field.setQueryOperator(defaultQueryOperator(columnName, types[0]));
                 field.setCreatedAt(now);
             }
-            field.setColumnComment(blankToNull(column.get("column_comment")));
+            field.setLabel(blankToNull(column.get("column_comment")));
             field.setDbType(String.valueOf(column.get("udt_name")));
-            field.setDataType(types[0]);
-            field.setFrontendType(types[1]);
-            field.setIsPrimaryKey(isPk);
-            field.setIsRequired(!nullable && !isPk && !isAudit);
-            field.setIsUnique(false);
-            field.setIsNullable(nullable);
+            field.setValueType(types[0]);
+            field.setUiType(types[1]);
+            field.setPrimaryKey(isPk);
+            field.setRequired(!nullable && !isPk && !isAudit);
+            field.setUniqueFlag(false);
+            field.setNullable(nullable);
             field.setMaxLength(asInteger(column.get("max_length")));
             Integer sort = asInteger(column.get("sort"));
             field.setSort(sort == null ? index : sort);
@@ -421,25 +421,28 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
                 String.valueOf(column.get("udt_name")));
         SysCodegenDatabaseColumnResult dto = new SysCodegenDatabaseColumnResult();
         dto.setColumnName(String.valueOf(column.get("column_name")));
-        dto.setColumnComment(blankToNull(column.get("column_comment")));
+        dto.setLabel(blankToNull(column.get("column_comment")));
         dto.setDbType(String.valueOf(column.get("udt_name")));
-        dto.setDataType(types[0]);
-        dto.setFrontendType(types[1]);
-        dto.setIsPrimaryKey(Boolean.TRUE.equals(column.get("is_primary_key")));
-        dto.setIsNullable("YES".equalsIgnoreCase(String.valueOf(column.get("is_nullable"))));
+        dto.setValueType(types[0]);
+        dto.setUiType(types[1]);
+        dto.setPrimaryKey(Boolean.TRUE.equals(column.get("is_primary_key")));
+        dto.setNullable("YES".equalsIgnoreCase(String.valueOf(column.get("is_nullable"))));
         dto.setMaxLength(asInteger(column.get("max_length")));
         return dto;
     }
 
-    private static String defaultWidget(String columnName, String dataType) {
+    private static String defaultWidget(String columnName, String valueType) {
         if ("status".equals(columnName)) {
             return "dict";
         }
-        if ("int".equals(dataType) || "float".equals(dataType)) {
+        if ("int".equals(valueType) || "float".equals(valueType)) {
             return "number";
         }
-        if ("bool".equals(dataType)) {
+        if ("bool".equals(valueType)) {
             return "switch";
+        }
+        if ("datetime".equals(valueType)) {
+            return "datetime";
         }
         if (columnName.contains("content") || columnName.contains("description") || columnName.contains("remark")) {
             return "textarea";
@@ -447,8 +450,8 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         return "input";
     }
 
-    private static String defaultQueryOperator(String columnName, String dataType) {
-        if ("status".equals(columnName) || "int".equals(dataType) || "bool".equals(dataType)) {
+    private static String defaultQueryOperator(String columnName, String valueType) {
+        if ("status".equals(columnName) || "int".equals(valueType) || "bool".equals(valueType)) {
             return "EQ";
         }
         if (Set.of("name", "title", "code", "category", "type").contains(columnName)) {

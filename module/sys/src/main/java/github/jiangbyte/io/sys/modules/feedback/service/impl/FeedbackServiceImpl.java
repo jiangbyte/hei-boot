@@ -267,12 +267,16 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
         }
         Map<String, ProfileUserAdminInfo> adminProfiles = new HashMap<>();
         Map<String, ProfileUserPortalInfo> portalProfiles = new HashMap<>();
+        Map<String, String> adminDisplayNames = new HashMap<>();
+        Map<String, String> portalDisplayNames = new HashMap<>();
         for (Map.Entry<String, List<String>> entry : idsByType.entrySet()) {
             List<String> ids = entry.getValue().stream().distinct().toList();
             if (AccountType.ADMIN.name().equals(entry.getKey())) {
                 adminProfiles.putAll(adminUserProfileApi.getProfiles(ids));
+                adminDisplayNames.putAll(adminUserProfileApi.getDisplayNames(ids));
             } else if (AccountType.PORTAL.name().equals(entry.getKey())) {
                 portalProfiles.putAll(portalUserProfileApi.getProfiles(ids));
+                portalDisplayNames.putAll(portalUserProfileApi.getDisplayNames(ids));
             }
         }
         for (SysFeedback entity : entities) {
@@ -288,14 +292,14 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
                     continue;
                 }
                 entity.setSubmitterAvatar(fileApi.resolveUrl(profile.getAvatar()));
-                entity.setSubmitterNickname(Objects.requireNonNullElse(profile.getNickname(), profile.getName()));
+                entity.setSubmitterNickname(adminDisplayNames.get(entity.getSubmitterAccountId()));
             } else if (AccountType.PORTAL.name().equals(type)) {
                 ProfileUserPortalInfo profile = portalProfiles.get(entity.getSubmitterAccountId());
                 if (profile == null) {
                     continue;
                 }
                 entity.setSubmitterAvatar(fileApi.resolveUrl(profile.getAvatar()));
-                entity.setSubmitterNickname(Objects.requireNonNullElse(profile.getNickname(), profile.getName()));
+                entity.setSubmitterNickname(portalDisplayNames.get(entity.getSubmitterAccountId()));
             }
         }
     }

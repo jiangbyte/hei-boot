@@ -48,9 +48,9 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
     @Transactional
     public void create(SysJobAddParam param) {
         SysJob job = jobConvert.toEntity(param);
-        JobCronUtil.validate(job.getExecuteType(), job.getTriggerConfig());
+        JobCronUtil.validate(job.getTriggerType(), job.getTriggerConfig());
         job.setNextRunTime(JobCronUtil.computeNextRunTime(
-                job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
+                job.getTriggerType(), job.getTriggerConfig(), OffsetDateTime.now()));
         this.save(job);
         AuditSnapshots.created(job);
     }
@@ -62,15 +62,15 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         if (job == null) {
             throw new BizException(404, "Job not found");
         }
-        String oldType = job.getExecuteType();
+        String oldType = job.getTriggerType();
         String oldConfig = job.getTriggerConfig();
         AuditSnapshots.before(job);
         jobConvert.update(param, job);
-        JobCronUtil.validate(job.getExecuteType(), job.getTriggerConfig());
+        JobCronUtil.validate(job.getTriggerType(), job.getTriggerConfig());
         // 触发配置变更后按新配置重置下次执行时间
-        if (!Objects.equals(oldType, job.getExecuteType()) || !Objects.equals(oldConfig, job.getTriggerConfig())) {
+        if (!Objects.equals(oldType, job.getTriggerType()) || !Objects.equals(oldConfig, job.getTriggerConfig())) {
             job.setNextRunTime(JobCronUtil.computeNextRunTime(
-                    job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
+                    job.getTriggerType(), job.getTriggerConfig(), OffsetDateTime.now()));
         }
         this.updateById(job);
         AuditSnapshots.after(job);
@@ -102,8 +102,8 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
     public Page<SysJob> page(SysJobPageParam param) {
         return this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<SysJob>lambdaQuery()
-                        .like(StringUtils.hasText(param.getJobName()), SysJob::getJobName, param.getJobName())
-                        .eq(StringUtils.hasText(param.getExecuteType()), SysJob::getExecuteType, param.getExecuteType())
+                        .like(StringUtils.hasText(param.getName()), SysJob::getName, param.getName())
+                        .eq(StringUtils.hasText(param.getTriggerType()), SysJob::getTriggerType, param.getTriggerType())
                         .eq(param.getEnabled() != null, SysJob::getEnabled, param.getEnabled())
                         .orderByAsc(SysJob::getSort)
                         .orderByDesc(SysJob::getCreatedAt));
@@ -121,7 +121,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         // 重新启用时按当前时间重置调度，避免沿用暂停前的过期时间立即触发
         if (Boolean.TRUE.equals(param.getEnabled())) {
             job.setNextRunTime(JobCronUtil.computeNextRunTime(
-                    job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
+                    job.getTriggerType(), job.getTriggerConfig(), OffsetDateTime.now()));
         }
         this.updateById(job);
         AuditSnapshots.after(job);
@@ -143,7 +143,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
             } catch (Exception ex) {
                 // 执行锁被其他实例持有时跳过（如任务正在执行中）
                 log.warn("Job run skipped, id={}, name={}, msg={}",
-                        job.getId(), job.getJobName(), ex.getMessage());
+                        job.getId(), job.getName(), ex.getMessage());
             }
         });
     }
