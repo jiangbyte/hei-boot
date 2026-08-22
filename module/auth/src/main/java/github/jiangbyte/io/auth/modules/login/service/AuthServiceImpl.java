@@ -4,12 +4,14 @@ import github.jiangbyte.io.auth.modules.login.param.CancelAccountParam;
 import github.jiangbyte.io.auth.modules.login.result.AuthOptionsResult;
 import github.jiangbyte.io.auth.modules.login.result.CaptchaResult;
 import github.jiangbyte.io.auth.modules.login.result.CurrentUserResult;
+import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.LoginParam;
 import github.jiangbyte.io.auth.modules.login.result.LoginResult;
 import github.jiangbyte.io.auth.modules.login.result.PasswordKeyResult;
 import github.jiangbyte.io.auth.modules.login.param.RegisterParam;
 import github.jiangbyte.io.auth.modules.login.result.RegisterResult;
+import github.jiangbyte.io.auth.modules.login.param.ResetPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ResetPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.auth.modules.login.convert.AuthConvert;
@@ -20,6 +22,7 @@ import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthProvider;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.sms.SmsSenderFacade;
@@ -33,6 +36,9 @@ import github.jiangbyte.io.iam.account.AccountInfo;
 import github.jiangbyte.io.iam.account.PermissionGrantInfo;
 import github.jiangbyte.io.iam.password.PasswordPolicyApi;
 import github.jiangbyte.io.sys.config.ConfigApi;
+import github.jiangbyte.io.sys.config.ConfigAppNames;
+import github.jiangbyte.io.sys.config.SiteFooterConfig;
+import github.jiangbyte.io.sys.config.SiteFooterResult;
 import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
 import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,7 +69,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthServiceImpl implements AuthService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final Duration DEFAULT_OTP_TTL = Duration.ofMinutes(5);
+    private static final int DEFAULT_OTP_TTL_SECONDS = 300;
 
     private final AuthCryptoService cryptoService;
     private final AccountApi accountApi;
@@ -117,8 +123,10 @@ public class AuthServiceImpl implements AuthService {
         result.setOauthProviders(buildOauthProviderOptions(type));
         result.setPasswordChangeVerifyMethod(
                 configApi.getValue("PASSWORD_CHANGE_VERIFY_METHOD", "OLD_PASSWORD").trim().toUpperCase(Locale.ROOT));
-        result.setCopyrightText(nullToEmpty(configApi.getValue("COPYRIGHT_TEXT", "")).trim());
-        result.setCopyrightUrl(nullToEmpty(configApi.getValue("COPYRIGHT_URL", "")).trim());
+        SiteFooterResult siteFooter = SiteFooterConfig.resolve(configApi);
+        result.setSiteFooter(siteFooter);
+        result.setCopyrightText(siteFooter.getCopyrightText());
+        result.setCopyrightUrl(siteFooter.getCopyrightUrl());
         return result;
     }
 
@@ -195,6 +203,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResult login(LoginParam request) {
         cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
+        AuditSnapshots.subject(request.getAccount());
         AccountType accountType = request.getAccountType() == null ? AccountType.ADMIN : request.getAccountType();
         String identityType = StringUtils.hasText(request.getIdentityType()) ? request.getIdentityType() : "ACCOUNT";
         String loginMode = StringUtils.hasText(request.getLoginMode())
@@ -319,6 +328,9 @@ public class AuthServiceImpl implements AuthService {
         }
         accountApi.recordPasswordHistory(account.getId(), rawPassword, account.getId(), "register");
 
+        AuditSnapshots.created(account);
+        AuditSnapshots.subject(accountName);
+
         // 按配置挂接默认角色/部门
         String roleId = configApi.getValue("AUTH_REGISTER_PORTAL_DEFAULT_ROLE_ID", "").trim();
         if (StringUtils.hasText(roleId)) {
@@ -332,10 +344,19 @@ public class AuthServiceImpl implements AuthService {
         if (StringUtils.hasText(email)) {
             try {
                 mailSenderFacade.sendTemplated("REGISTER_SUCCESS", email, Map.of(
-                        "app_name", configApi.getValue("APP_NAME", "HEI"),
+                        "app_name", appName(),
                         "account", accountName));
             } catch (Exception ignored) {
                 // 尽力发送生命周期邮件
+            }
+        }
+        if (StringUtils.hasText(phone)) {
+            try {
+                smsSenderFacade.sendTemplated("REGISTER_SUCCESS", phone, Map.of(
+                        "app_name", appName(),
+                        "account", accountName));
+            } catch (Exception ignored) {
+                // 尽力发送生命周期短信
             }
         }
 
@@ -346,6 +367,7 @@ public class AuthServiceImpl implements AuthService {
     public void forgotPassword(ForgotPasswordParam request, AccountType accountType) {
         cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
         String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        AuditSnapshots.subject(email);
         AccountInfo account = accountApi.findByIdentifier(email, "EMAIL");
         // 账号不存在或类型不匹配时静默返回，避免枚举
         if (account == null || !accountType.name().equalsIgnoreCase(account.getAccountType())) {
@@ -356,11 +378,26 @@ public class AuthServiceImpl implements AuthService {
         cryptoService.storeResetToken(token, account.getId(), Duration.ofSeconds(ttlSeconds));
         String resetLink = buildPasswordResetLink(token, accountType);
         Map<String, Object> vars = new LinkedHashMap<>();
-        vars.put("app_name", configApi.getValue("COPYRIGHT_TEXT", "HEI"));
+        vars.put("app_name", appName());
         vars.put("reset_link", resetLink);
         vars.put("email", email);
         vars.put("expire_minutes", String.valueOf(Math.max(1, ttlSeconds / 60)));
         mailSenderFacade.sendTemplated("RESET_PASSWORD_CODE", email, vars);
+    }
+
+    @Override
+    public void forgotPasswordByPhone(ForgotPasswordByPhoneParam request, AccountType accountType) {
+        cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
+        String phone = normalizeTarget("PHONE", request.getPhone());
+        AuditSnapshots.subject(phone);
+        AccountInfo account = accountApi.findByIdentifier(phone, "PHONE");
+        if (account == null || !accountType.name().equalsIgnoreCase(account.getAccountType())) {
+            return;
+        }
+        String code = sixDigitCode();
+        Duration ttl = otpTtl();
+        cryptoService.storeResetPasswordOtp(accountType.name(), phone, code, ttl);
+        sendCodeMailOrSms("PHONE", phone, "RESET_PASSWORD_CODE", code, ttl);
     }
 
     private String buildPasswordResetLink(String token, AccountType accountType) {
@@ -389,11 +426,43 @@ public class AuthServiceImpl implements AuthService {
             throw new BizException("重置令牌无效");
         }
         String accountName = accountApi.findIdentifier(accountId, "ACCOUNT");
+        AuditSnapshots.before(account);
+        AuditSnapshots.subject(StringUtils.hasText(accountName) ? accountName : accountId);
         String email = accountApi.findIdentifier(accountId, "EMAIL");
         String phone = accountApi.findIdentifier(accountId, "PHONE");
         passwordPolicyApi.assertValid(rawPassword, accountId, accountName, email, phone);
         accountApi.updatePasswordHash(accountId, accountApi.encodePassword(rawPassword));
         accountApi.recordPasswordHistory(accountId, rawPassword, accountId, "self_reset");
+        AccountInfo updated = accountApi.getById(accountId);
+        AuditSnapshots.after(updated != null ? updated : account);
+        notifyPasswordResetSuccess(accountId, accountName, email, phone);
+    }
+
+    @Override
+    @Transactional
+    public void resetPasswordByPhone(ResetPasswordByPhoneParam request, AccountType accountType) {
+        cryptoService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaValue());
+        String phone = normalizeTarget("PHONE", request.getPhone());
+        String otpCode = request.getOtpCode() == null ? "" : request.getOtpCode().trim();
+        if (!cryptoService.consumeResetPasswordOtp(accountType.name(), phone, otpCode)) {
+            throw new BizException("验证码无效或已过期");
+        }
+        AccountInfo account = accountApi.findByIdentifier(phone, "PHONE");
+        if (account == null || !accountType.name().equalsIgnoreCase(account.getAccountType())) {
+            throw new BizException("账号不存在");
+        }
+        String rawPassword = cryptoService.decryptPassword(request.getPasswordKeyId(), request.getPassword());
+        String accountId = account.getId();
+        String accountName = accountApi.findIdentifier(accountId, "ACCOUNT");
+        AuditSnapshots.before(account);
+        AuditSnapshots.subject(StringUtils.hasText(accountName) ? accountName : accountId);
+        String email = accountApi.findIdentifier(accountId, "EMAIL");
+        passwordPolicyApi.assertValid(rawPassword, accountId, accountName, email, phone);
+        accountApi.updatePasswordHash(accountId, accountApi.encodePassword(rawPassword));
+        accountApi.recordPasswordHistory(accountId, rawPassword, accountId, "self_reset_phone");
+        AccountInfo updated = accountApi.getById(accountId);
+        AuditSnapshots.after(updated != null ? updated : account);
+        notifyPasswordResetSuccess(accountId, accountName, email, phone);
     }
 
     @Override
@@ -405,6 +474,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout() {
+        LoginHelper.currentUser().ifPresent(user -> AuditSnapshots.subject(
+                StringUtils.hasText(user.getAccount()) ? user.getAccount() : user.getAccountId()));
         LoginHelper.currentUser().ifPresent(user -> LoginHelper.logout(user.getAccountType()));
     }
 
@@ -459,11 +530,15 @@ public class AuthServiceImpl implements AuthService {
         if (account == null) {
             throw new BizException(404, "账号不存在");
         }
+        AuditSnapshots.before(account);
+        AuditSnapshots.subject(accountApi.findIdentifier(account.getId(), "ACCOUNT"));
         // 标记注销后立即踢出当前会话
         accountApi.cancelAccount(
                 loginUser.getAccountId(),
                 loginUser.getAccountId(),
                 request == null ? null : request.getCancelReason());
+        AccountInfo updated = accountApi.getById(loginUser.getAccountId());
+        AuditSnapshots.after(updated != null ? updated : account);
         LoginHelper.logout(loginUser.getAccountType());
     }
 
@@ -505,6 +580,7 @@ public class AuthServiceImpl implements AuthService {
         if (account == null) {
             throw new BizException(404, "账号不存在");
         }
+        AuditSnapshots.before(account);
         verifyChangePassword(account, loginUser.getAccountType(), rawOld, otpCode);
         // 校验密码策略后更新哈希与历史
         String accountName = accountApi.findIdentifier(account.getId(), "ACCOUNT");
@@ -513,6 +589,8 @@ public class AuthServiceImpl implements AuthService {
         passwordPolicyApi.assertValid(rawNew, account.getId(), accountName, email, phone);
         accountApi.updatePasswordHash(account.getId(), accountApi.encodePassword(rawNew));
         accountApi.recordPasswordHistory(account.getId(), rawNew, account.getId(), "self_update");
+        AccountInfo updated = accountApi.getById(account.getId());
+        AuditSnapshots.after(updated != null ? updated : account);
     }
 
     @Transactional
@@ -528,6 +606,7 @@ public class AuthServiceImpl implements AuthService {
         if (!accountApi.matchesPassword(rawPassword, account.getPasswordHash())) {
             throw new BizException("密码错误");
         }
+        AuditSnapshots.before(account);
         if (phoneLoginEnabled && !StringUtils.hasText(phone)) {
             throw new BizException("开启手机登录需填写手机号");
         }
@@ -551,6 +630,8 @@ public class AuthServiceImpl implements AuthService {
         } else {
             portalUserProfileApi.updatePhone(loginUser.getAccountId(), normalized);
         }
+        AccountInfo updated = accountApi.getById(account.getId());
+        AuditSnapshots.after(updated != null ? updated : account);
     }
 
     @Transactional
@@ -566,6 +647,7 @@ public class AuthServiceImpl implements AuthService {
         if (!accountApi.matchesPassword(rawPassword, account.getPasswordHash())) {
             throw new BizException("密码错误");
         }
+        AuditSnapshots.before(account);
         if (emailLoginEnabled && !StringUtils.hasText(email)) {
             throw new BizException("开启邮箱登录需填写邮箱");
         }
@@ -589,6 +671,8 @@ public class AuthServiceImpl implements AuthService {
         } else {
             portalUserProfileApi.updateEmail(loginUser.getAccountId(), normalized);
         }
+        AccountInfo updated = accountApi.getById(account.getId());
+        AuditSnapshots.after(updated != null ? updated : account);
     }
 
     @Override
@@ -599,10 +683,12 @@ public class AuthServiceImpl implements AuthService {
         if (other != null && !loginUser.getAccountId().equals(other.getId())) {
             throw new BizException("邮箱已被使用");
         }
+        String current = accountApi.findIdentifier(loginUser.getAccountId(), "EMAIL");
+        String scene = StringUtils.hasText(current) ? "CHANGE_EMAIL_CODE" : "BIND_EMAIL_CODE";
         String code = sixDigitCode();
         Duration ttl = otpTtl();
         cryptoService.storeBindOtp(loginUser.getAccountType().name(), "EMAIL", loginUser.getAccountId(), normalized, code, ttl);
-        sendCodeMailOrSms("EMAIL", normalized, "BIND_EMAIL_CODE", code, ttl);
+        sendCodeMailOrSms("EMAIL", normalized, scene, code, ttl);
     }
 
     @Override
@@ -613,10 +699,12 @@ public class AuthServiceImpl implements AuthService {
         if (other != null && !loginUser.getAccountId().equals(other.getId())) {
             throw new BizException("手机号已被使用");
         }
+        String current = accountApi.findIdentifier(loginUser.getAccountId(), "PHONE");
+        String scene = StringUtils.hasText(current) ? "CHANGE_PHONE_CODE" : "BIND_PHONE_CODE";
         String code = sixDigitCode();
         Duration ttl = otpTtl();
         cryptoService.storeBindOtp(loginUser.getAccountType().name(), "PHONE", loginUser.getAccountId(), normalized, code, ttl);
-        sendCodeMailOrSms("PHONE", normalized, "BIND_PHONE_CODE", code, ttl);
+        sendCodeMailOrSms("PHONE", normalized, scene, code, ttl);
     }
 
     private LoginResult issueSession(AccountInfo account, AccountType accountType, Boolean rememberMe, String loginAccount) {
@@ -662,6 +750,7 @@ public class AuthServiceImpl implements AuthService {
         response.setExpiresIn(LoginHelper.stpLogic(accountType).getTokenTimeout());
         response.setPasswordExpiryWarningDays(passwordExpiryWarningDays(account.getId()));
         applyForceBindFlags(response, accountType, account.getId());
+        maybeNotifyPasswordExpiring(account);
         return response;
     }
 
@@ -842,7 +931,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void sendCodeMailOrSms(String channel, String target, String templateScene, String code, Duration ttl) {
         Map<String, Object> vars = new LinkedHashMap<>();
-        vars.put("app_name", configApi.getValue("COPYRIGHT_TEXT", "HEI"));
+        vars.put("app_name", appName());
         vars.put("code", code);
         vars.put("expire_minutes", String.valueOf(Math.max(1, ttl.toMinutes())));
         if ("EMAIL".equals(channel)) {
@@ -856,8 +945,67 @@ public class AuthServiceImpl implements AuthService {
         throw new BizException("不支持的发送渠道");
     }
 
+    private String appName() {
+        return ConfigAppNames.resolve(configApi);
+    }
+
+    private void notifyPasswordResetSuccess(String accountId, String accountName, String email, String phone) {
+        Map<String, Object> vars = new LinkedHashMap<>();
+        vars.put("app_name", appName());
+        vars.put("account", nullToEmpty(accountName));
+        if (StringUtils.hasText(email)) {
+            try {
+                mailSenderFacade.sendTemplated("RESET_PASSWORD_SUCCESS", email.trim(), vars);
+            } catch (Exception ignored) {
+                // 尽力发送
+            }
+        }
+        if (StringUtils.hasText(phone)) {
+            try {
+                smsSenderFacade.sendTemplated("RESET_PASSWORD_SUCCESS", phone.trim(), vars);
+            } catch (Exception ignored) {
+                // 尽力发送
+            }
+        }
+    }
+
+    private void maybeNotifyPasswordExpiring(AccountInfo account) {
+        if (account == null || !StringUtils.hasText(account.getId())) {
+            return;
+        }
+        Integer remainingDays = passwordExpiryWarningDays(account.getId());
+        if (remainingDays == null || remainingDays <= 0) {
+            return;
+        }
+        if (!cryptoService.tryMarkPasswordExpiryNotified(account.getId())) {
+            return;
+        }
+        String email = accountApi.findIdentifier(account.getId(), "EMAIL");
+        String phone = accountApi.findIdentifier(account.getId(), "PHONE");
+        String accountName = accountApi.findIdentifier(account.getId(), "ACCOUNT");
+        Map<String, Object> vars = new LinkedHashMap<>();
+        vars.put("app_name", appName());
+        vars.put("account", nullToEmpty(accountName));
+        vars.put("remaining_days", String.valueOf(remainingDays));
+        if (StringUtils.hasText(email)) {
+            try {
+                mailSenderFacade.sendTemplated("PASSWORD_EXPIRING", email.trim(), vars);
+            } catch (Exception ignored) {
+                // 尽力发送
+            }
+        }
+        if (StringUtils.hasText(phone)) {
+            try {
+                smsSenderFacade.sendTemplated("PASSWORD_EXPIRING", phone.trim(), vars);
+            } catch (Exception ignored) {
+                // 尽力发送
+            }
+        }
+    }
+
     private Duration otpTtl() {
-        return DEFAULT_OTP_TTL;
+        int seconds = configApi.getInt("AUTH_OTP_TTL_SECONDS", DEFAULT_OTP_TTL_SECONDS);
+        return Duration.ofSeconds(Math.max(60, seconds));
     }
 
     private String changeVerifyMethod() {

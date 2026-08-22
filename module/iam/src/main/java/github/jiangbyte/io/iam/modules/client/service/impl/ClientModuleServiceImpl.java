@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.iam.modules.client.convert.SysClientConvert;
 import github.jiangbyte.io.iam.modules.client.entity.SysClientModule;
@@ -46,6 +47,7 @@ public class ClientModuleServiceImpl extends ServiceImpl<SysClientModuleMapper, 
             module.setAccountType(module.getAccountType().trim().toUpperCase());
         }
         this.save(module);
+        AuditSnapshots.created(module);
     }
 
     @Override
@@ -55,6 +57,7 @@ public class ClientModuleServiceImpl extends ServiceImpl<SysClientModuleMapper, 
         if (module == null) {
             throw new BizException(404, "Client module not found");
         }
+        AuditSnapshots.before(module);
         clientConvert.update(param, module);
         if (!StringUtils.hasText(module.getAccountType())) {
             module.setAccountType(AccountType.ADMIN.name());
@@ -62,6 +65,7 @@ public class ClientModuleServiceImpl extends ServiceImpl<SysClientModuleMapper, 
             module.setAccountType(module.getAccountType().trim().toUpperCase());
         }
         this.updateById(module);
+        AuditSnapshots.after(module);
     }
 
     @Override
@@ -71,6 +75,8 @@ public class ClientModuleServiceImpl extends ServiceImpl<SysClientModuleMapper, 
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysClientModule> modules = this.listByIds(ids);
+        AuditSnapshots.deletedAll(modules);
         this.removeByIds(ids);
     }
 

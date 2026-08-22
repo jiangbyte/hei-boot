@@ -40,20 +40,20 @@ const rules = computed<FormRules>(() => ({
 <#list target.form_fields as field><#if field.is_required || field.is_json>
   ${field.name}: [
 <#if field.is_required>
-<#if field.python_type == "bool">
+<#if field.data_type == "bool">
     {
       validator: () => typeof state.formModel.${field.name} === 'boolean',
       message: '请选择${field.label}',
       trigger: 'change',
     },
-<#elseif (field.python_type == "int" || field.python_type == "float")>
+<#elseif (field.data_type == "int" || field.data_type == "float")>
     {
       validator: () => typeof state.formModel.${field.name} === 'number' && Number.isFinite(state.formModel.${field.name}),
       message: '请输入${field.label}',
       trigger: ['input', 'blur'],
     },
 <#else>
-    createRequiredRule('${field.label}', <#if field.form_widget == "dict" || field.python_type == "bool" || field.is_datetime>'change'<#else>'input'</#if>),
+    createRequiredRule('${field.label}', <#if field.form_widget == "dict" || field.data_type == "bool" || field.is_datetime>'change'<#else>'input'</#if>),
 </#if>
 </#if>
 <#if field.is_json>
@@ -93,10 +93,10 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
 <#list target.form_fields as field><#if field.is_bool>
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireBool(String(data.${field.name})),
 </#if></#list>
-<#list target.form_fields as field><#if field.python_type == "int">
+<#list target.form_fields as field><#if field.data_type == "int">
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireInt(String(data.${field.name})),
 </#if></#list>
-<#list target.form_fields as field><#if field.python_type == "float">
+<#list target.form_fields as field><#if field.data_type == "float">
     ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireFloat(String(data.${field.name})),
 </#if></#list>
 <#list target.form_fields as field><#if field.is_datetime>
@@ -203,7 +203,7 @@ defineExpose({
         <NForm ref="formRef" :model="state.formModel" :rules="rules" label-placement="left" label-width="110" :disabled="state.loading || state.submitLoading">
 <#list target.form_fields as field>
           <NFormItem label="${field.label}" path="${field.name}">
-<#if field.form_widget == "number" || (field.python_type == "int" || field.python_type == "float")>
+<#if field.form_widget == "number" || (field.data_type == "int" || field.data_type == "float")>
             <NInputNumber v-model:value="state.formModel.${field.name}" class="w-full" />
 <#elseif field.form_widget == "textarea">
             <NInput v-model:value="state.formModel.${field.name}" type="textarea" :autosize="{ minRows: 3, maxRows: 8 }" />
@@ -211,9 +211,9 @@ defineExpose({
             <DictSelect v-model="state.formModel.${field.name}" dict-code="${field.dict_code}" />
 <#elseif field.is_json>
             <NInput v-model:value="state.formModel.${field.name}" type="textarea" :autosize="{ minRows: 4, maxRows: 12 }" />
-<#elseif field.python_type == "bool">
+<#elseif field.data_type == "bool">
             <NSwitch v-model:value="state.formModel.${field.name}" />
-<#elseif field.form_widget == "datetime" || field.python_type == "datetime">
+<#elseif field.form_widget == "datetime" || field.data_type == "datetime">
             <NDatePicker v-model:formatted-value="state.formModel.${field.name}" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" class="w-full" clearable />
 <#else>
             <NInput v-model:value="state.formModel.${field.name}" />

@@ -14,6 +14,8 @@ import lombok.EqualsAndHashCode;
 public class SysAuditPageParam extends PageQuery {
     private String module;
     private String action;
+    /** 排除指定 action（如 login），与 action 互斥优先用 action。 */
+    private String excludeAction;
     private String accountId;
     private Boolean success;
 }

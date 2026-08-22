@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.dict.convert.SysDictConvert;
 import github.jiangbyte.io.sys.modules.dict.entity.SysDict;
@@ -80,6 +81,7 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
         }
         SysDict dict = dictConvert.toEntity(param);
         this.save(dict);
+        AuditSnapshots.created(dict);
         refreshTransCache();
     }
 
@@ -98,8 +100,10 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
         if (existing != null && !dict.getId().equals(existing.getId())) {
             throw new BizException("Dict code already exists");
         }
+        AuditSnapshots.before(dict);
         dictConvert.update(param, dict);
         this.updateById(dict);
+        AuditSnapshots.after(dict);
         refreshTransCache();
     }
 
@@ -110,6 +114,8 @@ public class DictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impleme
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysDict> dicts = this.listByIds(ids);
+        AuditSnapshots.deletedAll(dicts);
         this.removeByIds(ids);
         refreshTransCache();
     }

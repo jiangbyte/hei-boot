@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.dept.support.DataScopeResolver;
@@ -42,6 +43,7 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
     public void create(SysPositionAddParam param) {
         SysPosition position = positionConvert.toEntity(param);
         this.save(position);
+        AuditSnapshots.created(position);
     }
 
     @Override
@@ -53,8 +55,10 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 position.getCreatedBy(), position.getOwnerDeptId(), "iam:position:page");
+        AuditSnapshots.before(position);
         positionConvert.update(param, position);
         this.updateById(position);
+        AuditSnapshots.after(position);
     }
 
     @Override
@@ -70,6 +74,7 @@ public class PositionServiceImpl extends ServiceImpl<SysPositionMapper, SysPosit
             dataScopeResolver.assertOwnerOrDeptAccessible(
                     position.getCreatedBy(), position.getOwnerDeptId(), scope);
         }
+        AuditSnapshots.deletedAll(positions);
         this.removeByIds(ids);
     }
 

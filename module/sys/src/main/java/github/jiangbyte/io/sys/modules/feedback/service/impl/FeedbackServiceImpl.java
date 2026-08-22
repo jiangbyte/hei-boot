@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.sys.modules.feedback.convert.SysFeedbackConvert;
@@ -90,6 +91,7 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
         if (entity == null) {
             throw new BizException(404, "反馈不存在");
         }
+        AuditSnapshots.before(entity);
         if (StringUtils.hasText(param.getStatus())) {
             entity.setStatus(param.getStatus());
         }
@@ -99,6 +101,7 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
             entity.setRepliedAt(OffsetDateTime.now());
         }
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Transactional
@@ -110,6 +113,8 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysFeedback> entities = this.listByIds(ids);
+        AuditSnapshots.deletedAll(entities);
         this.removeByIds(ids);
     }
 
@@ -134,6 +139,7 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
         entity.setSubmitterAccountType(MessageAuthSupport.accountType(user));
         entity.setSubmitterAccountId(user.getAccountId());
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @ReadDataSource

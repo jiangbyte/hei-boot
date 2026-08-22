@@ -46,7 +46,7 @@
 <table>
   <tr>
     <td width="50%"><img src="docs/images/admin-login.png" alt="管理端登录" /></td>
-    <td width="50%"><img src="docs/images/admin-dashboard.png" alt="运营工作台" /></td>
+    <td width="50%"><img src="docs/images/admin-dashboard.png" alt="工作台" /></td>
   </tr>
   <tr>
     <td align="center">登录</td>
@@ -162,7 +162,7 @@
 - **对象存储**：S3 兼容存储（如 RustFS / MinIO / 阿里云 OSS 等），直链或预签名访问
 - **运维能力**：操作审计与告警、登录日志、运营工作台（概览与近 7 日趋势）、内置任务调度（`sys_job`）
 - **代码生成**：单表 / 树表 / 主子表方案，预览与 ZIP 下载（含前端与菜单权限 SQL）
-- **三端前端**：`web/admin`（Vue 3 + Naive UI）、`web/portal`（React + Ant Design）、`web/admin-uniapp`（uni-app）
+- **三端前端**：[`hei-admin`](https://github.com/jiangbyte/hei-admin)（Vue 3 + Naive UI）、[`hei-portal`](https://github.com/jiangbyte/hei-portal)（React + Ant Design）、[`hei-admin-uniapp`](https://github.com/jiangbyte/hei-admin-uniapp)（uni-app）
 
 ## 技术栈
 
@@ -184,16 +184,14 @@ hei-boot
 ├── app/admin                 # 可启动应用（Admin + Portal API）
 ├── common/                   # 公共能力（web / security / mybatis / redis / oss / job / log …）
 ├── module-api/               # 模块对外 API 契约
-├── module/                   # 业务实现（auth / iam / sys / profile / dashboard / biz）
-├── web/
-│   ├── admin                 # 管理端（Vue 3）
-│   ├── portal                # 门户（React）
-│   └── admin-uniapp          # 管理端 uni-app
+├── module/                   # 业务实现（auth / iam / sys / profile / workspace / biz）
 ├── scripts/db.sql            # PostgreSQL 源 dump
 ├── scripts/db.postgresql.sql # PostgreSQL 结构 + 种子（无 jsonb）
 ├── scripts/db.mysql.sql      # MySQL 结构 + 种子
 └── docs/images               # README 截图
 ```
+
+前端已拆分为姊妹项目：[hei-admin](../hei-admin)、[hei-portal](../hei-portal)、[hei-admin-uniapp](../hei-admin-uniapp)。
 
 ## 快速开始
 
@@ -254,13 +252,14 @@ mvn -pl app/admin -am spring-boot:run
 
 ```bash
 # 管理端 → http://127.0.0.1:5173
-cd web/admin && pnpm install && pnpm dev
+cd ../hei-admin && pnpm install && pnpm dev
 
 # 门户 → http://127.0.0.1:5174
-cd web/portal && pnpm install && pnpm dev
-```
+cd ../hei-portal && pnpm install && pnpm dev
 
-uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
+# 管理端 uni-app H5
+cd ../hei-admin-uniapp && pnpm install && pnpm dev:h5
+```
 
 ## 默认账号
 
@@ -275,9 +274,9 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 
 | 文档 | 说明 |
 | --- | --- |
-| [`web/admin/README.md`](web/admin/README.md) | 管理端前端说明与环境变量 |
-| [`web/portal/README.md`](web/portal/README.md) | 门户前端说明与环境变量 |
-| [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md) | uni-app 端说明 |
+| [`../hei-admin/README.md`](../hei-admin/README.md) | 管理端前端说明与环境变量 |
+| [`../hei-portal/README.md`](../hei-portal/README.md) | 门户前端说明与环境变量 |
+| [`../hei-admin-uniapp/README.md`](../hei-admin-uniapp/README.md) | 管理端 uni-app 说明 |
 | [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml) | 开发环境配置（数据源 / Redis / 存储） |
 | [`scripts/db.postgresql.sql`](scripts/db.postgresql.sql) | PostgreSQL 结构与种子数据 |
 | [`scripts/db.mysql.sql`](scripts/db.mysql.sql) | MySQL 结构与种子数据 |
@@ -287,6 +286,9 @@ uni-app 端见 [`web/admin-uniapp/README.md`](web/admin-uniapp/README.md)。
 | 项目 | 说明 | 协议 |
 | --- | --- | --- |
 | [**hei-boot**](https://github.com/jiangbyte/hei-boot) | Spring Boot 工程化脚手架（本仓库） | Apache License 2.0 |
+| [**hei-admin**](https://github.com/jiangbyte/hei-admin) | Vue 3 管理端前端 | Apache License 2.0 |
+| [**hei-portal**](https://github.com/jiangbyte/hei-portal) | React 门户前端 | Apache License 2.0 |
+| [**hei-admin-uniapp**](https://github.com/jiangbyte/hei-admin-uniapp) | uni-app 管理端移动端 | Apache License 2.0 |
 | [**hei-gin**](https://github.com/jiangbyte/hei-gin) | Go 轻量级后端框架 | Apache License 2.0 |
 | [**hei-fastapi**](https://github.com/jiangbyte/hei-fastapi) | FastAPI 异步脚手架 | Apache License 2.0 |
 

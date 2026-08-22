@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -50,6 +52,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         job.setNextRunTime(JobCronUtil.computeNextRunTime(
                 job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
         this.save(job);
+        AuditSnapshots.created(job);
     }
 
     @Override
@@ -61,6 +64,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         }
         String oldType = job.getExecuteType();
         String oldConfig = job.getTriggerConfig();
+        AuditSnapshots.before(job);
         jobConvert.update(param, job);
         JobCronUtil.validate(job.getExecuteType(), job.getTriggerConfig());
         // 触发配置变更后按新配置重置下次执行时间
@@ -69,6 +73,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
                     job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
         }
         this.updateById(job);
+        AuditSnapshots.after(job);
     }
 
     @Override
@@ -77,6 +82,8 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<SysJob> jobs = this.listByIds(param.getIds());
+        AuditSnapshots.deletedAll(jobs);
         this.removeByIds(param.getIds());
     }
 
@@ -109,6 +116,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
         if (job == null) {
             throw new BizException(404, "Job not found");
         }
+        AuditSnapshots.before(job);
         job.setEnabled(param.getEnabled());
         // 重新启用时按当前时间重置调度，避免沿用暂停前的过期时间立即触发
         if (Boolean.TRUE.equals(param.getEnabled())) {
@@ -116,6 +124,7 @@ public class JobServiceImpl extends ServiceImpl<SysJobMapper, SysJob> implements
                     job.getExecuteType(), job.getTriggerConfig(), OffsetDateTime.now()));
         }
         this.updateById(job);
+        AuditSnapshots.after(job);
     }
 
     @Override

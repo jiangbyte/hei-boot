@@ -1,7 +1,7 @@
 package github.jiangbyte.io.sys.modules.codegen.support;
 
 /**
- * 数据库类型到 Java / Python / TypeScript 类型映射工具。
+ * 数据库类型到语义类型 / 前端类型 / Java 类型映射工具。
  *
  * Author: Charlie
  */
@@ -10,7 +10,10 @@ public final class DbTypeMapper {
     private DbTypeMapper() {
     }
 
-    public static String[] toPythonAndTs(String dataType, String udtName) {
+    /**
+     * @return [dataType, frontendType]
+     */
+    public static String[] toDataAndFrontendType(String dataType, String udtName) {
         String raw = (udtName == null || udtName.isBlank() ? dataType : udtName).toLowerCase().trim();
         // MySQL COLUMN_TYPE 可能为 tinyint(1)、varchar(64) 等
         String type = raw;
@@ -44,11 +47,11 @@ public final class DbTypeMapper {
         };
     }
 
-    public static String toJavaType(String pythonType) {
-        if (pythonType == null) {
+    public static String toJavaType(String dataType) {
+        if (dataType == null) {
             return "String";
         }
-        return switch (pythonType) {
+        return switch (dataType) {
             case "int" -> "Integer";
             case "float" -> "java.math.BigDecimal";
             case "bool" -> "Boolean";

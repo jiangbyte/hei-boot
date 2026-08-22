@@ -19,7 +19,7 @@
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>iam</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>sys</artifactId></dependency>
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>profile</artifactId></dependency>
-        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>dashboard</artifactId></dependency>
+        <dependency><groupId>github.jiangbyte.io</groupId><artifactId>workspace</artifactId></dependency>
         <!-- sample module/biz: see profile with-biz (activeByDefault); prod: -P'!with-biz' -->
 
         <dependency><groupId>github.jiangbyte.io</groupId><artifactId>common-oss</artifactId></dependency>

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.biz.modules.cg_test_order.convert.CgTestOrderConvert;
 import github.jiangbyte.io.biz.modules.cg_test_order.entity.CgTestOrder;
@@ -45,6 +46,7 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
         // 入参转实体并持久化
         CgTestOrder entity = cgTestOrderConvert.toEntity(param);
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -57,8 +59,10 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
             throw new BizException(404, "CgTestOrder not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestOrderConvert.update(param, entity);
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -67,6 +71,8 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestOrder> entities = this.listByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除
         this.removeByIds(param.getIds());
     }
@@ -103,6 +109,7 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
         // 入参转子实体并插入
         CgTestOrderItem entity = cgTestOrderItemConvert.toEntity(param);
         cgTestOrderItemMapper.insert(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -115,8 +122,10 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
             throw new BizException(404, "CgTestOrderItem not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestOrderItemConvert.update(param, entity);
         cgTestOrderItemMapper.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -125,6 +134,8 @@ public class CgTestOrderServiceImpl extends ServiceImpl<CgTestOrderMapper, CgTes
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestOrderItem> entities = cgTestOrderItemMapper.selectByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除子实体
         cgTestOrderItemMapper.deleteBatchIds(param.getIds());
     }

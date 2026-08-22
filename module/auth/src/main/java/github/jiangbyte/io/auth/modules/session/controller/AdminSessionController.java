@@ -14,6 +14,7 @@ import github.jiangbyte.io.auth.modules.session.result.SessionTokenResult;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -34,6 +35,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 管理端在线会话 API：统计、分页查询、Token 列表及按账号/Token 强制下线。
@@ -154,6 +157,16 @@ public class AdminSessionController {
     @SaCheckPermission(value = "auth:session:exit", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "auth_session", action = "exit")
     public ApiResponse<Void> exit(@Valid @RequestBody SessionExitParam request) {
+        List<String> targets = request.getTargets().stream()
+                .map(target -> {
+                    String accountId = target.getAccountId();
+                    if (!StringUtils.hasText(target.getAccountType())) {
+                        return accountId;
+                    }
+                    return accountId + "（" + target.getAccountType() + "）";
+                })
+                .collect(Collectors.toList());
+        AuditSnapshots.after(Map.of("账号", targets));
         for (SessionExitParam.Target target : request.getTargets()) {
             resolveLogic(target.getAccountType()).logout(target.getAccountId());
         }
@@ -166,6 +179,11 @@ public class AdminSessionController {
     @OperationAudit(resourceType = "auth_session", action = "token_exit")
     public ApiResponse<Void> tokenExit(@Valid @RequestBody SessionTokenExitParam request) {
         LinkedHashSet<String> tokens = new LinkedHashSet<>(request.getTokens());
+        List<String> maskedTokens = tokens.stream()
+                .filter(StringUtils::hasText)
+                .map(AdminSessionController::maskToken)
+                .collect(Collectors.toList());
+        AuditSnapshots.after(Map.of("会话", maskedTokens));
         for (String token : tokens) {
             if (!StringUtils.hasText(token)) {
                 continue;
@@ -375,6 +393,17 @@ public class AdminSessionController {
 
     private static boolean containsIgnoreCase(String value, String keyword) {
         return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private static String maskToken(String token) {
+        if (!StringUtils.hasText(token)) {
+            return "";
+        }
+        String value = token.trim();
+        if (value.length() <= 8) {
+            return "****";
+        }
+        return value.substring(0, 4) + "****" + value.substring(value.length() - 4);
     }
 
     private static String formatEpoch(long epochMillis) {

@@ -168,7 +168,7 @@
             </dependency>
             <dependency>
                 <groupId>github.jiangbyte.io</groupId>
-                <artifactId>dashboard</artifactId>
+                <artifactId>workspace</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

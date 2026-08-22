@@ -12,6 +12,7 @@ import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
@@ -39,7 +40,9 @@ import github.jiangbyte.io.iam.modules.account.result.SysAccountResult;
 import github.jiangbyte.io.iam.modules.account.support.AccountAuthorization;
 import github.jiangbyte.io.iam.modules.account.support.AccountLifecycleNotifier;
 import github.jiangbyte.io.iam.modules.account.support.PasswordHelper;
+import github.jiangbyte.io.iam.modules.client.mapper.SysClientResourceMapper;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
+import github.jiangbyte.io.iam.modules.dept.mapper.SysDeptMapper;
 import github.jiangbyte.io.iam.modules.dept.result.SysDeptGrantResult;
 import github.jiangbyte.io.iam.modules.dept.support.DataScopeResolver;
 import github.jiangbyte.io.sys.config.ConfigApi;
@@ -47,8 +50,10 @@ import github.jiangbyte.io.iam.modules.group.entity.SysGroup;
 import github.jiangbyte.io.iam.modules.group.mapper.SysGroupMapper;
 import github.jiangbyte.io.iam.modules.relation.constants.IamRelationTypes;
 import github.jiangbyte.io.iam.modules.relation.service.IamRelationService;
+import github.jiangbyte.io.iam.modules.resource.mapper.SysResourceMapper;
 import github.jiangbyte.io.iam.modules.resource.result.SysResourceOwnResult;
 import github.jiangbyte.io.iam.modules.resource.service.ResourceService;
+import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import github.jiangbyte.io.iam.modules.role.entity.SysRole;
 import github.jiangbyte.io.iam.modules.role.mapper.SysRoleMapper;
 import github.jiangbyte.io.sys.file.FileApi;
@@ -96,6 +101,9 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     private final DataScopeResolver dataScopeResolver;
     private final SysRoleMapper roleMapper;
     private final SysGroupMapper groupMapper;
+    private final SysDeptMapper deptMapper;
+    private final SysResourceMapper resourceMapper;
+    private final SysClientResourceMapper clientResourceMapper;
     private final ResourceService resourceService;
     private final ClientResourceService clientResourceService;
     private final ConfigApi configApi;
@@ -373,6 +381,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
         upsertProfile(account, param.getName(), param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
+        AuditSnapshots.created(account);
     }
 
     @Override
@@ -407,6 +416,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             throw new BizException("Account identifier already exists");
         }
         String previousStatus = account.getAccountStatus();
+        AuditSnapshots.before(account);
         // 合并字段、可选改密后落库
         accountConvert.update(param, account);
         if (!StringUtils.hasText(param.getAccountType())) {
@@ -430,6 +440,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
                 param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
         upsertProfile(account, param.getName(), param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
+        AuditSnapshots.after(account);
         String nextStatus = account.getAccountStatus();
         if (StringUtils.hasText(nextStatus)
                 && !"ENABLED".equalsIgnoreCase(nextStatus)
@@ -464,6 +475,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountsAccessible(uniqueIds, "iam:account:page");
+        AuditSnapshots.deletedAll(accounts);
         // 分批清侧车数据后删账号，再踢会话
         for (List<String> batch : BatchPartition.partition(uniqueIds)) {
             cleanupAccountSideData(batch);
@@ -599,11 +611,21 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Transactional
     public void grantRoles(SysAccountGrantRoleParam param) {
         // 全量替换账号角色关系
-        if (getBaseMapper().selectById(param.getId()) == null) {
+        SysAccount account = getBaseMapper().selectById(param.getId());
+        if (account == null) {
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
+        List<String> beforeRoleIds = relationService.listTargetIds(
+                IamRelationTypes.SUBJECT_ACCOUNT,
+                param.getId(),
+                IamRelationTypes.ACCOUNT_ROLE,
+                account.getAccountType());
+        AuditSnapshots.subject(primaryAccountIdentifier(account.getId()));
+        AuditSnapshots.resourceId(param.getId());
+        AuditSnapshots.before(IamAuditLabelSupport.roleIdsField(beforeRoleIds, roleMapper));
         relationService.replaceAccountRoles(param.getId(), param.getRoleIds());
+        AuditSnapshots.after(IamAuditLabelSupport.roleIdsField(param.getRoleIds(), roleMapper));
     }
 
     @Override
@@ -630,11 +652,21 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Transactional
     public void grantGroups(SysAccountGrantGroupParam param) {
         // 全量替换账号用户组关系
-        if (getBaseMapper().selectById(param.getId()) == null) {
+        SysAccount account = getBaseMapper().selectById(param.getId());
+        if (account == null) {
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
+        List<String> beforeGroupIds = relationService.listTargetIds(
+                IamRelationTypes.SUBJECT_ACCOUNT,
+                param.getId(),
+                IamRelationTypes.ACCOUNT_GROUP,
+                account.getAccountType());
+        AuditSnapshots.subject(primaryAccountIdentifier(account.getId()));
+        AuditSnapshots.resourceId(param.getId());
+        AuditSnapshots.before(IamAuditLabelSupport.groupIdsField(beforeGroupIds, groupMapper));
         relationService.replaceAccountGroups(param.getId(), param.getGroupIds());
+        AuditSnapshots.after(IamAuditLabelSupport.groupIdsField(param.getGroupIds(), groupMapper));
     }
 
     @Override
@@ -654,11 +686,17 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Transactional
     public void grantDepts(SysAccountGrantDeptParam param) {
         // 全量替换账号部门关系
-        if (getBaseMapper().selectById(param.getId()) == null) {
+        SysAccount account = getBaseMapper().selectById(param.getId());
+        if (account == null) {
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(param.getId(), "iam:account:page");
+        var beforeGrantInfoList = relationService.listAccountDepts(param.getId());
+        AuditSnapshots.subject(primaryAccountIdentifier(account.getId()));
+        AuditSnapshots.resourceId(param.getId());
+        AuditSnapshots.before(IamAuditLabelSupport.deptGrantField(beforeGrantInfoList, deptMapper));
         relationService.replaceAccountDepts(param.getId(), param.getGrantInfoList());
+        AuditSnapshots.after(IamAuditLabelSupport.deptGrantField(param.getGrantInfoList(), deptMapper));
     }
 
     @Override
@@ -686,11 +724,18 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
+        AuditSnapshots.subject(primaryAccountIdentifier(account.getId()));
+        AuditSnapshots.resourceId(param.getId());
+        var beforeGrants = relationService.listSubjectResourceGrants(
+                IamRelationTypes.SUBJECT_ACCOUNT, param.getId(), account.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantResourceField("授权资源", beforeGrants, resourceMapper));
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 param.getId(),
                 param.getGrantInfoList(),
                 account.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantResourceField(
+                "授权资源", param.getGrantInfoList(), resourceMapper));
     }
 
     @Override
@@ -718,11 +763,18 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             throw new BizException(404, "Account not found");
         }
         dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
+        AuditSnapshots.subject(primaryAccountIdentifier(account.getId()));
+        AuditSnapshots.resourceId(param.getId());
+        var beforeGrants = relationService.listSubjectClientResourceGrants(
+                IamRelationTypes.SUBJECT_ACCOUNT, param.getId(), account.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantClientResourceField("授权资源", beforeGrants, clientResourceMapper));
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_ACCOUNT,
                 param.getId(),
                 param.getGrantInfoList(),
                 account.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantClientResourceField(
+                "授权资源", param.getGrantInfoList(), clientResourceMapper));
     }
 
     @Override

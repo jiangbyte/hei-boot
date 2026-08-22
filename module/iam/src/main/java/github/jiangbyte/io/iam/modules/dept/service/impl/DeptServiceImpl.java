@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
 import github.jiangbyte.io.iam.modules.dept.convert.SysDeptConvert;
@@ -51,6 +52,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
     public void create(SysDeptAddParam param) {
         SysDept dept = deptConvert.toEntity(param);
         this.save(dept);
+        AuditSnapshots.created(dept);
     }
 
     @Override
@@ -61,8 +63,10 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
             throw new BizException(404, "Dept not found");
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(dept.getCreatedBy(), dept.getId(), "iam:dept:page");
+        AuditSnapshots.before(dept);
         deptConvert.update(param, dept);
         this.updateById(dept);
+        AuditSnapshots.after(dept);
     }
 
     @Override
@@ -77,6 +81,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
         for (SysDept dept : depts) {
             dataScopeResolver.assertOwnerOrDeptAccessible(dept.getCreatedBy(), dept.getId(), scope);
         }
+        AuditSnapshots.deletedAll(depts);
         relationService.deleteByTargetIds(IamRelationTypes.TARGET_DEPT, ids);
         this.removeByIds(ids);
     }

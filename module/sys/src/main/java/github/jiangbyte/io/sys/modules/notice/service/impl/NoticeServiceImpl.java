@@ -8,6 +8,7 @@ import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
@@ -78,6 +79,7 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
             entity.setPublishLocations(new HashMap<>());
         }
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Transactional
@@ -90,6 +92,7 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
             throw new BizException(404, "消息不存在");
         }
         normalizeAndValidate(param);
+        AuditSnapshots.before(entity);
         noticeConvert.update(param, entity);
         applyKindDefaults(entity, param.getKind());
         String status = resolveStatus(param.getStatus());
@@ -104,6 +107,7 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
             entity.setPublishLocations(new HashMap<>());
         }
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Transactional
@@ -114,6 +118,8 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysNotice> entities = this.listByIds(ids);
+        AuditSnapshots.deletedAll(entities);
         for (List<String> batch : BatchPartition.partition(ids)) {
             readMapper.delete(Wrappers.<SysNoticeRead>lambdaQuery().in(SysNoticeRead::getNoticeId, batch));
         }
@@ -156,10 +162,12 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
         for (List<String> batch : BatchPartition.partition(param.getIds())) {
             List<SysNotice> entities = this.listByIds(batch);
             for (SysNotice entity : entities) {
+                AuditSnapshots.before(entity);
                 entity.setStatus(MessageConstants.PUBLISHED);
                 entity.setPublishAt(now);
                 entity.setSenderAccountType(senderAccountType);
                 entity.setSenderAccountId(senderAccountId);
+                AuditSnapshots.after(entity);
             }
             if (!entities.isEmpty()) {
                 this.updateBatchById(entities);
@@ -175,8 +183,10 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
         for (List<String> batch : BatchPartition.partition(param.getIds())) {
             List<SysNotice> entities = this.listByIds(batch);
             for (SysNotice entity : entities) {
+                AuditSnapshots.before(entity);
                 entity.setStatus(MessageConstants.REVOKED);
                 entity.setRevokedAt(now);
+                AuditSnapshots.after(entity);
             }
             if (!entities.isEmpty()) {
                 this.updateBatchById(entities);
@@ -195,9 +205,11 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
         if (!MessageConstants.KIND_ANNOUNCEMENT.equals(entity.getKind())) {
             throw new BizException("仅公告支持置顶");
         }
+        AuditSnapshots.before(entity);
         entity.setIsPinned(param.getIsPinned());
         entity.setPinnedUntil(param.getPinnedUntil());
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @ReadDataSource
@@ -266,7 +278,16 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
     public void markRead(SysNoticeReadParam param) {
         // 将指定消息写入已读表
         LoginUser user = MessageAuthSupport.requireUser();
-        markReadInternal(param.getIds(), MessageAuthSupport.accountType(user), user.getAccountId());
+        List<String> ids = param.getIds() == null ? List.of() : param.getIds();
+        List<String> titles = List.of();
+        if (!ids.isEmpty()) {
+            titles = this.listByIds(ids).stream()
+                    .map(SysNotice::getTitle)
+                    .filter(StringUtils::hasText)
+                    .toList();
+        }
+        AuditSnapshots.after(Map.of("消息", titles));
+        markReadInternal(ids, MessageAuthSupport.accountType(user), user.getAccountId());
     }
 
     @Transactional
@@ -275,6 +296,8 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
         LoginUser user = MessageAuthSupport.requireUser();
         String accountType = MessageAuthSupport.accountType(user);
         String accountId = user.getAccountId();
+        int unread = getBaseMapper().countUnread(accountType, accountId, null, OffsetDateTime.now());
+        AuditSnapshots.after(Map.of("已读数量", unread));
         OffsetDateTime now = OffsetDateTime.now();
         final int batchSize = 500;
         int offset = 0;

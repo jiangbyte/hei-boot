@@ -7,6 +7,7 @@ import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.modules.account.support.AccountAuthorization;
@@ -35,6 +36,7 @@ import github.jiangbyte.io.iam.modules.resource.result.SysResourceGrantMenuOptio
 import github.jiangbyte.io.iam.modules.resource.result.SysResourceGrantModuleOptionResult;
 import github.jiangbyte.io.iam.modules.resource.result.SysResourcePermissionOptionResult;
 import github.jiangbyte.io.iam.modules.resource.service.ResourceService;
+import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.tree.Tree;
 import cn.hutool.core.lang.tree.TreeNodeConfig;
@@ -87,6 +89,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
     public void create(SysResourceAddParam param) {
         SysResource resource = resourceConvert.toEntity(param);
         this.save(resource);
+        AuditSnapshots.created(resource);
     }
 
     @Override
@@ -96,8 +99,10 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         if (resource == null) {
             throw new BizException(404, "Resource not found");
         }
+        AuditSnapshots.before(resource);
         resourceConvert.update(param, resource);
         this.updateById(resource);
+        AuditSnapshots.after(resource);
     }
 
     @Override
@@ -107,6 +112,8 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysResource> resources = this.listByIds(ids);
+        AuditSnapshots.deletedAll(resources);
         relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_RESOURCE, ids);
         relationService.deleteByTargetIds(IamRelationTypes.TARGET_RESOURCE, ids);
         this.removeByIds(ids);
@@ -152,8 +159,10 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
                 return List.of();
             }
         }
-        // 2. 查询扁平资源并字典翻译
-        var wrapper = Wrappers.<SysResource>lambdaQuery().orderByAsc(SysResource::getSort);
+        // 2. 查询扁平资源并字典翻译（按钮走独立接口，树中排除 BUTTON/ACTION）
+        var wrapper = Wrappers.<SysResource>lambdaQuery()
+                .notIn(SysResource::getResourceType, List.of(RESOURCE_TYPE_BUTTON, RESOURCE_TYPE_ACTION))
+                .orderByAsc(SysResource::getSort);
         if (moduleIds != null) {
             wrapper.in(SysResource::getModuleId, moduleIds);
         }
@@ -205,9 +214,13 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
     @Transactional
     public void bindPermission(SysResourcePermissionBindParam param) {
         // 绑定资源-权限关系
-        if (this.getById(param.getResourceId()) == null) {
+        SysResource resource = this.getById(param.getResourceId());
+        if (resource == null) {
             throw new BizException(404, "Resource not found");
         }
+        AuditSnapshots.subject(resource.getName());
+        AuditSnapshots.resourceId(param.getResourceId());
+        AuditSnapshots.before(Map.of());
         permissionRegistryService.ensureRegistered(param.getPermissionKey());
         relationService.bindResourcePermission(
                 param.getResourceId(),
@@ -217,6 +230,8 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
                 param.getCustomScopeDeptIds(),
                 param.getSort(),
                 param.getDescription());
+        AuditSnapshots.after(IamAuditLabelSupport.permissionBindField(
+                param.getPermissionKey(), param.getAccountType(), param.getDataScope()));
     }
 
     @Override
@@ -245,6 +260,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         button.setStatus(StringUtils.hasText(param.getStatus()) ? param.getStatus() : IamRelationTypes.STATUS_ENABLED);
         button.setDescription(param.getDescription());
         this.save(button);
+        AuditSnapshots.created(button);
         replaceButtonPermission(button.getId(), param.getPermissionKey(), param.getDataScope(),
                 param.getCustomScopeDeptIds(), param.getSort(), param.getDescription());
     }
@@ -268,6 +284,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
             throw new BizException("Button resource cannot be parent resource");
         }
         permissionRegistryService.ensureRegistered(param.getPermissionKey());
+        AuditSnapshots.before(button);
         button.setParentId(parent.getId());
         button.setCode(param.getCode());
         button.setName(param.getName());
@@ -276,6 +293,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         button.setStatus(StringUtils.hasText(param.getStatus()) ? param.getStatus() : IamRelationTypes.STATUS_ENABLED);
         button.setDescription(param.getDescription());
         this.updateById(button);
+        AuditSnapshots.after(button);
         replaceButtonPermission(button.getId(), param.getPermissionKey(), param.getDataScope(),
                 param.getCustomScopeDeptIds(), param.getSort(), param.getDescription());
     }
@@ -300,6 +318,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
                 throw new BizException("Resource is not a button");
             }
         }
+        AuditSnapshots.deletedAll(buttons);
         // 先批量删权限关系，再分批删按钮资源
         relationService.deleteSubjectRelations(
                 IamRelationTypes.SUBJECT_RESOURCE,
@@ -333,6 +352,7 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
     public void createModule(SysResourceModuleAddParam param) {
         SysResourceModule module = resourceConvert.toModuleEntity(param);
         moduleMapper.insert(module);
+        AuditSnapshots.created(module);
     }
 
     @Override
@@ -342,8 +362,10 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         if (module == null) {
             throw new BizException(404, "Resource module not found");
         }
+        AuditSnapshots.before(module);
         resourceConvert.updateModule(param, module);
         moduleMapper.updateById(module);
+        AuditSnapshots.after(module);
     }
 
     @Override
@@ -353,6 +375,8 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysResourceModule> modules = moduleMapper.selectByIds(ids);
+        AuditSnapshots.deletedAll(modules);
         moduleMapper.deleteByIds(ids);
     }
 
@@ -538,14 +562,51 @@ public class ResourceServiceImpl extends ServiceImpl<SysResourceMapper, SysResou
             resourceIds = auth.getResourceIds();
         }
         // 2. 超管/全权限返回客户端全部启用资源
+        List<SysResource> resources;
         if (superAdmin || allPerms) {
-            return listEnabledResourcesByClient(moduleClient);
+            resources = listEnabledResourcesByClient(moduleClient);
+        } else if (resourceIds == null || resourceIds.isEmpty()) {
+            resources = List.of();
+        } else {
+            // 3. 普通账号按授权 id 补齐祖先后返回
+            resources = listResourcesByIdsWithParents(resourceIds, moduleClient);
         }
-        if (resourceIds == null || resourceIds.isEmpty()) {
-            return List.of();
+        // 工作台作为各角色统一首页入口，管理端始终可见（不依赖单独授权）
+        return ensureWorkbenchHome(resources, moduleClient);
+    }
+
+    /**
+     * 确保管理端可见资源包含工作台菜单，便于任意角色进入统一首页。
+     */
+    private List<SysResource> ensureWorkbenchHome(List<SysResource> resources, String moduleClient) {
+        if (!MODULE_CLIENT_ADMIN.equals(moduleClient)) {
+            return resources;
         }
-        // 3. 普通账号按授权 id 补齐祖先后返回
-        return listResourcesByIdsWithParents(resourceIds, moduleClient);
+        boolean hasHome = resources.stream().anyMatch(item ->
+                "workspace".equals(item.getCode()) || "/workspace".equals(item.getPath()));
+        if (hasHome) {
+            return resources;
+        }
+        Page<SysResource> homePage = this.getBaseMapper().selectPage(
+                new Page<>(1, 1, false),
+                Wrappers.<SysResource>lambdaQuery()
+                        .eq(SysResource::getCode, "workspace")
+                        .eq(SysResource::getStatus, IamRelationTypes.STATUS_ENABLED));
+        SysResource home = homePage.getRecords().isEmpty() ? null : homePage.getRecords().get(0);
+        if (home == null) {
+            return resources;
+        }
+        Set<String> moduleIds = moduleIdsByClient(moduleClient);
+        if (!moduleIds.contains(home.getModuleId())) {
+            return resources;
+        }
+        List<SysResource> merged = new ArrayList<>(resources.size() + 1);
+        merged.add(home);
+        merged.addAll(resources);
+        merged.sort(Comparator
+                .comparing(SysResource::getSort, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(SysResource::getId, Comparator.nullsLast(String::compareTo)));
+        return merged;
     }
 
     private List<SysResource> listEnabledResourcesByClient(String moduleClient) {

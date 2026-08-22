@@ -204,6 +204,24 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
         return stored != null && code != null && stored.equals(code.trim());
     }
 
+    @Override
+    public void storeResetPasswordOtp(String accountType, String phone, String code, Duration ttl) {
+        redissonClient.getBucket(resetPasswordOtpKey(accountType, phone)).set(code, ttl);
+    }
+
+    @Override
+    public boolean consumeResetPasswordOtp(String accountType, String phone, String code) {
+        RBucket<String> bucket = redissonClient.getBucket(resetPasswordOtpKey(accountType, phone));
+        String stored = bucket.getAndDelete();
+        return stored != null && code != null && stored.equals(code.trim());
+    }
+
+    @Override
+    public boolean tryMarkPasswordExpiryNotified(String accountId) {
+        String key = "auth:notify:password-expiring:" + accountId;
+        return redissonClient.getBucket(key).setIfAbsent("1", Duration.ofHours(24));
+    }
+
     private static String captchaKey(String captchaId) {
         return "captcha:" + captchaId;
     }
@@ -230,6 +248,10 @@ public class AuthCryptoServiceImpl implements AuthCryptoService {
 
     private static String bindOtpKey(String accountType, String channel, String accountId, String target) {
         return "auth:otp:bind:" + accountType + ":" + channel + ":" + accountId + ":" + target;
+    }
+
+    private static String resetPasswordOtpKey(String accountType, String phone) {
+        return "auth:otp:reset-password:" + accountType + ":PHONE:" + phone;
     }
 
     private static String toPem(byte[] encoded) {

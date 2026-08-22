@@ -117,4 +117,21 @@ public interface AuthCryptoService {
      */
     boolean consumeBindOtp(String accountType, String channel, String accountId, String target, String code);
 
+    /**
+     * 缓存手机找回密码 OTP。
+     */
+    void storeResetPasswordOtp(String accountType, String phone, String code, Duration ttl);
+
+    /**
+     * 校验并消费手机找回密码 OTP。
+     */
+    boolean consumeResetPasswordOtp(String accountType, String phone, String code);
+
+    /**
+     * 尝试标记密码即将过期通知已发送（24 小时内不重复）。
+     *
+     * @return true 表示本次可发送
+     */
+    boolean tryMarkPasswordExpiryNotified(String accountId);
+
 }

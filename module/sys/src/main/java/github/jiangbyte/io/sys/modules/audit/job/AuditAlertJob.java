@@ -184,7 +184,8 @@ public class AuditAlertJob implements JobHandler {
      */
     private boolean evaluateBulkDelete(RuntimeSettings settings) {
         long threshold = Math.max(1L, settings.getLong("AUDIT_ALERT_BULK_DELETE_THRESHOLD", 20));
-        OffsetDateTime since = OffsetDateTime.now().minusSeconds(300);
+        int windowSeconds = Math.max(60, settings.getInt("AUDIT_ALERT_BULK_DELETE_WINDOW_SECONDS", 300));
+        OffsetDateTime since = OffsetDateTime.now().minusSeconds(windowSeconds);
         List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
                 .ge(SysOperationAuditLog::getCreatedAt, since)
                 .eq(SysOperationAuditLog::getAction, "delete"));
@@ -200,7 +201,8 @@ public class AuditAlertJob implements JobHandler {
             details.put("account_id", entry.getKey());
             details.put("count", entry.getValue());
             details.put("threshold", threshold);
-            String summary = "账户 " + entry.getKey() + " 在 5 分钟内删除了 " + entry.getValue() + " 条记录";
+            details.put("window_seconds", windowSeconds);
+            String summary = "账户 " + entry.getKey() + " 在 " + Math.max(1, windowSeconds / 60) + " 分钟内删除了 " + entry.getValue() + " 条记录";
             fired |= fireAlert(settings, RULE_BULK_DELETE, "WARNING", summary, details, cooldownSeconds(settings));
         }
         return fired;
@@ -213,7 +215,8 @@ public class AuditAlertJob implements JobHandler {
      */
     private boolean evaluateIpAnomaly(RuntimeSettings settings) {
         long threshold = Math.max(1L, settings.getLong("AUDIT_ALERT_IP_ANOMALY_THRESHOLD", 3));
-        OffsetDateTime since = OffsetDateTime.now().minusSeconds(900);
+        int windowSeconds = Math.max(60, settings.getInt("AUDIT_ALERT_IP_ANOMALY_WINDOW_SECONDS", 900));
+        OffsetDateTime since = OffsetDateTime.now().minusSeconds(windowSeconds);
         List<SysOperationAuditLog> logs = auditLogMapper.selectList(Wrappers.<SysOperationAuditLog>lambdaQuery()
                 .ge(SysOperationAuditLog::getCreatedAt, since)
                 .eq(SysOperationAuditLog::getAction, "login")
@@ -233,7 +236,8 @@ public class AuditAlertJob implements JobHandler {
             details.put("account_id", entry.getKey());
             details.put("ip_count", entry.getValue().size());
             details.put("threshold", threshold);
-            String summary = "账户 " + entry.getKey() + " 在 15 分钟内从 "
+            details.put("window_seconds", windowSeconds);
+            String summary = "账户 " + entry.getKey() + " 在 " + Math.max(1, windowSeconds / 60) + " 分钟内从 "
                     + entry.getValue().size() + " 个不同 IP 登录";
             fired |= fireAlert(settings, RULE_IP_ANOMALY, "WARNING", summary, details, cooldownSeconds(settings));
         }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
 import github.jiangbyte.io.sys.file.FileApi;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Banner 服务实现：维护与按窗口筛选。
@@ -51,6 +53,7 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         }
         banner.setInteractionCount(0L);
         this.save(banner);
+        AuditSnapshots.created(banner);
     }
 
     @Override
@@ -62,11 +65,13 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
             // 不存在则抛出业务异常
             throw new BizException(404, "Banner not found");
         }
+        AuditSnapshots.before(banner);
         bannerConvert.update(param, banner);
         if (StringUtils.hasText(banner.getImage())) {
             banner.setImage(fileApi.normalizeObjectName(banner.getImage()));
         }
         this.updateById(banner);
+        AuditSnapshots.after(banner);
     }
 
     @Override
@@ -76,6 +81,8 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysBanner> banners = this.listByIds(ids);
+        AuditSnapshots.deletedAll(banners);
         this.removeByIds(ids);
     }
 
@@ -168,6 +175,11 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
         if (banner.getEndAt() != null && banner.getEndAt().isBefore(now)) {
             throw new BizException("Banner is not publicly visible");
         }
+        String subject = StringUtils.hasText(banner.getTitle())
+                ? banner.getTitle()
+                : (StringUtils.hasText(banner.getDescription()) ? banner.getDescription() : banner.getId());
+        AuditSnapshots.subject(subject);
+        AuditSnapshots.after(Map.of("展示图", subject));
         // 计数先入 Redis 增量，由 bannerFlushInteractions 周期任务刷入 DB（对齐 hei-fastapi）
         stringRedisTemplate.opsForHash().increment(INTERACTION_DELTA_KEY, id, 1L);
     }

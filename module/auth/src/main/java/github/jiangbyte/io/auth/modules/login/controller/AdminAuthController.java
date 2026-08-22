@@ -4,10 +4,12 @@ import github.jiangbyte.io.auth.modules.login.service.AuthService;
 import github.jiangbyte.io.auth.modules.login.param.CancelAccountParam;
 import github.jiangbyte.io.auth.modules.login.result.AuthOptionsResult;
 import github.jiangbyte.io.auth.modules.login.result.CaptchaResult;
+import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.LoginParam;
 import github.jiangbyte.io.auth.modules.login.result.LoginResult;
 import github.jiangbyte.io.auth.modules.login.result.PasswordKeyResult;
+import github.jiangbyte.io.auth.modules.login.param.ResetPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ResetPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -97,12 +99,30 @@ public class AdminAuthController {
         return ApiResponse.ok();
     }
 
+    /** 管理端忘记密码（向绑定手机发送 OTP）。 */
+    @PostMapping("/v1/admin/forgot-password/phone")
+    @RateLimit(key = "admin:forgot-password-phone", permits = 5, windowSeconds = 60)
+    @OperationAudit(resourceType = "auth", action = "forgot_password_phone")
+    public ApiResponse<Void> forgotPasswordByPhone(@Valid @RequestBody ForgotPasswordByPhoneParam request) {
+        authService.forgotPasswordByPhone(request, AccountType.ADMIN);
+        return ApiResponse.ok();
+    }
+
     /** 管理端通过令牌重置密码。 */
     @PostMapping("/v1/admin/reset-password")
     @RateLimit(key = "admin:reset-password", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "reset_password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordParam request) {
         authService.resetPassword(request, AccountType.ADMIN);
+        return ApiResponse.ok();
+    }
+
+    /** 管理端通过手机 OTP 重置密码。 */
+    @PostMapping("/v1/admin/reset-password/phone")
+    @RateLimit(key = "admin:reset-password-phone", permits = 10, windowSeconds = 60)
+    @OperationAudit(resourceType = "auth", action = "reset_password_phone")
+    public ApiResponse<Void> resetPasswordByPhone(@Valid @RequestBody ResetPasswordByPhoneParam request) {
+        authService.resetPasswordByPhone(request, AccountType.ADMIN);
         return ApiResponse.ok();
     }
 

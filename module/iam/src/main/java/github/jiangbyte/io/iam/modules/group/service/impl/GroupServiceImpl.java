@@ -7,10 +7,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
+import github.jiangbyte.io.iam.modules.account.result.SysAccountResult;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.account.service.AccountService;
+import github.jiangbyte.io.iam.modules.client.mapper.SysClientResourceMapper;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
 import github.jiangbyte.io.iam.modules.dept.support.DataScopeResolver;
 import github.jiangbyte.io.iam.modules.group.convert.SysGroupConvert;
@@ -26,8 +29,10 @@ import github.jiangbyte.io.iam.modules.group.result.SysGroupOwnRoleResult;
 import github.jiangbyte.io.iam.modules.group.service.GroupService;
 import github.jiangbyte.io.iam.modules.relation.constants.IamRelationTypes;
 import github.jiangbyte.io.iam.modules.relation.service.IamRelationService;
+import github.jiangbyte.io.iam.modules.resource.mapper.SysResourceMapper;
 import github.jiangbyte.io.iam.modules.resource.result.SysResourceOwnResult;
 import github.jiangbyte.io.iam.modules.resource.service.ResourceService;
+import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import github.jiangbyte.io.iam.modules.role.entity.SysRole;
 import github.jiangbyte.io.iam.modules.role.mapper.SysRoleMapper;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 用户组服务实现：组维护及成员、角色、资源关系替换。
@@ -58,12 +64,15 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
     private final ResourceService resourceService;
     private final ClientResourceService clientResourceService;
     private final SysRoleMapper roleMapper;
+    private final SysResourceMapper resourceMapper;
+    private final SysClientResourceMapper clientResourceMapper;
 
     @Override
     @Transactional
     public void create(SysGroupAddParam param) {
         SysGroup group = groupConvert.toEntity(param);
         this.save(group);
+        AuditSnapshots.created(group);
     }
 
     @Override
@@ -75,8 +84,10 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
+        AuditSnapshots.before(group);
         groupConvert.update(param, group);
         this.updateById(group);
+        AuditSnapshots.after(group);
     }
 
     @Override
@@ -92,6 +103,7 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
             dataScopeResolver.assertOwnerOrDeptAccessible(
                     group.getCreatedBy(), group.getOwnerDeptId(), scope);
         }
+        AuditSnapshots.deletedAll(groups);
         // 先清主体/客体关系，再删用户组
         relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_GROUP, ids);
         relationService.deleteByTargetIds(IamRelationTypes.TARGET_GROUP, ids);
@@ -152,7 +164,13 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
+        List<String> beforeAccountIds = relationService.listSubjectIds(
+                IamRelationTypes.ACCOUNT_GROUP, IamRelationTypes.TARGET_GROUP, param.getId());
+        AuditSnapshots.subject(group.getName());
+        AuditSnapshots.resourceId(param.getId());
+        AuditSnapshots.before(accountField(beforeAccountIds));
         relationService.replaceGroupUsers(param.getId(), param.getAccountIds());
+        AuditSnapshots.after(accountField(param.getAccountIds()));
     }
 
     @Override
@@ -184,7 +202,13 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
+        List<String> beforeRoleIds = relationService.listTargetIds(
+                IamRelationTypes.SUBJECT_GROUP, param.getId(), IamRelationTypes.GROUP_ROLE, param.getAccountType());
+        AuditSnapshots.subject(group.getName());
+        AuditSnapshots.resourceId(param.getId());
+        AuditSnapshots.before(IamAuditLabelSupport.roleIdsField(beforeRoleIds, roleMapper));
         relationService.replaceGroupRoles(param.getId(), param.getRoleIds(), param.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.roleIdsField(param.getRoleIds(), roleMapper));
     }
 
     @Override
@@ -215,11 +239,18 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
+        AuditSnapshots.subject(group.getName());
+        AuditSnapshots.resourceId(param.getId());
+        var beforeGrants = relationService.listSubjectResourceGrants(
+                IamRelationTypes.SUBJECT_GROUP, param.getId(), param.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantResourceField("授权资源", beforeGrants, resourceMapper));
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_GROUP,
                 param.getId(),
                 param.getGrantInfoList(),
                 param.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantResourceField(
+                "授权资源", param.getGrantInfoList(), resourceMapper));
     }
 
     @Override
@@ -250,11 +281,29 @@ public class GroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> impl
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 group.getCreatedBy(), group.getOwnerDeptId(), "iam:group:page");
+        AuditSnapshots.subject(group.getName());
+        AuditSnapshots.resourceId(param.getId());
+        var beforeGrants = relationService.listSubjectClientResourceGrants(
+                IamRelationTypes.SUBJECT_GROUP, param.getId(), param.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantClientResourceField("授权资源", beforeGrants, clientResourceMapper));
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_GROUP,
                 param.getId(),
                 param.getGrantInfoList(),
                 param.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantClientResourceField(
+                "授权资源", param.getGrantInfoList(), clientResourceMapper));
+    }
+
+    private Map<String, Object> accountField(List<String> accountIds) {
+        List<String> ids = accountIds == null ? List.of() : accountIds;
+        Map<String, String> labelMap = accountService.listResultsByIds(ids).stream()
+                .collect(Collectors.toMap(
+                        SysAccountResult::getId,
+                        item -> StringUtils.hasText(item.getName()) ? item.getName()
+                                : (StringUtils.hasText(item.getAccount()) ? item.getAccount() : item.getId()),
+                        (a, b) -> a));
+        return IamAuditLabelSupport.accountIdsField(ids, id -> labelMap.getOrDefault(id, id));
     }
 
     private List<SysRole> loadRolesByIds(List<String> roleIds) {

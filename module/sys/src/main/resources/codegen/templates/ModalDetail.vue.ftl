@@ -65,7 +65,7 @@ defineExpose({
             <NTag :color="createTagColor(dictTypeColor('${field.dict_code}', state.detail.${field.name}))" :bordered="false">
               ${"{{"} dictTypeData('${field.dict_code}', state.detail.${field.name}) || displayValue(state.detail.${field.name}) ${"}" }}
             </NTag>
-<#elseif field.python_type == "datetime">
+<#elseif field.data_type == "datetime">
             ${"{{"} formatDateTime(state.detail.${field.name}) ${"}" }}
 <#elseif field.is_json>
             <NCode :code="formatJsonValue(state.detail.${field.name})" language="json" word-wrap />

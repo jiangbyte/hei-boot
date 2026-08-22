@@ -3,6 +3,7 @@ package github.jiangbyte.io.iam.modules.account.support;
 import github.jiangbyte.io.common.notify.mail.MailSenderFacade;
 import github.jiangbyte.io.common.notify.sms.SmsSenderFacade;
 import github.jiangbyte.io.sys.config.ConfigApi;
+import github.jiangbyte.io.sys.config.ConfigAppNames;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -64,7 +65,7 @@ public class AccountLifecycleNotifier {
     /** 构建通知模板基础变量。 */
     private Map<String, Object> baseVars() {
         Map<String, Object> vars = new HashMap<>();
-        vars.put("app_name", configApi.getValue("APP_NAME", "HEI"));
+        vars.put("app_name", ConfigAppNames.resolve(configApi));
         return vars;
     }
 

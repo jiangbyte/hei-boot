@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.security.datascope.DataScopeConstraint;
+import github.jiangbyte.io.iam.modules.account.result.SysAccountResult;
 import github.jiangbyte.io.iam.modules.account.result.SysOwnUserResult;
 import github.jiangbyte.io.iam.modules.account.service.AccountService;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
@@ -26,6 +28,9 @@ import github.jiangbyte.io.iam.modules.role.param.SysRoleGrantResourceParam;
 import github.jiangbyte.io.iam.modules.role.param.SysRoleGrantUserParam;
 import github.jiangbyte.io.iam.modules.role.param.SysRolePageParam;
 import github.jiangbyte.io.iam.modules.role.service.RoleService;
+import github.jiangbyte.io.iam.modules.client.mapper.SysClientResourceMapper;
+import github.jiangbyte.io.iam.modules.resource.mapper.SysResourceMapper;
+import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import lombok.RequiredArgsConstructor;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
@@ -33,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 角色服务实现：角色维护及资源/成员关系替换。
@@ -50,6 +57,8 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     private final ResourceService resourceService;
     private final ClientResourceService clientResourceService;
     private final AccountService accountService;
+    private final SysResourceMapper resourceMapper;
+    private final SysClientResourceMapper clientResourceMapper;
 
     @Override
     @Transactional
@@ -61,6 +70,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         }
         SysRole role = roleConvert.toEntity(param);
         this.save(role);
+        AuditSnapshots.created(role);
     }
 
     @Override
@@ -77,8 +87,10 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         if (existing != null && !role.getId().equals(existing.getId())) {
             throw new BizException("Role code already exists");
         }
+        AuditSnapshots.before(role);
         roleConvert.update(param, role);
         this.updateById(role);
+        AuditSnapshots.after(role);
     }
 
     @Override
@@ -95,6 +107,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
                 dataScopeResolver.assertOwnerOrDeptAccessible(
                         role.getCreatedBy(), role.getOwnerDeptId(), scope);
             }
+            AuditSnapshots.deletedAll(roles);
             relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_ROLE, batch);
             relationService.deleteByTargetIds(IamRelationTypes.TARGET_ROLE, batch);
             this.removeByIds(batch);
@@ -158,11 +171,18 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
+        AuditSnapshots.subject(role.getName());
+        AuditSnapshots.resourceId(role.getId());
+        var beforeGrants = relationService.listSubjectResourceGrants(
+                IamRelationTypes.SUBJECT_ROLE, param.getId(), param.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantResourceField("授权资源", beforeGrants, resourceMapper));
         relationService.replaceSubjectResourceGrants(
                 IamRelationTypes.SUBJECT_ROLE,
                 param.getId(),
                 param.getGrantInfoList(),
                 param.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantResourceField(
+                "授权资源", param.getGrantInfoList(), resourceMapper));
     }
 
     @Override
@@ -193,11 +213,18 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
+        AuditSnapshots.subject(role.getName());
+        AuditSnapshots.resourceId(role.getId());
+        var beforeGrants = relationService.listSubjectClientResourceGrants(
+                IamRelationTypes.SUBJECT_ROLE, param.getId(), param.getAccountType());
+        AuditSnapshots.before(IamAuditLabelSupport.grantClientResourceField("授权资源", beforeGrants, clientResourceMapper));
         relationService.replaceSubjectClientResourceGrants(
                 IamRelationTypes.SUBJECT_ROLE,
                 param.getId(),
                 param.getGrantInfoList(),
                 param.getAccountType());
+        AuditSnapshots.after(IamAuditLabelSupport.grantClientResourceField(
+                "授权资源", param.getGrantInfoList(), clientResourceMapper));
     }
 
     @Override
@@ -229,6 +256,23 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         }
         dataScopeResolver.assertOwnerOrDeptAccessible(
                 role.getCreatedBy(), role.getOwnerDeptId(), "iam:role:page");
+        AuditSnapshots.subject(role.getName());
+        AuditSnapshots.resourceId(role.getId());
+        List<String> beforeIds = relationService.listSubjectIds(
+                IamRelationTypes.ACCOUNT_ROLE, IamRelationTypes.TARGET_ROLE, param.getId());
+        AuditSnapshots.before(accountField(beforeIds));
         relationService.replaceRoleUsers(param.getId(), param.getAccountIds());
+        AuditSnapshots.after(accountField(param.getAccountIds()));
+    }
+
+    private Map<String, Object> accountField(List<String> accountIds) {
+        List<String> ids = accountIds == null ? List.of() : accountIds;
+        Map<String, String> labelMap = accountService.listResultsByIds(ids).stream()
+                .collect(Collectors.toMap(
+                        SysAccountResult::getId,
+                        item -> StringUtils.hasText(item.getName()) ? item.getName()
+                                : (StringUtils.hasText(item.getAccount()) ? item.getAccount() : item.getId()),
+                        (a, b) -> a));
+        return IamAuditLabelSupport.accountIdsField(ids, id -> labelMap.getOrDefault(id, id));
     }
 }

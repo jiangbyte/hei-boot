@@ -6,6 +6,7 @@ import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.core.param.IdParam;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.sys.modules.config.param.SysConfigAddParam;
 import github.jiangbyte.io.sys.modules.config.param.SysConfigBatchSaveParam;
@@ -17,6 +18,7 @@ import github.jiangbyte.io.sys.modules.config.service.ConfigService;
 import github.jiangbyte.io.sys.modules.config.support.AuditAlertTestSender;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -104,6 +106,9 @@ public class AdminConfigController {
     public ApiResponse<Map<String, String>> testAuditAlertWebhook(
             @RequestBody(required = false) SysConfigTestWebhookParam param) {
         SysConfigTestWebhookParam body = param == null ? new SysConfigTestWebhookParam() : param;
+        AuditSnapshots.after(Map.of(
+                "Webhook地址", body.getWebhookUrl() == null ? "" : body.getWebhookUrl(),
+                "密钥", maskSecret(body.getWebhookSecret())));
         auditAlertTestSender.testWebhook(body.getWebhookUrl(), body.getWebhookSecret());
         return ApiResponse.ok(Map.of("message", "测试消息已发送"));
     }
@@ -112,7 +117,19 @@ public class AdminConfigController {
     @PostMapping("/v1/admin/sys/config/audit-alert/test-push")
     @OperationAudit(resourceType = "sys_config", action = "test_push")
     public ApiResponse<Map<String, String>> testAuditAlertPush() {
+        AuditSnapshots.after(Map.of("推送渠道", "审计告警"));
         auditAlertTestSender.testPush();
         return ApiResponse.ok(Map.of("message", "测试消息已发送"));
+    }
+
+    private static String maskSecret(String secret) {
+        if (!StringUtils.hasText(secret)) {
+            return "";
+        }
+        String value = secret.trim();
+        if (value.length() <= 4) {
+            return "****";
+        }
+        return value.substring(0, 2) + "****" + value.substring(value.length() - 2);
     }
 }

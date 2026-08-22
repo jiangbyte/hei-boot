@@ -1,9 +1,11 @@
 package github.jiangbyte.io.auth.modules.login.service;
 
 import github.jiangbyte.io.auth.modules.login.param.CancelAccountParam;
+import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ForgotPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.LoginParam;
 import github.jiangbyte.io.auth.modules.login.param.RegisterParam;
+import github.jiangbyte.io.auth.modules.login.param.ResetPasswordByPhoneParam;
 import github.jiangbyte.io.auth.modules.login.param.ResetPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.auth.modules.login.result.AuthOptionsResult;
@@ -51,8 +53,14 @@ public interface AuthService {
     /** 发送忘记密码重置邮件（账号不存在时静默返回）。 */
     void forgotPassword(ForgotPasswordParam request, AccountType accountType);
 
+    /** 向绑定手机发送找回密码 OTP（账号不存在时静默返回）。 */
+    void forgotPasswordByPhone(ForgotPasswordByPhoneParam request, AccountType accountType);
+
     /** 使用重置令牌设置新密码。 */
     void resetPassword(ResetPasswordParam request, AccountType accountType);
+
+    /** 使用手机 OTP 设置新密码。 */
+    void resetPasswordByPhone(ResetPasswordByPhoneParam request, AccountType accountType);
 
     /** 获取当前登录用户摘要。 */
     CurrentUserResult currentUser();

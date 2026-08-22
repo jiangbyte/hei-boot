@@ -34,10 +34,22 @@ public class AdminAuditController {
         return ApiResponse.ok(auditService.page(param));
     }
 
+    /** 当前用户本人审计日志分页（无需审计管理权限）。 */
+    @GetMapping("/v1/admin/sys/audit/my-page")
+    public ApiResponse<Page<SysOperationAuditLog>> myPage(@Valid @ModelAttribute SysAuditPageParam param) {
+        return ApiResponse.ok(auditService.myPage(param));
+    }
+
     /** 查询详情。 */
     @GetMapping("/v1/admin/sys/audit/detail")
     @SaCheckPermission(value = "sys:audit:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysOperationAuditLog> detail(@RequestParam String id) {
         return ApiResponse.ok(auditService.detail(id));
+    }
+
+    /** 当前用户本人审计详情。 */
+    @GetMapping("/v1/admin/sys/audit/my-detail")
+    public ApiResponse<SysOperationAuditLog> myDetail(@RequestParam String id) {
+        return ApiResponse.ok(auditService.myDetail(id));
     }
 }

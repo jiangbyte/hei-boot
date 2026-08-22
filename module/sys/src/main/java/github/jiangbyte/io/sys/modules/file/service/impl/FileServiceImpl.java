@@ -8,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.oss.StorageService;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -90,6 +91,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
                             file.getId(), objectKey, file.getStorageProvider(), ex.getMessage());
                 }
             }
+            AuditSnapshots.deletedAll(files);
             this.removeByIds(batch);
         }
     }
@@ -103,8 +105,10 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
             // 不存在则抛出业务异常
             throw new BizException(404, "File not found");
         }
+        AuditSnapshots.before(file);
         fileConvert.update(param, file);
         this.updateById(file);
+        AuditSnapshots.after(file);
     }
 
     @Override
@@ -206,6 +210,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
         if (file == null) {
             return;
         }
+        AuditSnapshots.deleted(file);
         String objectKey = fileAccessUrls.toObjectKey(objectName);
         if (objectKey != null) {
             try {
@@ -312,6 +317,7 @@ public class FileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impleme
             entity.setSize(file.getSize());
             entity.setUrl(objectName);
             this.save(entity);
+            AuditSnapshots.created(entity);
             return withResolvedUrl(entity);
         } catch (IOException exception) {
             throw new BizException(500, "Failed to read upload stream");

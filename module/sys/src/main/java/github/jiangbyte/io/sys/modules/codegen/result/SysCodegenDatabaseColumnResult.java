@@ -12,8 +12,8 @@ public class SysCodegenDatabaseColumnResult {
     private String columnName;
     private String columnComment;
     private String dbType;
-    private String pythonType;
-    private String typescriptType;
+    private String dataType;
+    private String frontendType;
     private Boolean isPrimaryKey;
     private Boolean isNullable;
     private Integer maxLength;

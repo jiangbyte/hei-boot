@@ -1,6 +1,7 @@
 package github.jiangbyte.io.auth.modules.login.result;
 
 import github.jiangbyte.io.common.core.enums.AccountType;
+import github.jiangbyte.io.sys.config.SiteFooterResult;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -37,4 +38,6 @@ public class AuthOptionsResult {
     private String passwordChangeVerifyMethod = "OLD_PASSWORD";
     private String copyrightText = "";
     private String copyrightUrl = "";
+    /** 版权与备案（与顶层 copyright 字段同源，便于前端统一消费） */
+    private SiteFooterResult siteFooter = new SiteFooterResult();
 }

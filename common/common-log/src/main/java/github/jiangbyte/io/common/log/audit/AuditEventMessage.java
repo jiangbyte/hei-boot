@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * 审计事件消息体：资源、动作、操作者与请求上下文等字段。
@@ -24,7 +25,17 @@ public class AuditEventMessage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String resourceType;
+    private String resourceId;
     private String action;
+    private String actionName;
+    private String actionType;
+    private String moduleLabel;
+    private String operatorName;
+    /** 可读操作内容 */
+    private String summary;
+    private Map<String, Object> beforeData;
+    private Map<String, Object> afterData;
+    private Integer durationMs;
     private String method;
     private String path;
     private Integer statusCode;

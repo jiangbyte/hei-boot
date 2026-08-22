@@ -13,6 +13,7 @@ import github.jiangbyte.io.auth.modules.oauth.support.OauthStateStore;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthUserProfile;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.iam.account.AccountApi;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * {@link AuthOauthService} 实现。
@@ -139,6 +141,13 @@ public class AuthOauthServiceImpl implements AuthOauthService {
             throw new BizException("管理端暂不支持小程序登录");
         }
         OauthUserProfile profile = oauthClientFacade.loginWechatMp(type, code);
+        String label = StringUtils.hasText(profile.getNickname())
+                ? profile.getNickname()
+                : maskOpenId(profile.getOpenId());
+        AuditSnapshots.subject(label);
+        AuditSnapshots.after(Map.of(
+                "提供商", "微信小程序",
+                "OpenID", maskOpenId(profile.getOpenId())));
         return loginOrCreate(type, profile);
     }
 
@@ -150,6 +159,11 @@ public class AuthOauthServiceImpl implements AuthOauthService {
 
     @Override
     public OauthAuthorizeResult bindAuthorize(AccountType accountType, String provider) {
+        LoginUser user = LoginHelper.requireUser();
+        OauthProvider oauthProvider = OauthProvider.from(provider);
+        String accountLabel = StringUtils.hasText(user.getAccount()) ? user.getAccount() : user.getAccountId();
+        AuditSnapshots.subject(accountLabel);
+        AuditSnapshots.after(Map.of("提供商", oauthProvider.getLabel()));
         return authorize(accountType, provider, "BIND", null);
     }
 
@@ -159,6 +173,14 @@ public class AuthOauthServiceImpl implements AuthOauthService {
         LoginUser user = LoginHelper.requireUser();
         OauthProvider oauthProvider = OauthProvider.from(provider);
         assertCanUnbind(user.getAccountId(), oauthProvider.name());
+        AccountOauthBindingInfo binding = accountOauthApi.listByAccount(user.getAccountId()).stream()
+                .filter(item -> oauthProvider.name().equalsIgnoreCase(item.getProvider()))
+                .findFirst()
+                .orElse(null);
+        if (binding != null) {
+            AuditSnapshots.deleted(binding);
+        }
+        AuditSnapshots.subject(user.getAccountId());
         accountOauthApi.unbind(user.getAccountId(), oauthProvider.name());
     }
 
@@ -170,6 +192,14 @@ public class AuthOauthServiceImpl implements AuthOauthService {
         }
         OauthProvider oauthProvider = OauthProvider.from(provider);
         assertCanUnbind(accountId, oauthProvider.name());
+        AccountOauthBindingInfo binding = accountOauthApi.listByAccount(accountId).stream()
+                .filter(item -> oauthProvider.name().equalsIgnoreCase(item.getProvider()))
+                .findFirst()
+                .orElse(null);
+        if (binding != null) {
+            AuditSnapshots.deleted(binding);
+        }
+        AuditSnapshots.subject(accountId);
         accountOauthApi.unbind(accountId, oauthProvider.name());
     }
 

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.config.convert.SysConfigConvert;
 import github.jiangbyte.io.sys.modules.config.entity.SysConfig;
@@ -98,6 +99,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
         }
         config.setConfigValue(encryptValue(config.getConfigKey(), config.getConfigValue()));
         this.save(config);
+        AuditSnapshots.created(config);
         afterMutation("create");
     }
 
@@ -127,12 +129,14 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
                 param.setScope(config.getScope());
             }
         }
+        AuditSnapshots.before(config);
         configConvert.update(param, config);
         if (!StringUtils.hasText(config.getValueType())) {
             config.setValueType("STRING");
         }
         config.setConfigValue(encryptValue(config.getConfigKey(), config.getConfigValue()));
         this.updateById(config);
+        AuditSnapshots.after(config);
         afterMutation("update");
     }
 
@@ -152,6 +156,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
             if (!builtinKeys.isEmpty()) {
                 throw new BizException("内置配置不可删除: " + String.join(", ", builtinKeys));
             }
+            AuditSnapshots.deletedAll(configs);
             this.removeByIds(batch);
         }
         afterMutation("delete");
@@ -238,6 +243,7 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
                 toCreate.add(created);
                 continue;
             }
+            AuditSnapshots.before(config);
             config.setConfigValue(encryptValue(item.getConfigKey(), item.getConfigValue()));
             if (item.getCategory() != null) {
                 config.setCategory(item.getCategory());
@@ -261,11 +267,14 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
                 config.setIsBuiltin(item.getIsBuiltin());
             }
             toUpdate.add(config);
+            AuditSnapshots.after(config);
         }
         // 分批落库后刷新缓存
         int size = BatchPartition.DEFAULT_SIZE;
         for (int i = 0; i < toCreate.size(); i += size) {
-            this.saveBatch(toCreate.subList(i, Math.min(i + size, toCreate.size())));
+            List<SysConfig> batch = toCreate.subList(i, Math.min(i + size, toCreate.size()));
+            this.saveBatch(batch);
+            batch.forEach(AuditSnapshots::created);
         }
         for (int i = 0; i < toUpdate.size(); i += size) {
             this.updateBatchById(toUpdate.subList(i, Math.min(i + size, toUpdate.size())));
@@ -393,9 +402,24 @@ public class ConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> i
 
     private SysConfigResult toPublicResult(SysConfig config) {
         SysConfigResult result = configConvert.toResult(config);
-        if (result != null && result.getConfigValue() != null) {
-            result.setConfigValue(decryptValue(result.getConfigValue()));
+        if (result == null) {
+            return null;
         }
+        String raw = result.getConfigValue();
+        if (raw == null) {
+            return result;
+        }
+        String plain = decryptValue(raw);
+        if (isSensitive(result.getConfigKey()) && StringUtils.hasText(plain)) {
+            result.setConfigValue("");
+            Map<String, Object> ext = result.getExtJson() != null
+                    ? new HashMap<>(result.getExtJson())
+                    : new HashMap<>();
+            ext.put("is_set", true);
+            result.setExtJson(ext);
+            return result;
+        }
+        result.setConfigValue(plain);
         return result;
     }
 

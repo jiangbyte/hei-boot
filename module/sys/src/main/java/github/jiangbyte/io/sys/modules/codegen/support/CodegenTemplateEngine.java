@@ -109,7 +109,7 @@ public class CodegenTemplateEngine {
 
         // 前端
         files.add(file((String) ctx.get("api_file"), "typescript", "api.ts.ftl", ctx));
-        files.add(file("web/admin/src/api/index.ts.append", "typescript", "api_index_export.ts.ftl", ctx));
+        files.add(file("hei-admin/src/api/index.ts.append", "typescript", "api_index_export.ts.ftl", ctx));
         files.add(file((String) ctx.get("view_path"), "vue", "index.vue.ftl", ctx));
         files.add(file(ctx.get("view_component_dir") + "/ModalForm.vue", "vue", "ModalForm.vue.ftl", withTarget(ctx, false)));
         files.add(file(ctx.get("view_component_dir") + "/ModalDetail.vue", "vue", "ModalDetail.vue.ftl", withTarget(ctx, false)));
@@ -235,8 +235,8 @@ public class CodegenTemplateEngine {
                 .anyMatch(f -> plan.getTreeParentField().equals(((Map<?, ?>) f).get("name")));
 
         String componentPath = plan.getComponentPath() == null ? "" : plan.getComponentPath().trim();
-        String viewPath = "web/admin/src/views/" + componentPath.replaceAll("^/+", "");
-        String viewDir = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/')) : "web/admin/src/views";
+        String viewPath = "hei-admin/src/views/" + componentPath.replaceAll("^/+", "");
+        String viewDir = viewPath.contains("/") ? viewPath.substring(0, viewPath.lastIndexOf('/')) : "hei-admin/src/views";
         String viewComponentDir = viewDir + "/components";
         String apiFile = resolveApiFile(plan, componentPath);
         String apiExportName = CodegenNaming.snakeToCamel(toSnake(plan.getMainEntityName())) + "Api";
@@ -293,7 +293,7 @@ public class CodegenTemplateEngine {
         ctx.put("menu_permission", menuPermissionContext(hasTree));
         ctx.put("api_file", apiFile);
         ctx.put("api_export", "export * as " + apiExportName + " from './"
-                + apiFile.replace("web/admin/src/api/", "").replace(".ts", "") + "'");
+                + apiFile.replace("hei-admin/src/api/", "").replace(".ts", "") + "'");
         ctx.put("api_export_name", apiExportName);
         ctx.put("view_path", viewPath);
         ctx.put("view_component_dir", viewComponentDir);
@@ -379,7 +379,7 @@ public class CodegenTemplateEngine {
             if ("id".equals(field.getColumnName()) || AUDIT.contains(field.getColumnName())) {
                 continue;
             }
-            String javaType = DbTypeMapper.toJavaType(field.getPythonType());
+            String javaType = DbTypeMapper.toJavaType(field.getDataType());
             String simpleType = DbTypeMapper.toSimpleJavaName(javaType);
             if (javaType.startsWith("java.") && !javaType.startsWith("java.lang.") && !javaType.contains("<")) {
                 javaImports.add(javaType);
@@ -394,7 +394,7 @@ public class CodegenTemplateEngine {
             jf.put("comment", field.getColumnComment() == null ? "" : field.getColumnComment());
             jf.put("javaType", simpleType);
             jf.put("fullJavaType", javaType);
-            jf.put("isJson", "dict".equals(field.getPythonType()) || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json")));
+            jf.put("isJson", "dict".equals(field.getDataType()) || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json")));
             jf.put("showInQuery", Boolean.TRUE.equals(field.getShowInQuery()));
             jf.put("showInForm", Boolean.TRUE.equals(field.getShowInForm()));
             jf.put("queryOperator", field.getQueryOperator());
@@ -423,8 +423,8 @@ public class CodegenTemplateEngine {
         entity.put("has_form_datetime", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_datetime"))));
         entity.put("has_form_json", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_json"))));
         entity.put("has_form_bool", formFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_bool"))));
-        entity.put("has_form_int", formFields.stream().anyMatch(f -> "int".equals(f.get("python_type"))));
-        entity.put("has_form_float", formFields.stream().anyMatch(f -> "float".equals(f.get("python_type"))));
+        entity.put("has_form_int", formFields.stream().anyMatch(f -> "int".equals(f.get("data_type"))));
+        entity.put("has_form_float", formFields.stream().anyMatch(f -> "float".equals(f.get("data_type"))));
         entity.put("has_detail_json", detailFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_json"))));
         entity.put("has_query_dict", queryFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
         entity.put("has_table_dict", tableFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
@@ -446,18 +446,18 @@ public class CodegenTemplateEngine {
     }
 
     private Map<String, Object> fieldContext(SysCodegenField field) {
-        String pythonType = field.getPythonType() == null ? "str" : field.getPythonType();
-        boolean isDatetime = "datetime".equals(field.getFormWidget()) || "datetime".equals(pythonType);
-        boolean isJson = "dict".equals(pythonType)
+        String dataType = field.getDataType() == null ? "str" : field.getDataType();
+        boolean isDatetime = "datetime".equals(field.getFormWidget()) || "datetime".equals(dataType);
+        boolean isJson = "dict".equals(dataType)
                 || (field.getDbType() != null && field.getDbType().toLowerCase(Locale.ROOT).contains("json"));
-        boolean isBool = "bool".equals(pythonType);
+        boolean isBool = "bool".equals(dataType);
         Map<String, Object> fc = new LinkedHashMap<>();
         fc.put("name", field.getColumnName());
         fc.put("label", StringUtils.hasText(field.getColumnComment()) ? field.getColumnComment() : field.getColumnName());
         fc.put("comment", field.getColumnComment());
         fc.put("db_type", field.getDbType());
-        fc.put("python_type", pythonType);
-        fc.put("ts_type", field.getTypescriptType());
+        fc.put("data_type", dataType);
+        fc.put("frontend_type", field.getFrontendType());
         fc.put("form_widget", field.getFormWidget());
         fc.put("dict_code", field.getDictCode());
         fc.put("query_operator", field.getQueryOperator() == null ? "LIKE" : field.getQueryOperator());
@@ -469,7 +469,7 @@ public class CodegenTemplateEngine {
         fc.put("is_required", field.getIsRequired());
         fc.put("is_nullable", field.getIsNullable());
         fc.put("max_length", field.getMaxLength());
-        fc.put("vue_default", vueDefault(field, isDatetime, isJson, isBool, pythonType));
+        fc.put("vue_default", vueDefault(field, isDatetime, isJson, isBool, dataType));
         fc.put("is_datetime", isDatetime);
         fc.put("is_json", isJson);
         fc.put("is_bool", isBool);
@@ -477,11 +477,11 @@ public class CodegenTemplateEngine {
     }
 
     private static String vueDefault(
-            SysCodegenField field, boolean isDatetime, boolean isJson, boolean isBool, String pythonType) {
+            SysCodegenField field, boolean isDatetime, boolean isJson, boolean isBool, String dataType) {
         if (isDatetime || "datetime".equals(field.getFormWidget())) {
             return "null";
         }
-        if ("int".equals(pythonType) || "float".equals(pythonType)) {
+        if ("int".equals(dataType) || "float".equals(dataType)) {
             return "0";
         }
         if (isBool) {
@@ -535,13 +535,13 @@ public class CodegenTemplateEngine {
         String cleaned = componentPath.replaceAll("^/+", "");
         String[] parts = cleaned.split("/");
         if (parts.length >= 2 && "index.vue".equals(parts[parts.length - 1])) {
-            StringBuilder sb = new StringBuilder("web/admin/src/api");
+            StringBuilder sb = new StringBuilder("hei-admin/src/api");
             for (int i = 0; i < parts.length - 1; i++) {
                 sb.append('/').append(parts[i]);
             }
             return sb + ".ts";
         }
-        return "web/admin/src/api/" + toSnake(plan.getMainEntityName()) + ".ts";
+        return "hei-admin/src/api/" + toSnake(plan.getMainEntityName()) + ".ts";
     }
 
     private static String toSnake(String value) {

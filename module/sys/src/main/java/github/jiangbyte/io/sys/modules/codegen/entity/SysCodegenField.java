@@ -19,8 +19,10 @@ public class SysCodegenField extends BaseEntity {
     private String columnName;
     private String columnComment;
     private String dbType;
-    private String pythonType;
-    private String typescriptType;
+    /** 语义数据类型（如 str / int / bool / datetime / dict） */
+    private String dataType;
+    /** 前端类型（如 string / number / boolean） */
+    private String frontendType;
     private String formWidget;
     private String dictCode;
     private String queryOperator;

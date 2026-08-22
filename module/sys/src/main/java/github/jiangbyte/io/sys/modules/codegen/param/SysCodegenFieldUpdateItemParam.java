@@ -30,11 +30,11 @@ public class SysCodegenFieldUpdateItemParam {
 
     @NotBlank
     @Size(max = 64)
-    private String pythonType = "str";
+    private String dataType = "str";
 
     @NotBlank
     @Size(max = 64)
-    private String typescriptType = "string";
+    private String frontendType = "string";
 
     @NotBlank
     @Size(max = 32)

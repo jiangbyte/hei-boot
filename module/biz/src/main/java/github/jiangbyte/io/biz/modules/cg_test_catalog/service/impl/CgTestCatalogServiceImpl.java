@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.convert.CgTestCatalogConvert;
 import github.jiangbyte.io.biz.modules.cg_test_catalog.entity.CgTestCatalog;
@@ -44,6 +45,7 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
         // 入参转实体并持久化
         CgTestCatalog entity = cgTestCatalogConvert.toEntity(param);
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -56,8 +58,10 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
             throw new BizException(404, "CgTestCatalog not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestCatalogConvert.update(param, entity);
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -66,6 +70,8 @@ public class CgTestCatalogServiceImpl extends ServiceImpl<CgTestCatalogMapper, C
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestCatalog> entities = this.listByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除
         this.removeByIds(param.getIds());
     }

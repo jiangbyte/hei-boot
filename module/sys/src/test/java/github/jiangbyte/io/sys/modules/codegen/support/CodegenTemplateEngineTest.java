@@ -30,8 +30,8 @@ class CodegenTemplateEngineTest {
         List<SysCodegenPreviewFileResult> files = engine.render(plan, sampleFields("MAIN"), List.of());
         Set<String> paths = paths(files);
         assertTrue(paths.stream().anyMatch(p -> p.endsWith("/entity/CgTestActivity.java")));
-        assertTrue(paths.stream().anyMatch(p -> p.contains("web/admin/src/views/")));
-        assertTrue(paths.stream().anyMatch(p -> p.endsWith(".ts") && p.contains("web/admin/src/api/")));
+        assertTrue(paths.stream().anyMatch(p -> p.contains("hei-admin/src/views/")));
+        assertTrue(paths.stream().anyMatch(p -> p.endsWith(".ts") && p.contains("hei-admin/src/api/")));
         assertTrue(paths.stream().anyMatch(p -> p.endsWith("_menu_permission.sql")));
         assertTrue(paths.stream().anyMatch(p -> p.endsWith("/param/CgTestActivityAddParam.java")));
         assertTrue(paths.stream().anyMatch(p -> p.endsWith("/param/CgTestActivityEditParam.java")));
@@ -50,7 +50,7 @@ class CodegenTemplateEngineTest {
         // 规范对齐：分页走 getBaseMapper().selectPage
         assertTrue(contentContaining(files, "CgTestActivityServiceImpl.java").contains("getBaseMapper().selectPage"));
         // 前端 api 使用 API_PREFIX 常量（保持 any 约定）
-        String api = contentContaining(files, "web/admin/src/api/");
+        String api = contentContaining(files, "hei-admin/src/api/");
         assertTrue(api.contains("API_PREFIX"));
         assertTrue(api.contains("export function page(params: any)"));
         assertTrue(api.contains("http.get<any>"));
@@ -69,7 +69,7 @@ class CodegenTemplateEngineTest {
             }
         }
         List<SysCodegenPreviewFileResult> files = engine.render(plan, fields, List.of());
-        String view = contentContaining(files, "web/admin/src/views/");
+        String view = contentContaining(files, "hei-admin/src/views/");
         assertTrue(view.contains("dictList('COMMON_STATUS')"));
         assertTrue(view.contains("field: 'select'"));
         assertTrue(view.contains("import { dictList,"));
@@ -87,7 +87,7 @@ class CodegenTemplateEngineTest {
         assertTrue(contentContaining(files, "CgTestCatalogService.java").contains("tree("));
         assertTrue(contentContaining(files, "CgTestCatalogServiceImpl.java").contains("TreeUtil"));
         assertTrue(contentContaining(files, "CgTestCatalog.java").contains("children"));
-        assertTrue(contentContaining(files, "web/admin/src/api/").contains("export function tree"));
+        assertTrue(contentContaining(files, "hei-admin/src/api/").contains("export function tree"));
         assertTrue(contentContaining(files, "_menu_permission.sql").contains(":tree"));
         assertTrue(contentContaining(files, "AdminCgTestCatalogController.java").contains(":tree"));
         assertFalse(paths(files).stream().anyMatch(p -> p.startsWith("module-api/")));
@@ -113,7 +113,7 @@ class CodegenTemplateEngineTest {
         assertTrue(paths.stream().anyMatch(p -> p.contains("ChildModalForm.vue")));
         assertTrue(paths.stream().anyMatch(p -> p.endsWith("/entity/CgTestKnowledgeDoc.java")));
         assertTrue(contentContaining(files, "AdminCgTestKnowledgeCategoryController.java").contains("/children/page"));
-        assertTrue(contentContaining(files, "web/admin/src/api/").contains("childPage"));
+        assertTrue(contentContaining(files, "hei-admin/src/api/").contains("childPage"));
     }
 
     @Test

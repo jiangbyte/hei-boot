@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.iam.modules.client.convert.SysClientConvert;
 import github.jiangbyte.io.iam.modules.client.entity.SysClientModule;
@@ -17,6 +18,7 @@ import github.jiangbyte.io.iam.modules.client.param.SysClientResourcePageParam;
 import github.jiangbyte.io.iam.modules.client.param.SysClientResourcePermissionBindParam;
 import github.jiangbyte.io.iam.modules.client.param.SysClientResourceTreeParam;
 import github.jiangbyte.io.iam.modules.client.service.ClientResourceService;
+import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import github.jiangbyte.io.iam.modules.relation.constants.IamRelationTypes;
 import github.jiangbyte.io.iam.modules.relation.entity.SysIamRelation;
 import github.jiangbyte.io.iam.modules.relation.mapper.SysIamRelationMapper;
@@ -71,6 +73,7 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
     public void create(SysClientResourceAddParam param) {
         SysClientResource resource = clientConvert.toEntity(param);
         this.save(resource);
+        AuditSnapshots.created(resource);
     }
 
     @Override
@@ -80,8 +83,10 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
         if (resource == null) {
             throw new BizException(404, "Client resource not found");
         }
+        AuditSnapshots.before(resource);
         clientConvert.update(param, resource);
         this.updateById(resource);
+        AuditSnapshots.after(resource);
     }
 
     @Override
@@ -91,6 +96,8 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysClientResource> resources = this.listByIds(ids);
+        AuditSnapshots.deletedAll(resources);
         relationService.deleteBySubjectIds(IamRelationTypes.SUBJECT_CLIENT_RESOURCE, ids);
         relationService.deleteByTargetIds(IamRelationTypes.TARGET_CLIENT_RESOURCE, ids);
         this.removeByIds(ids);
@@ -139,8 +146,10 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
                 return List.of();
             }
         }
-        // 2. 查询扁平资源并回填账号类型
-        var wrapper = Wrappers.<SysClientResource>lambdaQuery().orderByAsc(SysClientResource::getSort);
+        // 2. 查询扁平资源并回填账号类型（按钮走独立能力，树中排除 BUTTON/ACTION）
+        var wrapper = Wrappers.<SysClientResource>lambdaQuery()
+                .notIn(SysClientResource::getResourceType, List.of(RESOURCE_TYPE_BUTTON, RESOURCE_TYPE_ACTION))
+                .orderByAsc(SysClientResource::getSort);
         if (moduleIds != null) {
             wrapper.in(SysClientResource::getModuleId, moduleIds);
         }
@@ -193,6 +202,9 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
         if (resource == null) {
             throw new BizException(404, "Client resource not found");
         }
+        AuditSnapshots.subject(resource.getName());
+        AuditSnapshots.resourceId(param.getResourceId());
+        AuditSnapshots.before(Map.of());
         permissionRegistryService.ensureRegistered(param.getPermissionKey());
         relationService.bindClientResourcePermission(
                 param.getResourceId(),
@@ -202,6 +214,8 @@ public class ClientResourceServiceImpl extends ServiceImpl<SysClientResourceMapp
                 param.getCustomScopeDeptIds(),
                 param.getSort(),
                 param.getDescription());
+        AuditSnapshots.after(IamAuditLabelSupport.permissionBindField(
+                param.getPermissionKey(), param.getAccountType(), param.getDataScope()));
     }
 
     @Override

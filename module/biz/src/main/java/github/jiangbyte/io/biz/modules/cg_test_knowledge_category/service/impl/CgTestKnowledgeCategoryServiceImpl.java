@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.convert.CgTestKnowledgeCategoryConvert;
 import github.jiangbyte.io.biz.modules.cg_test_knowledge_category.entity.CgTestKnowledgeCategory;
@@ -52,6 +53,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         // 入参转实体并持久化
         CgTestKnowledgeCategory entity = cgTestKnowledgeCategoryConvert.toEntity(param);
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -64,8 +66,10 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
             throw new BizException(404, "CgTestKnowledgeCategory not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestKnowledgeCategoryConvert.update(param, entity);
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -74,6 +78,8 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestKnowledgeCategory> entities = this.listByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除
         this.removeByIds(param.getIds());
     }
@@ -144,6 +150,7 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         // 入参转子实体并插入
         CgTestKnowledgeDoc entity = cgTestKnowledgeDocConvert.toEntity(param);
         cgTestKnowledgeDocMapper.insert(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -156,8 +163,10 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
             throw new BizException(404, "CgTestKnowledgeDoc not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestKnowledgeDocConvert.update(param, entity);
         cgTestKnowledgeDocMapper.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -166,6 +175,8 @@ public class CgTestKnowledgeCategoryServiceImpl extends ServiceImpl<CgTestKnowle
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestKnowledgeDoc> entities = cgTestKnowledgeDocMapper.selectByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除子实体
         cgTestKnowledgeDocMapper.deleteBatchIds(param.getIds());
     }

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
@@ -79,6 +80,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         BeanUtil.copyProperties(request, plan);
         plan.setId(null);
         this.save(plan);
+        AuditSnapshots.created(plan);
         syncReflectedFields(plan);
     }
 
@@ -100,8 +102,10 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
             // 不存在则抛出业务异常
             throw new BizException(404, "Codegen plan not found");
         }
+        AuditSnapshots.before(plan);
         BeanUtil.copyProperties(request, plan);
         this.updateById(plan);
+        AuditSnapshots.after(plan);
         syncReflectedFields(plan);
     }
 
@@ -111,6 +115,8 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         if (request.getIds() == null || request.getIds().isEmpty()) {
             return;
         }
+        List<SysCodegenPlan> plans = this.listByIds(request.getIds());
+        AuditSnapshots.deletedAll(plans);
         fieldMapper.delete(Wrappers.<SysCodegenField>lambdaQuery().in(SysCodegenField::getPlanId, request.getIds()));
         this.removeByIds(request.getIds());
     }
@@ -172,10 +178,12 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
     @Transactional
     public void updateFieldsBatch(SysCodegenFieldsUpdateBatchParam request) {
         // 按主键加载
-        if (getBaseMapper().selectById(request.getPlanId()) == null) {
+        SysCodegenPlan plan = getBaseMapper().selectById(request.getPlanId());
+        if (plan == null) {
             // 不存在则抛出业务异常
             throw new BizException(404, "Codegen plan not found");
         }
+        AuditSnapshots.before(plan);
         fieldMapper.delete(Wrappers.<SysCodegenField>lambdaQuery()
                 .eq(SysCodegenField::getPlanId, request.getPlanId()));
         OffsetDateTime now = OffsetDateTime.now();
@@ -193,6 +201,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         for (int i = 0; i < fields.size(); i += size) {
             Db.saveBatch(fields.subList(i, Math.min(i + size, fields.size())));
         }
+        AuditSnapshots.after(plan);
     }
 
     @Override
@@ -336,7 +345,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
             boolean isPk = Boolean.TRUE.equals(column.get("is_primary_key"));
             boolean isAudit = AUDIT.contains(columnName);
             boolean nullable = "YES".equalsIgnoreCase(String.valueOf(column.get("is_nullable")));
-            String[] types = DbTypeMapper.toPythonAndTs(
+            String[] types = DbTypeMapper.toDataAndFrontendType(
                     String.valueOf(column.get("data_type")),
                     String.valueOf(column.get("udt_name")));
             String widget = defaultWidget(columnName, types[0]);
@@ -358,8 +367,8 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
             }
             field.setColumnComment(blankToNull(column.get("column_comment")));
             field.setDbType(String.valueOf(column.get("udt_name")));
-            field.setPythonType(types[0]);
-            field.setTypescriptType(types[1]);
+            field.setDataType(types[0]);
+            field.setFrontendType(types[1]);
             field.setIsPrimaryKey(isPk);
             field.setIsRequired(!nullable && !isPk && !isAudit);
             field.setIsUnique(false);
@@ -407,29 +416,29 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
     }
 
     private SysCodegenDatabaseColumnResult toColumnResult(Map<String, Object> column) {
-        String[] types = DbTypeMapper.toPythonAndTs(
+        String[] types = DbTypeMapper.toDataAndFrontendType(
                 String.valueOf(column.get("data_type")),
                 String.valueOf(column.get("udt_name")));
         SysCodegenDatabaseColumnResult dto = new SysCodegenDatabaseColumnResult();
         dto.setColumnName(String.valueOf(column.get("column_name")));
         dto.setColumnComment(blankToNull(column.get("column_comment")));
         dto.setDbType(String.valueOf(column.get("udt_name")));
-        dto.setPythonType(types[0]);
-        dto.setTypescriptType(types[1]);
+        dto.setDataType(types[0]);
+        dto.setFrontendType(types[1]);
         dto.setIsPrimaryKey(Boolean.TRUE.equals(column.get("is_primary_key")));
         dto.setIsNullable("YES".equalsIgnoreCase(String.valueOf(column.get("is_nullable"))));
         dto.setMaxLength(asInteger(column.get("max_length")));
         return dto;
     }
 
-    private static String defaultWidget(String columnName, String pythonType) {
+    private static String defaultWidget(String columnName, String dataType) {
         if ("status".equals(columnName)) {
             return "dict";
         }
-        if ("int".equals(pythonType) || "float".equals(pythonType)) {
+        if ("int".equals(dataType) || "float".equals(dataType)) {
             return "number";
         }
-        if ("bool".equals(pythonType)) {
+        if ("bool".equals(dataType)) {
             return "switch";
         }
         if (columnName.contains("content") || columnName.contains("description") || columnName.contains("remark")) {
@@ -438,8 +447,8 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
         return "input";
     }
 
-    private static String defaultQueryOperator(String columnName, String pythonType) {
-        if ("status".equals(columnName) || "int".equals(pythonType) || "bool".equals(pythonType)) {
+    private static String defaultQueryOperator(String columnName, String dataType) {
+        if ("status".equals(columnName) || "int".equals(dataType) || "bool".equals(dataType)) {
             return "EQ";
         }
         if (Set.of("name", "title", "code", "category", "type").contains(columnName)) {

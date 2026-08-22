@@ -3,6 +3,7 @@ package github.jiangbyte.io.profile.modules.admin.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
@@ -87,12 +88,14 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
     public void updateProfile(ProfileUpdateParam request) {
         LoginUser loginUser = LoginHelper.requireUser();
         ProfileUserAdmin profile = ensureProfile(loginUser.getAccountId());
+        AuditSnapshots.before(profile);
         // 映射可编辑字段；头像单独规范化对象名
         adminUserProfileConvert.update(request, profile);
         if (StringUtils.hasText(request.getAvatar())) {
             profile.setAvatar(fileApi.normalizeObjectName(request.getAvatar()));
         }
         adminProfileMapper.updateById(profile);
+        AuditSnapshots.after(profile);
     }
 
     @Override
@@ -111,11 +114,13 @@ public class ProfileUserAdminServiceImpl implements ProfileUserAdminService {
             throw new BizException("Avatar must be jpeg/png/webp");
         }
         ProfileUserAdmin current = ensureProfile(loginUser.getAccountId());
+        AuditSnapshots.before(current);
         String previousAvatar = current.getAvatar();
         // 上传新头像并落库
         FileInfo uploaded = fileApi.upload(file, null);
         current.setAvatar(uploaded.getObjectName());
         adminProfileMapper.updateById(current);
+        AuditSnapshots.after(current);
         // 尽力删除旧对象
         if (StringUtils.hasText(previousAvatar) && !previousAvatar.equals(uploaded.getObjectName())) {
             try {

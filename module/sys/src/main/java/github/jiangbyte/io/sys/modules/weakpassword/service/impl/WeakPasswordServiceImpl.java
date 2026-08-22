@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.sys.modules.weakpassword.convert.SysWeakPasswordConvert;
 import github.jiangbyte.io.sys.modules.weakpassword.entity.SysWeakPassword;
@@ -47,6 +48,7 @@ public class WeakPasswordServiceImpl extends ServiceImpl<SysWeakPasswordMapper, 
         SysWeakPassword entity = weakPasswordConvert.toEntity(param);
         entity.setPassword(param.getPassword().trim());
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -67,9 +69,11 @@ public class WeakPasswordServiceImpl extends ServiceImpl<SysWeakPasswordMapper, 
         if (existing != null && !entity.getId().equals(existing.getId())) {
             throw new BizException("Weak password already exists");
         }
+        AuditSnapshots.before(entity);
         weakPasswordConvert.update(param, entity);
         entity.setPassword(param.getPassword().trim());
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -79,6 +83,8 @@ public class WeakPasswordServiceImpl extends ServiceImpl<SysWeakPasswordMapper, 
         if (ids == null || ids.isEmpty()) {
             return;
         }
+        List<SysWeakPassword> entities = this.listByIds(ids);
+        AuditSnapshots.deletedAll(entities);
         this.removeByIds(ids);
     }
 

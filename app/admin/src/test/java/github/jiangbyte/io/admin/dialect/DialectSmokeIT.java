@@ -82,7 +82,7 @@ class DialectSmokeIT {
     }
 
     @Test
-    void dashboardDailyBucketSql() throws Exception {
+    void workspaceDailyBucketSql() throws Exception {
         String sql = """
                 SELECT %s, COUNT(*) AS cnt
                 FROM sys_account

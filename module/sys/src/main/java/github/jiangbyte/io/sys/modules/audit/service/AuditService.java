@@ -16,8 +16,14 @@ public interface AuditService extends IService<SysOperationAuditLog> {
     /** 分页查询审计日志。 */
     Page<SysOperationAuditLog> page(SysAuditPageParam param);
 
+    /** 当前登录用户本人审计日志分页（强制绑定 accountId）。 */
+    Page<SysOperationAuditLog> myPage(SysAuditPageParam param);
+
     /** 查询详情。 */
     SysOperationAuditLog detail(String id);
+
+    /** 当前登录用户本人审计详情（越权返回 404）。 */
+    SysOperationAuditLog myDetail(String id);
 
     /** 持久化审计事件。 */
     void persistEvent(AuditEventMessage event);

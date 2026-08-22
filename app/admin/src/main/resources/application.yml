@@ -99,6 +99,7 @@ hei:
     hsts-include-sub-domains: ${HEI_SECURITY_HSTS_INCLUDE_SUBDOMAINS:true}
     hsts-preload: ${HEI_SECURITY_HSTS_PRELOAD:false}
     ignore-urls:
+      - /api/v1/public/**
       - /api/v1/admin/captcha
       - /api/v1/admin/password-key
       - /api/v1/admin/login

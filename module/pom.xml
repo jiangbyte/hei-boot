@@ -15,7 +15,7 @@
         <module>profile</module>
         <module>iam</module>
         <module>auth</module>
-        <module>dashboard</module>
+        <module>workspace</module>
         <module>biz</module>
     </modules>
 </project>

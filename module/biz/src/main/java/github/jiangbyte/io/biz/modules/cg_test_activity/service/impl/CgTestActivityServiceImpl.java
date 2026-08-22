@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.biz.modules.cg_test_activity.convert.CgTestActivityConvert;
 import github.jiangbyte.io.biz.modules.cg_test_activity.entity.CgTestActivity;
@@ -37,6 +38,7 @@ public class CgTestActivityServiceImpl extends ServiceImpl<CgTestActivityMapper,
         // 入参转实体并持久化
         CgTestActivity entity = cgTestActivityConvert.toEntity(param);
         this.save(entity);
+        AuditSnapshots.created(entity);
     }
 
     @Override
@@ -49,8 +51,10 @@ public class CgTestActivityServiceImpl extends ServiceImpl<CgTestActivityMapper,
             throw new BizException(404, "CgTestActivity not found");
         }
         // 合并编辑入参并更新
+        AuditSnapshots.before(entity);
         cgTestActivityConvert.update(param, entity);
         this.updateById(entity);
+        AuditSnapshots.after(entity);
     }
 
     @Override
@@ -59,6 +63,8 @@ public class CgTestActivityServiceImpl extends ServiceImpl<CgTestActivityMapper,
         if (param.getIds() == null || param.getIds().isEmpty()) {
             return;
         }
+        List<CgTestActivity> entities = this.listByIds(param.getIds());
+        AuditSnapshots.deletedAll(entities);
         // 批量删除
         this.removeByIds(param.getIds());
     }

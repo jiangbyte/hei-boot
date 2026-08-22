@@ -19,4 +19,13 @@ public @interface OperationAudit {
 
     /** 审计动作；为空时可由切面推导。 */
     String action() default "";
+
+    /** 操作名（展示）；为空时由 catalog 推导。 */
+    String name() default "";
+
+    /**
+     * 操作类型：CREATE/UPDATE/DELETE/QUERY/EXPORT/LOGIN/LOGOUT/OTHER；
+     * 为空时由 action 推断。
+     */
+    String actionType() default "";
 }
