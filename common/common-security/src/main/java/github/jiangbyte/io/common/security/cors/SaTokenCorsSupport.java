@@ -44,7 +44,7 @@ public final class SaTokenCorsSupport {
             return;
         }
 
-        res.setHeader("Access-Control-Allow-Methods", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.setHeader("Access-Control-Allow-Headers", "*");
         res.setHeader("Access-Control-Max-Age", "3600");
 

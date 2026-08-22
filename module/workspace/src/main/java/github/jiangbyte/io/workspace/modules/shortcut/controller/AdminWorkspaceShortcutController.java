@@ -8,7 +8,7 @@ import github.jiangbyte.io.workspace.modules.shortcut.service.WorkspaceShortcutS
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,7 +32,7 @@ public class AdminWorkspaceShortcutController {
         return ApiResponse.ok(shortcutService.listMine());
     }
 
-    @PutMapping("/v1/admin/workspace/shortcuts")
+    @PostMapping("/v1/admin/workspace/shortcuts")
     @OperationAudit(resourceType = "workspace_shortcut", action = "update", name = "更新快捷应用")
     public ApiResponse<List<WorkspaceShortcutResult>> replace(@Valid @RequestBody WorkspaceShortcutSaveParam request) {
         return ApiResponse.ok(shortcutService.replaceMine(request.getResourceIds()));
