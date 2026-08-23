@@ -16,3 +16,12 @@ logs/
 .zcode/
 __pycache__/
 *.pyc
+
+# 部署环境变量与本地密钥（勿提交）
+.env
+.env.*
+!.env.example
+scripts/docker/.env
+scripts/docker/.env.*
+!scripts/docker/.env.example
+scripts/docker/deploy/

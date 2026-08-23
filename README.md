@@ -64,15 +64,17 @@ hei-boot/
 ├── common/                 # 公共能力（web / security / mybatis / redis / oss / job / log …）
 ├── module-api/             # 模块对外 API 契约
 ├── module/                 # 业务实现（auth / iam / sys / profile / workspace / biz）
-└── scripts/                # db.sql、WSL 开发库导入
+└── scripts/                # db.sql、Docker Compose
 ```
 
-`scripts/` 保留：
+`scripts/` 目录：
 
 | 文件 | 用途 |
 |------|------|
 | `db.sql` | MySQL 全量建表、种子数据与表/列 `COMMENT` |
-| `import-mysql-wsl.sh` / `migrate-dev-wsl.sh` | WSL Docker `dev-mysql` 一键导入 |
+| `docker/docker-compose.yml` | 全栈 Compose（中间件 + hei-boot + hei-admin + hei-portal，**无 build**） |
+| `docker/database.yml` | 仅中间件 Compose |
+| `docker/.env.example` | 部署环境变量模板（复制为 `.env`，**勿提交**） |
 
 ## 快速开始
 
@@ -92,17 +94,39 @@ mysql -u root -p -e "CREATE DATABASE hei_boot DEFAULT CHARACTER SET utf8mb4 COLL
 mysql -u root -p hei_boot < scripts/db.sql
 ```
 
-WSL Docker 开发库一键同步（`dev-mysql`）：
+Compose 首次启动 MySQL 时会自动执行 `scripts/db.sql`（挂载至 `docker-entrypoint-initdb.d`）。已有数据卷需重建库时可：
 
 ```bash
-bash scripts/migrate-dev-wsl.sh
+docker compose -f scripts/docker/docker-compose.yml down -v   # 清空卷后重导
+docker compose -f scripts/docker/docker-compose.yml up -d
 ```
 
-或仅导入 MySQL（`dev-mysql`）：
+Docker Compose（**镜像需预先构建**，Compose 不包含 `build`；密钥通过 `.env` 注入）：
 
 ```bash
-bash scripts/import-mysql-wsl.sh
+cd scripts/docker
+cp .env.example .env
+# 编辑 .env 填写密钥
+
+# 1. 构建并推送镜像（自行 mvn package + docker build / push）
+cd ../..   # hei monorepo 根目录
+mvn -pl app/admin -am -DskipTests -P'!with-biz' package -f hei-boot/pom.xml
+docker build -f hei-boot/app/admin/Dockerfile -t registry.cn-beijing.aliyuncs.com/czbyte/hei-boot:latest hei-boot
+docker build -t registry.cn-beijing.aliyuncs.com/czbyte/hei-admin:latest hei-admin
+docker build -t registry.cn-beijing.aliyuncs.com/czbyte/hei-portal:latest hei-portal
+
+# 2. 仅中间件
+docker compose -f database.yml up -d
+
+# 3. 全栈（API + Admin + Portal）
+docker compose up -d
 ```
+
+访问：Admin `http://127.0.0.1:5173`、Portal `http://127.0.0.1:5174`、API `http://127.0.0.1:8000`。
+
+`HEI_CONFIG_CRYPTO_KEY` 须与 `scripts/db.sql` 中 `sys_config` 密文匹配（演示种子与本地 `application-dev.yml` 默认密钥一致）；生产环境请生成新 Fernet 密钥并在管理端重配对象存储等敏感项。
+
+默认端口：API `8000`、Admin `5173`、Portal `5174`、MySQL `3306`、Redis `6379`、MinIO `9000`/`9001`。对象存储在管理端配置 MinIO（容器内 `http://minio:9000`）。
 
 开发配置见 [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml)（`DB_WRITE_*` / Redis / 对象存储）。本地 `dev`/`local` profile 下读写库均指向同一 MySQL（`hei_boot`），只需配置 `DB_WRITE_*`；生产环境可通过 `DB_READ_*` 单独指定只读从库。
 
@@ -162,7 +186,7 @@ pnpm install && pnpm dev
 | Portal | [hei-portal](https://github.com/jiangbyte/hei-portal) | http://127.0.0.1:5174 | `user` | `123456` | 门户默认用户 |
 | Portal | 同上 | 同上 | `portal_bob` / `portal_alice` | `123456` | 演示门户账户（含 Profile） |
 
-> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。演示账号与内容种子已写入 `scripts/db.sql`；改库后执行 `bash scripts/migrate-dev-wsl.sh` 同步开发库。
+> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。演示账号与内容种子已写入 `scripts/db.sql`。
 
 ## 姊妹项目
 
