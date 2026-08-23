@@ -64,24 +64,15 @@ hei-boot/
 ├── common/                 # 公共能力（web / security / mybatis / redis / oss / job / log …）
 ├── module-api/             # 模块对外 API 契约
 ├── module/                 # 业务实现（auth / iam / sys / profile / workspace / biz）
-└── scripts/                # db.sql、OpenAPI 注解工具、e2e
+└── scripts/                # db.sql、WSL 开发库导入
 ```
 
 `scripts/` 保留：
 
 | 文件 | 用途 |
 |------|------|
-| `db.sql` | MySQL 全量建表与种子 |
-| `generate_column_labels.py` | 从 db.sql 生成字段注释 catalog |
-| `apply_openapi.py` | 批量补齐模型 `@Schema` 与 Controller `@Tag`/`@Operation` |
-| `import-mysql-wsl.sh` / `migrate-dev-wsl.sh` | WSL Docker 开发库导入 |
-| `seed_auth_demo.py` | 认证/授权演示账户、角色、部门、数据范围种子 |
-| `seed_content_demo.py` | 内容运营演示种子（展示图、通知消息、反馈） |
-| `validate_permission_keys.py` | 校验权限 key 三段式合规（可用于 CI） |
-| `audit_button_permissions.py` | 审计按钮资源与 DB/前端权限绑定覆盖 |
-| `permission_code_map.py` | 上述校验/审计脚本的资源 code 映射 |
-| `run_dialect_e2e.py` + `e2e/` | 本地 MySQL e2e |
-| `screenshot_docs.py` / `read_captcha.py` | Knife4j 文档截图辅助 |
+| `db.sql` | MySQL 全量建表、种子数据与表/列 `COMMENT` |
+| `import-mysql-wsl.sh` / `migrate-dev-wsl.sh` | WSL Docker `dev-mysql` 一键导入 |
 
 ## 快速开始
 
@@ -92,11 +83,7 @@ hei-boot/
 
 ### 1. 初始化数据库
 
-**维护原则：** 在 `scripts/db.sql`（MySQL 8）直接维护表结构、种子数据与表/列 `COMMENT`；改库后可选执行：
-
-```bash
-python scripts/generate_column_labels.py   # 从 db.sql 重新生成 db_column_labels.py
-```
+**维护原则：** 在 `scripts/db.sql`（MySQL 8）直接维护表结构、种子数据与表/列 `COMMENT`。
 
 **MySQL 8+（本地运行默认）：**
 
@@ -140,7 +127,7 @@ mvn -pl app/admin -am spring-boot:run
 | 接口文档（Knife4j） | http://127.0.0.1:8000/doc.html |
 | OpenAPI JSON | http://127.0.0.1:8000/v3/api-docs |
 
-> 文档栈：**Spring Boot 4** + **Knife4j 5**（`knife4j-openapi3-boot4-spring-boot-starter`）+ springdoc 生成 OpenAPI。批量补齐模型 `@Schema` 与 Controller `@Tag`/`@Operation`：`python scripts/apply_openapi.py`。
+> 文档栈：**Spring Boot 4** + **Knife4j 5**（`knife4j-openapi3-boot4-spring-boot-starter`）+ springdoc 生成 OpenAPI。
 
 ### 3. 启动前端（可选）
 
@@ -175,8 +162,7 @@ pnpm install && pnpm dev
 | Portal | [hei-portal](https://github.com/jiangbyte/hei-portal) | http://127.0.0.1:5174 | `user` | `123456` | 门户默认用户 |
 | Portal | 同上 | 同上 | `portal_bob` / `portal_alice` | `123456` | 演示门户账户（含 Profile） |
 
-> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。  
-> 重新生成演示种子：`python scripts/seed_auth_demo.py`（组织权限）与 `python scripts/seed_content_demo.py`（内容运营），然后执行 `bash scripts/migrate-dev-wsl.sh`。
+> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。演示账号与内容种子已写入 `scripts/db.sql`；改库后执行 `bash scripts/migrate-dev-wsl.sh` 同步开发库。
 
 ## 姊妹项目
 
