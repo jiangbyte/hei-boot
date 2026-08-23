@@ -19,4 +19,7 @@ public interface ProfileIdentityApi {
 
     /** 账号是否已通过实名认证。 */
     boolean isVerified(String accountId);
+
+    /** 读取账号实名认证快照（脱敏字段，供管理端详情展示）。 */
+    ProfileIdentityStatusInfo getStatusForAccount(String accountId);
 }

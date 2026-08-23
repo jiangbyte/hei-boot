@@ -12,7 +12,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { ${api_export_name} } from '@/api'
 <#if plan.gen_type != "TREE">
-import { readPageMeta } from '@/utils/wire'
+import { readPageMeta<#if main.has_table_bool || (sub?? && sub.has_table_bool)>, wireBool</#if> } from '@/utils/wire'
 </#if>
 import { <#if main.has_query_dict || (sub?? && sub.has_query_dict)>dictList, </#if><#if main.has_table_dict || (sub?? && sub.has_table_dict)>createTagColor, dictTypeColor, dictTypeData, displayValue, </#if>formatDateTime, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon<#if plan.gen_type == "LEFT_TREE_TABLE">, NInput, NInputGroup</#if><#if main.has_table_tag || (sub?? && sub.has_table_tag)>, NTag</#if> } from 'naive-ui'
@@ -218,8 +218,8 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: '${field.name}',
     width: 120,
     render: row => (
-      <NTag type={row.${field.name} === 'true' ? 'success' : 'default'} bordered={false}>
-        {row.${field.name} === 'true' ? '是' : row.${field.name} === 'false' ? '否' : '-'}
+      <NTag type={wireBool(row.${field.name}) ? 'success' : 'default'} bordered={false}>
+        {wireBool(row.${field.name}) ? '是' : '否'}
       </NTag>
     ),
   },
@@ -285,8 +285,8 @@ const childColumns = computed<ProDataTableColumns<any>>(() => [
     path: '${field.name}',
     width: 120,
     render: row => (
-      <NTag type={row.${field.name} === 'true' ? 'success' : 'default'} bordered={false}>
-        {row.${field.name} === 'true' ? '是' : row.${field.name} === 'false' ? '否' : '-'}
+      <NTag type={wireBool(row.${field.name}) ? 'success' : 'default'} bordered={false}>
+        {wireBool(row.${field.name}) ? '是' : '否'}
       </NTag>
     ),
   },

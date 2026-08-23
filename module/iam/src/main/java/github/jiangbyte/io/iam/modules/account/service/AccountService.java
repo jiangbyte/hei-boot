@@ -10,7 +10,8 @@ import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantDeptParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantGroupParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantResourceParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantRoleParam;
-import github.jiangbyte.io.iam.modules.account.param.SysAccountPageParam;
+import github.jiangbyte.io.iam.modules.account.param.SysAccountUpdateLoginIdentityParam;
+import github.jiangbyte.io.iam.modules.account.result.SysAccountListResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnDeptResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnGroupResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnRoleResult;
@@ -104,6 +105,9 @@ public interface AccountService extends IService<SysAccount> {
     /** 管理端更新账号。 */
     void update(SysAccountEditParam param);
 
+    /** 管理端更新账号邮箱/手机号登录身份。 */
+    void updateLoginIdentity(SysAccountUpdateLoginIdentityParam param);
+
     /** 管理端批量删除账号。 */
     void delete(IdsParam param);
 
@@ -113,8 +117,8 @@ public interface AccountService extends IService<SysAccount> {
     /** 账号详情（含资料与身份）。 */
     SysAccountResult detail(String id);
 
-    /** 账号分页查询。 */
-    Page<SysAccountResult> page(SysAccountPageParam param);
+    /** 账号分页查询（仅 account + profile 展示字段）。 */
+    Page<SysAccountListResult> page(SysAccountPageParam param);
 
     /** 查询账号已拥有角色。 */
     SysAccountOwnRoleResult ownRoles(String id);

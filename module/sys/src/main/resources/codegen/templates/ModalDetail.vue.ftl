@@ -6,6 +6,9 @@
 
 <script setup lang="ts">
 import { ${api_export_name} } from '@/api'
+<#if target.has_detail_bool>
+import { wireBool } from '@/utils/wire'
+</#if>
 import { <#if target.has_detail_dict>createTagColor, dictTypeColor, dictTypeData, </#if>displayValue, formatDateTime } from '@/utils'
 <#if target.has_detail_editor>
 import { <#if target.has_detail_richtext>RichTextPreview, </#if><#if target.has_detail_markdown>MdPreview, </#if><#if target.has_detail_code>MonacoPreview</#if> } from '@/components/editor'
@@ -82,6 +85,8 @@ defineExpose({
               ${"{{"} displayValue(state.detail.${field.name}) ${"}" }}
             </NFlex>
             <span v-else>-</span>
+<#elseif field.is_bool>
+            ${"{{"} wireBool(state.detail.${field.name}) ? '是' : '否' ${"}" }}
 <#elseif field.is_json>
             <NCode :code="formatJsonValue(state.detail.${field.name})" language="json" word-wrap />
 <#else>

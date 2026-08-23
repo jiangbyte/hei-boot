@@ -1,6 +1,7 @@
 package github.jiangbyte.io.iam.modules.account.result;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import github.jiangbyte.io.profile.ProfileIdentityStatusInfo;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -56,6 +57,8 @@ public class SysAccountResult {
     private List<AccountIdentityResult> identities = new ArrayList<>();
     @Schema(description = "三方登录绑定列表")
     private List<AccountOauthBindingResult> oauthBindings = new ArrayList<>();
+    @Schema(description = "实名认证快照（仅详情返回）")
+    private ProfileIdentityStatusInfo identityStatus;
     @Schema(description = "备注说明")
     private String remark;
     @Schema(description = "账号注销完成时间")

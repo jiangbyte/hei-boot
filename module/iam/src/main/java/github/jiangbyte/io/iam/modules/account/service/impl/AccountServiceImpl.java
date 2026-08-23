@@ -27,13 +27,14 @@ import github.jiangbyte.io.iam.modules.account.mapper.SysAccountMapper;
 import github.jiangbyte.io.iam.modules.account.service.AccountOauthService;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountAddParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountEditParam;
-import github.jiangbyte.io.iam.modules.account.param.SysAccountPageParam;
+import github.jiangbyte.io.iam.modules.account.param.SysAccountUpdateLoginIdentityParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantDeptParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantGroupParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantResourceParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantRoleParam;
 import github.jiangbyte.io.iam.modules.account.result.AccountIdentityResult;
 import github.jiangbyte.io.iam.modules.account.result.AccountOauthBindingResult;
+import github.jiangbyte.io.iam.modules.account.result.SysAccountListResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnDeptResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnGroupResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnRoleResult;
@@ -58,6 +59,8 @@ import github.jiangbyte.io.iam.support.audit.IamAuditLabelSupport;
 import github.jiangbyte.io.iam.modules.role.entity.SysRole;
 import github.jiangbyte.io.iam.modules.role.mapper.SysRoleMapper;
 import github.jiangbyte.io.sys.file.FileApi;
+import github.jiangbyte.io.profile.ProfileIdentityApi;
+import github.jiangbyte.io.profile.ProfileIdentityStatusInfo;
 import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
 import github.jiangbyte.io.profile.admin.ProfileUserAdminInfo;
 import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
@@ -109,6 +112,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     private final ClientResourceService clientResourceService;
     private final ConfigApi configApi;
     private final AccountOauthService accountOauthService;
+    private final ProfileIdentityApi profileIdentityApi;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
@@ -344,14 +348,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if ("CANCELLED".equalsIgnoreCase(param.getAccountStatus())) {
             throw new BizException("注销状态不允许通过管理端设置");
         }
-        if (Boolean.TRUE.equals(param.getEmailLoginEnabled())
-                && !StringUtils.hasText(firstNonBlank(param.getEmailIdentity(), param.getEmail()))) {
-            throw new BizException("Email login requires an email");
-        }
-        if (Boolean.TRUE.equals(param.getPhoneLoginEnabled())
-                && !StringUtils.hasText(firstNonBlank(param.getPhoneIdentity(), param.getPhone()))) {
-            throw new BizException("Phone login requires a phone");
-        }
         SysAccountIdentity existingAccount = identityMapper.selectOne(Wrappers.<SysAccountIdentity>lambdaQuery()
                 .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
                 .eq(SysAccountIdentity::getIdentifier, accountLogin)
@@ -376,12 +372,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             account.setAccountStatus("ENABLED");
         }
         this.save(account);
-        // 全量写入身份并同步档案
-        replaceAccountIdentities(account.getId(), param.getAccount(),
-                param.getEmailLoginEnabled(), param.getEmailIdentity(), param.getEmail(),
-                param.getEmailIdentityVerified(), param.getEmailIdentityBindStatus(),
-                param.getPhoneLoginEnabled(), param.getPhoneIdentity(), param.getPhone(),
-                param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
+        replaceAccountLoginIdentity(account.getId(), param.getAccount());
         upsertProfile(account, param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
         AuditSnapshots.created(account);
@@ -403,14 +394,6 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         }
         if ("CANCELLED".equalsIgnoreCase(param.getAccountStatus())) {
             throw new BizException("注销状态不允许通过管理端设置");
-        }
-        if (Boolean.TRUE.equals(param.getEmailLoginEnabled())
-                && !StringUtils.hasText(firstNonBlank(param.getEmailIdentity(), param.getEmail()))) {
-            throw new BizException("Email login requires an email");
-        }
-        if (Boolean.TRUE.equals(param.getPhoneLoginEnabled())
-                && !StringUtils.hasText(firstNonBlank(param.getPhoneIdentity(), param.getPhone()))) {
-            throw new BizException("Phone login requires a phone");
         }
         SysAccountIdentity existingAccount = identityMapper.selectOne(Wrappers.<SysAccountIdentity>lambdaQuery()
                 .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
@@ -437,12 +420,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             account.setPasswordHash(passwordHelper.encode(rawPassword));
         }
         this.updateById(account);
-        // 全量替换身份并同步档案
-        replaceAccountIdentities(account.getId(), param.getAccount(),
-                param.getEmailLoginEnabled(), param.getEmailIdentity(), param.getEmail(),
-                param.getEmailIdentityVerified(), param.getEmailIdentityBindStatus(),
-                param.getPhoneLoginEnabled(), param.getPhoneIdentity(), param.getPhone(),
-                param.getPhoneIdentityVerified(), param.getPhoneIdentityBindStatus());
+        replaceAccountLoginIdentity(account.getId(), param.getAccount());
         upsertProfile(account, param.getNickname(), param.getAvatar(),
                 param.getSignature(), param.getPhone(), param.getEmail(), param.getRemark());
         AuditSnapshots.after(account);
@@ -465,6 +443,33 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
             return defaults.trim();
         }
         throw new BizException("Password is required");
+    }
+
+    @Override
+    @Transactional
+    public void updateLoginIdentity(SysAccountUpdateLoginIdentityParam param) {
+        SysAccount account = getBaseMapper().selectById(param.getId());
+        if (account == null) {
+            throw new BizException(404, "Account not found");
+        }
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:update");
+        if ("CANCELLED".equalsIgnoreCase(account.getAccountStatus())) {
+            throw new BizException("已注销账号不允许通过管理端修改");
+        }
+        if (Boolean.TRUE.equals(param.getEmailLoginEnabled())
+                && !StringUtils.hasText(param.getEmail())) {
+            throw new BizException("Email login requires an email");
+        }
+        if (Boolean.TRUE.equals(param.getPhoneLoginEnabled())
+                && !StringUtils.hasText(param.getPhone())) {
+            throw new BizException("Phone login requires a phone");
+        }
+        replaceSecondaryLoginIdentities(
+                account.getId(),
+                param.getEmailLoginEnabled(),
+                param.getEmail(),
+                param.getPhoneLoginEnabled(),
+                param.getPhone());
     }
 
     @Override
@@ -535,14 +540,22 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         if (account == null) {
             throw new BizException(404, "Account not found");
         }
-        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:page");
+        dataScopeResolver.assertAccountAccessible(account.getId(), "iam:account:detail");
         Map<String, SysAccountResult> map = toResultMap(List.of(account));
-        return map.get(id);
+        SysAccountResult result = map.get(id);
+        if (result != null) {
+            ProfileIdentityStatusInfo identityStatus = profileIdentityApi.getStatusForAccount(id);
+            result.setIdentityStatus(identityStatus);
+            if (identityStatus != null && StringUtils.hasText(identityStatus.getRealNameMasked())) {
+                result.setName(identityStatus.getRealNameMasked());
+            }
+        }
+        return result;
     }
 
     @Override
     @ReadDataSource
-    public Page<SysAccountResult> page(SysAccountPageParam param) {
+    public Page<SysAccountListResult> page(SysAccountPageParam param) {
         // 账号标识模糊命中 → 候选 ID 集
         Set<String> scopedIds = null;
         if (StringUtils.hasText(param.getAccount())) {
@@ -582,12 +595,12 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         wrapper.eq(StringUtils.hasText(param.getAccountStatus()), SysAccount::getAccountStatus, param.getAccountStatus());
         wrapper.orderByDesc(SysAccount::getId);
         Page<SysAccount> page = this.getBaseMapper().selectPage(new Page<>(param.getCurrent(), param.getSize()), wrapper);
-        Map<String, SysAccountResult> resultMap = toResultMap(page.getRecords());
-        List<SysAccountResult> records = page.getRecords().stream()
+        Map<String, SysAccountListResult> resultMap = toListResultMap(page.getRecords());
+        List<SysAccountListResult> records = page.getRecords().stream()
                 .map(item -> resultMap.get(item.getId()))
                 .filter(Objects::nonNull)
                 .toList();
-        Page<SysAccountResult> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        Page<SysAccountListResult> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         result.setRecords(records);
         return result;
     }
@@ -840,6 +853,75 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         return result;
     }
 
+    private Map<String, SysAccountListResult> toListResultMap(List<SysAccount> accounts) {
+        Map<String, SysAccountListResult> map = new HashMap<>();
+        if (accounts == null || accounts.isEmpty()) {
+            return map;
+        }
+        List<String> ids = accounts.stream().map(SysAccount::getId).toList();
+        Map<String, String> accountIdentifiers = new HashMap<>();
+        Map<String, ProfileUserAdminInfo> adminProfiles = new HashMap<>();
+        Map<String, ProfileUserPortalInfo> portalProfiles = new HashMap<>();
+
+        Map<String, List<String>> idsByType = accounts.stream()
+                .filter(a -> StringUtils.hasText(a.getId()) && StringUtils.hasText(a.getAccountType()))
+                .collect(Collectors.groupingBy(
+                        a -> a.getAccountType().trim().toUpperCase(Locale.ROOT),
+                        Collectors.mapping(SysAccount::getId, Collectors.toList())));
+
+        for (List<String> batch : BatchPartition.partition(ids)) {
+            identityMapper.selectList(Wrappers.<SysAccountIdentity>lambdaQuery()
+                            .in(SysAccountIdentity::getAccountId, batch)
+                            .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
+                            .orderByDesc(SysAccountIdentity::getIsPrimary)
+                            .orderByAsc(SysAccountIdentity::getId))
+                    .forEach(identity -> accountIdentifiers.putIfAbsent(identity.getAccountId(), identity.getIdentifier()));
+        }
+        for (Map.Entry<String, List<String>> entry : idsByType.entrySet()) {
+            for (List<String> batch : BatchPartition.partition(entry.getValue())) {
+                if (AccountType.ADMIN.name().equals(entry.getKey())) {
+                    adminProfiles.putAll(adminUserProfileApi.getProfiles(batch));
+                } else if (AccountType.PORTAL.name().equals(entry.getKey())) {
+                    portalProfiles.putAll(portalUserProfileApi.getProfiles(batch));
+                }
+            }
+        }
+
+        for (SysAccount account : accounts) {
+            SysAccountListResult result = new SysAccountListResult();
+            result.setId(account.getId());
+            result.setAccount(accountIdentifiers.get(account.getId()));
+            result.setAccountType(account.getAccountType());
+            result.setAccountStatus(account.getAccountStatus());
+            result.setLatestLoginTime(account.getLatestLoginTime());
+            result.setUpdatedAt(account.getUpdatedAt());
+
+            String type = StringUtils.hasText(account.getAccountType())
+                    ? account.getAccountType().trim().toUpperCase(Locale.ROOT)
+                    : "";
+            if (AccountType.ADMIN.name().equals(type)) {
+                ProfileUserAdminInfo profile = adminProfiles.get(account.getId());
+                if (profile != null) {
+                    result.setNickname(profile.getNickname());
+                    result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
+                    result.setPhone(profile.getPhone());
+                    result.setEmail(profile.getEmail());
+                    result.setRemark(profile.getRemark());
+                }
+            } else if (AccountType.PORTAL.name().equals(type)) {
+                ProfileUserPortalInfo profile = portalProfiles.get(account.getId());
+                if (profile != null) {
+                    result.setNickname(profile.getNickname());
+                    result.setAvatar(fileApi.resolveUrl(profile.getAvatar()));
+                    result.setPhone(profile.getPhone());
+                    result.setEmail(profile.getEmail());
+                }
+            }
+            map.put(account.getId(), result);
+        }
+        return map;
+    }
+
     private Map<String, SysAccountResult> toResultMap(List<SysAccount> accounts) {
         Map<String, SysAccountResult> map = new HashMap<>();
         if (accounts == null || accounts.isEmpty()) {
@@ -1015,6 +1097,40 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         }
         existing.setIdentifier(identifier);
         identityMapper.updateById(existing);
+    }
+
+    private void replaceAccountLoginIdentity(String accountId, String account) {
+        if (!StringUtils.hasText(account)) {
+            throw new BizException("Account identity identifier required");
+        }
+        Long conflict = identityMapper.selectCount(Wrappers.<SysAccountIdentity>lambdaQuery()
+                .ne(SysAccountIdentity::getAccountId, accountId)
+                .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
+                .eq(SysAccountIdentity::getIdentifier, account));
+        if (conflict != null && conflict > 0) {
+            throw new BizException("Account identity already exists");
+        }
+        identityMapper.delete(Wrappers.<SysAccountIdentity>lambdaQuery()
+                .eq(SysAccountIdentity::getAccountId, accountId)
+                .eq(SysAccountIdentity::getIdentityType, "ACCOUNT"));
+        insertIdentity(accountId, "ACCOUNT", account, true, true);
+    }
+
+    private void replaceSecondaryLoginIdentities(
+            String accountId,
+            Boolean emailLoginEnabled,
+            String email,
+            Boolean phoneLoginEnabled,
+            String phone) {
+        identityMapper.delete(Wrappers.<SysAccountIdentity>lambdaQuery()
+                .eq(SysAccountIdentity::getAccountId, accountId)
+                .in(SysAccountIdentity::getIdentityType, "EMAIL", "PHONE"));
+        if (Boolean.TRUE.equals(emailLoginEnabled) && StringUtils.hasText(email)) {
+            insertIdentity(accountId, "EMAIL", email.trim(), true, false);
+        }
+        if (Boolean.TRUE.equals(phoneLoginEnabled) && StringUtils.hasText(phone)) {
+            insertIdentity(accountId, "PHONE", phone.trim(), true, false);
+        }
     }
 
     private void replaceAccountIdentities(

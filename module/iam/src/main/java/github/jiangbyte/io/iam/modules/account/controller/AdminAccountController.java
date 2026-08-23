@@ -16,7 +16,8 @@ import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantDeptParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantGroupParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantResourceParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantRoleParam;
-import github.jiangbyte.io.iam.modules.account.param.SysAccountPageParam;
+import github.jiangbyte.io.iam.modules.account.param.SysAccountUpdateLoginIdentityParam;
+import github.jiangbyte.io.iam.modules.account.result.SysAccountListResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnDeptResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnGroupResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnRoleResult;
@@ -68,6 +69,16 @@ public class AdminAccountController {
         return ApiResponse.ok();
     }
 
+    /** 更新账号邮箱/手机号登录身份。 */
+    @Operation(summary = "更新账号邮箱/手机号登录身份。")
+    @PostMapping("/v1/admin/sys/accounts/update-login-identity")
+    @SaCheckPermission(value = "iam:account:update", type = StpKit.TYPE_ADMIN)
+    @OperationAudit(resourceType = "iam_account", action = "update_login_identity")
+    public ApiResponse<Void> updateLoginIdentity(@Valid @RequestBody SysAccountUpdateLoginIdentityParam param) {
+        accountService.updateLoginIdentity(param);
+        return ApiResponse.ok();
+    }
+
     /** 批量删除账号。 */
     @Operation(summary = "批量删除账号。")
     @PostMapping("/v1/admin/sys/accounts/delete")
@@ -90,7 +101,7 @@ public class AdminAccountController {
     @Operation(summary = "分页查询账号。")
     @GetMapping("/v1/admin/sys/accounts/page")
     @SaCheckPermission(value = "iam:account:page", type = StpKit.TYPE_ADMIN)
-    public ApiResponse<Page<SysAccountResult>> page(@Valid @ModelAttribute SysAccountPageParam param) {
+    public ApiResponse<Page<SysAccountListResult>> page(@Valid @ModelAttribute SysAccountPageParam param) {
         return ApiResponse.ok(accountService.page(param));
     }
 

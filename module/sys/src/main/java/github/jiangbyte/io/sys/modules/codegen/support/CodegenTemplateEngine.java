@@ -445,6 +445,7 @@ public class CodegenTemplateEngine {
                 (f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank())
                         || Boolean.TRUE.equals(f.get("is_bool"))));
         entity.put("has_detail_dict", detailFields.stream().anyMatch(f -> f.get("dict_code") != null && !String.valueOf(f.get("dict_code")).isBlank()));
+        entity.put("has_detail_bool", detailFields.stream().anyMatch(f -> Boolean.TRUE.equals(f.get("is_bool"))));
         boolean needsNormalize = formFields.stream().anyMatch(f ->
                 Boolean.TRUE.equals(f.get("is_datetime")) || Boolean.TRUE.equals(f.get("is_json")));
         entity.put("needs_form_normalize", needsNormalize);

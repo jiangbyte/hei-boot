@@ -34,8 +34,6 @@ public class SysAccountAddParam {
     @Schema(description = "账户状态：ACTIVE（正常）/ LOCKED（锁定）/ CANCELLED（已注销）")
 
     private String accountStatus = "ENABLED";
-    @Schema(description = "名称")
-    private String name;
     @Schema(description = "nickname")
     private String nickname;
     @Schema(description = "avatar")
@@ -46,22 +44,6 @@ public class SysAccountAddParam {
     private String phone;
     @Schema(description = "email")
     private String email;
-    @Schema(description = "是否启用邮箱登录")
-    private Boolean emailLoginEnabled = false;
-    @Schema(description = "是否启用手机号登录")
-    private Boolean phoneLoginEnabled = false;
-    @Schema(description = "邮箱身份标识")
-    private String emailIdentity;
-    @Schema(description = "手机号身份标识")
-    private String phoneIdentity;
-    @Schema(description = "邮箱身份是否已验证")
-    private Boolean emailIdentityVerified = false;
-    @Schema(description = "手机号身份是否已验证")
-    private Boolean phoneIdentityVerified = false;
-    @Schema(description = "邮箱身份绑定状态")
-    private String emailIdentityBindStatus = "BOUND";
-    @Schema(description = "手机号身份绑定状态")
-    private String phoneIdentityBindStatus = "BOUND";
     @Schema(description = "备注说明")
     private String remark;
 }

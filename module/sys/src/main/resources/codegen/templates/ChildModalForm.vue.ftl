@@ -7,12 +7,8 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
 import { ${api_export_name} } from '@/api'
-<#assign _wires = []>
-<#if target.has_form_bool><#assign _wires = _wires + ["wireBool"]></#if>
-<#if target.has_form_int><#assign _wires = _wires + ["wireInt"]></#if>
-<#if target.has_form_float><#assign _wires = _wires + ["wireFloat"]></#if>
-<#if (_wires?size > 0)>
-import { ${_wires?join(", ")} } from '@/utils/wire'
+<#if target.has_form_bool || target.has_form_int || target.has_form_float>
+import { wireFields } from '@/utils/wire'
 </#if>
 import { createRequiredRule<#if target.has_form_datetime>, toApiDateTime, toFormDateTime</#if> } from '@/utils'
 <#if target.has_form_icon>
@@ -96,15 +92,17 @@ function normalizeFormData(data: Record<string, any> = {}): Record<string, any> 
   return {
     ...defaultFormData,
     ...data,
+<#if target.has_form_bool || target.has_form_int || target.has_form_float>
+    ...wireFields(data, {
 <#list target.form_fields as field><#if field.is_bool>
-    ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireBool(String(data.${field.name})),
+      ${field.name}: 'bool',
+</#if><#if field.value_type == "int">
+      ${field.name}: 'int',
+</#if><#if field.value_type == "float">
+      ${field.name}: 'float',
 </#if></#list>
-<#list target.form_fields as field><#if field.value_type == "int">
-    ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireInt(String(data.${field.name})),
-</#if></#list>
-<#list target.form_fields as field><#if field.value_type == "float">
-    ${field.name}: data.${field.name} == null || data.${field.name} === '' ? defaultFormData.${field.name} : wireFloat(String(data.${field.name})),
-</#if></#list>
+    }, defaultFormData),
+</#if>
 <#list target.form_fields as field><#if field.is_datetime>
     ${field.name}: toFormDateTime(data.${field.name}),
 </#if></#list>
