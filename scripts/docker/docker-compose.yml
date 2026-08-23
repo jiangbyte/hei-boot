@@ -1,10 +1,9 @@
-# HEI 全栈演示：MySQL + Redis + MinIO + hei-boot + hei-admin + hei-portal
-# 镜像需预先构建并 docker load，Compose 不包含 build。
-# 中间件镜像默认 Docker Hub 名，可通过 .env 覆盖；应用镜像见 registry.cn-beijing.aliyuncs.com/czbyte
-# cp .env.example .env && docker compose -f scripts/docker/docker-compose.yml up -d
+# HEI 全栈：MySQL + Redis + MinIO + hei-boot + hei-admin + hei-portal
+# 镜像从 registry.cn-beijing.aliyuncs.com/czbyte 拉取，Compose 不包含 build。
+# cp .env.example .env && docker compose up -d
 services:
   mysql:
-    image: ${MYSQL_IMAGE:-mysql:8.0.42}
+    image: ${MYSQL_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/mysql:9.6.0}
     container_name: hei-mysql
     env_file: .env
     environment:
@@ -32,7 +31,7 @@ services:
       - hei-net
 
   redis:
-    image: ${REDIS_IMAGE:-redis:7.2.8}
+    image: ${REDIS_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/redis:8.6.2}
     container_name: hei-redis
     env_file: .env
     environment:
@@ -52,7 +51,7 @@ services:
       - hei-net
 
   minio:
-    image: ${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}
+    image: ${MINIO_IMAGE:-registry.cn-beijing.aliyuncs.com/czbyte/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1}
     container_name: hei-minio
     env_file: .env
     environment:

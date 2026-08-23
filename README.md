@@ -72,8 +72,7 @@ hei-boot/
 | 文件 | 用途 |
 |------|------|
 | `db.sql` | MySQL 全量建表、种子数据与表/列 `COMMENT` |
-| `docker/docker-compose.yml` | 全栈 Compose（中间件 + hei-boot + hei-admin + hei-portal，**无 build**） |
-| `docker/database.yml` | 仅中间件 Compose |
+| `docker/docker-compose.yml` | 全栈 Compose（中间件 + 应用，**无 build**） |
 | `docker/.env.example` | 部署环境变量模板（复制为 `.env`，**勿提交**） |
 
 ## 快速开始
@@ -115,10 +114,9 @@ docker build -f hei-boot/app/admin/Dockerfile -t registry.cn-beijing.aliyuncs.co
 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/hei-admin:latest hei-admin
 docker build -t registry.cn-beijing.aliyuncs.com/czbyte/hei-portal:latest hei-portal
 
-# 2. 仅中间件
-docker compose -f database.yml up -d
-
-# 3. 全栈（API + Admin + Portal）
+cd hei-boot/scripts/docker
+cp .env.example .env   # 编辑密钥
+docker compose pull
 docker compose up -d
 ```
 
