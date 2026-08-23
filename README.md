@@ -40,11 +40,11 @@ API 前缀统一为 `/api/v1/admin/*` 与 `/api/v1/portal/*`，常见中后台�
 
 ## 前端姊妹项目
 
-| 项目 | 说明 | 界面预览 |
-| --- | --- | --- |
-| [**hei-admin**](https://github.com/jiangbyte/hei-admin) | Vue 3 管理端，对接 `/api/v1/admin/*` | [README 截图](https://github.com/jiangbyte/hei-admin#界面预览) |
-| [**hei-portal**](https://github.com/jiangbyte/hei-portal) | React 门户，对接 `/api/v1/portal/*` | [README 截图](https://github.com/jiangbyte/hei-portal) |
-| [**hei-admin-uniapp**](https://github.com/jiangbyte/hei-admin-uniapp) | uni-app 管理端移动端 | [README](https://github.com/jiangbyte/hei-admin-uniapp) |
+| 项目 | 说明 |
+| --- | --- |
+| [**hei-admin**](https://github.com/jiangbyte/hei-admin) | Vue 3 管理端，对接 `/api/v1/admin/*` |
+| [**hei-portal**](https://github.com/jiangbyte/hei-portal) | React 门户，对接 `/api/v1/portal/*` |
+| [**hei-admin-uniapp**](https://github.com/jiangbyte/hei-admin-uniapp) | uni-app 管理端移动端 |
 
 ## 技术栈
 
@@ -64,14 +64,14 @@ hei-boot/
 ├── common/                 # 公共能力（web / security / mybatis / redis / oss / job / log …）
 ├── module-api/             # 模块对外 API 契约
 ├── module/                 # 业务实现（auth / iam / sys / profile / workspace / biz）
-└── scripts/                # db.sql、Docker Compose
+└── scripts/                # 数据库脚本、Docker Compose
 ```
 
 `scripts/` 目录：
 
 | 文件 | 用途 |
-|------|------|
-| `db.sql` | MySQL 全量建表、种子数据与表/列 `COMMENT` |
+| --- | --- |
+| `hei_boot.sql` | MySQL 全量建表、种子数据与表/列 `COMMENT` |
 | `docker/docker-compose.yml` | 全栈 Compose（中间件 + 应用，**无 build**） |
 | `docker/.env.example` | 部署环境变量模板（复制为 `.env`，**勿提交**） |
 
@@ -84,16 +84,16 @@ hei-boot/
 
 ### 1. 初始化数据库
 
-**维护原则：** 在 `scripts/db.sql`（MySQL 8）直接维护表结构、种子数据与表/列 `COMMENT`。
+**维护原则：** 在 `scripts/hei_boot.sql`（MySQL 8）直接维护表结构、种子数据与表/列 `COMMENT`。
 
 **MySQL 8+（本地运行默认）：**
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE hei_boot DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p hei_boot < scripts/db.sql
+mysql -u root -p hei_boot < scripts/hei_boot.sql
 ```
 
-Compose 首次启动 MySQL 时会自动执行 `scripts/db.sql`（挂载至 `docker-entrypoint-initdb.d`）。已有数据卷需重建库时可：
+Compose 首次启动 MySQL 时会自动执行初始化脚本（挂载至 `docker-entrypoint-initdb.d`）。已有数据卷需重建库时可：
 
 ```bash
 docker compose -f scripts/docker/docker-compose.yml down -v   # 清空卷后重导
@@ -122,7 +122,7 @@ docker compose up -d
 
 访问：Admin `http://127.0.0.1:5173`、Portal `http://127.0.0.1:5174`、API `http://127.0.0.1:8000`。
 
-`HEI_CONFIG_CRYPTO_KEY` 须与 `scripts/db.sql` 中 `sys_config` 密文匹配（演示种子与本地 `application-dev.yml` 默认密钥一致）；生产环境请生成新 Fernet 密钥并在管理端重配对象存储等敏感项。
+`HEI_CONFIG_CRYPTO_KEY` 须与 `scripts/hei_boot.sql` 中 `sys_config` 密文匹配（演示种子与本地 `application-dev.yml` 默认密钥一致）；生产环境请生成新 Fernet 密钥并在管理端重配对象存储等敏感项。
 
 默认端口：API `8000`、Admin `5173`、Portal `5174`、MySQL `3306`、Redis `6379`、MinIO `9000`/`9001`。对象存储在管理端配置 MinIO（容器内 `http://minio:9000`）。
 
@@ -135,7 +135,7 @@ docker compose up -d
 | 登录/登出 | 180 天 | `hei.log.audit.login-retention-days` |
 | 操作审计 | 365 天 | `hei.log.audit.operation-retention-days` |
 
-> 本地 / 演示环境以 SQL 脚本全量初始化；Flyway 默认关闭。`scripts/db.sql` 已包含全部表/列中文注释。
+> 本地 / 演示环境以 SQL 脚本全量初始化；Flyway 默认关闭。`scripts/hei_boot.sql` 已包含全部表/列中文注释。
 
 ### 2. 启动后端
 
@@ -172,19 +172,8 @@ pnpm install && pnpm dev
 | 端 | 前端仓库 | 地址 | 账号 | 密码 | 说明 |
 | --- | --- | --- | --- | --- | --- |
 | Admin | [hei-admin](https://github.com/jiangbyte/hei-admin) | http://127.0.0.1:5173 | `superadmin` | `123456` | 超级管理员（`*:*:*`） |
-| Admin | 同上 | 同上 | `admin_iam` | `123456` | IAM 管理员，账号列表 CUSTOM 数据范围 |
-| Admin | 同上 | 同上 | `admin_all` | `123456` | 活动模块，数据范围 ALL |
-| Admin | 同上 | 同上 | `admin_dept` | `123456` | 目录模块，数据范围 DEPT（研发部） |
-| Admin | 同上 | 同上 | `admin_self` | `123456` | 订单模块，数据范围 SELF |
-| Admin | 同上 | 同上 | `admin_child` | `123456` | 知识分类，数据范围 DEPT_AND_CHILD |
-| Admin | 同上 | 同上 | `admin_readonly` | `123456` | 账号管理只读（列表+详情） |
-| Admin | 同上 | 同上 | `admin_group` | `123456` | 经用户组继承 BIZ_DEPT 角色 |
-| Admin | 同上 | 同上 | `admin_be` | `123456` | 后端组主管，目录 DEPT |
-| Admin | 同上 | 同上 | `admin_qa` | `123456` | 测试组主管，知识分类 DEPT_AND_CHILD |
-| Portal | [hei-portal](https://github.com/jiangbyte/hei-portal) | http://127.0.0.1:5174 | `user` | `123456` | 门户默认用户 |
-| Portal | 同上 | 同上 | `portal_bob` / `portal_alice` | `123456` | 演示门户账户（含 Profile） |
 
-> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。演示账号与内容种子已写入 `scripts/db.sql`。
+> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。更多演示账号与内容种子已写入 `scripts/hei_boot.sql`。
 
 ## 姊妹项目
 
@@ -199,4 +188,4 @@ pnpm install && pnpm dev
 
 ## License
 
-本项目基于 [Apache License 2.0](LICENSE) 开源。完整条款见 [LICENSE](LICENSE)，版权声明见 [NOTICE](NOTICE)。
+本项目基于 [Apache License 2.0](LICENSE) 开源。完整条款见 [LICENSE](LICENSE)，版权声明见 [NOTICE](NOTICE).
