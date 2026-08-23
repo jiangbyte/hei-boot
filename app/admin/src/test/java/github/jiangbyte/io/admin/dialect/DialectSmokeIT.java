@@ -102,18 +102,6 @@ class DialectSmokeIT {
     }
 
     @Test
-    void jobLogDeleteExpiredSql() throws Exception {
-        String sql = dialect.deleteExpiredJobLogSql()
-                .replace("#{cutoff}", "?")
-                .replace("#{limit}", "?");
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setTimestamp(1, Timestamp.from(OffsetDateTime.now(ZoneOffset.UTC).minusYears(20).toInstant()));
-            ps.setInt(2, 1);
-            ps.executeUpdate();
-        }
-    }
-
-    @Test
     void noticeJsonVisibilityPredicate() throws Exception {
         String types = dialect.jsonArrayEmptyOrContainsNamed("n.target_account_types", "accountType")
                 .replace("#{accountType}", "?");

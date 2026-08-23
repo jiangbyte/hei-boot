@@ -62,8 +62,11 @@ public class FeedbackServiceImpl extends ServiceImpl<SysFeedbackMapper, SysFeedb
         Page<SysFeedback> page = this.getBaseMapper().selectPage(
                 new Page<>(param.getCurrent(), param.getSize()),
                 Wrappers.<SysFeedback>lambdaQuery()
+                        .like(StringUtils.hasText(param.getTitle()), SysFeedback::getTitle, param.getTitle())
                         .eq(StringUtils.hasText(param.getStatus()), SysFeedback::getStatus, param.getStatus())
                         .eq(StringUtils.hasText(param.getCategory()), SysFeedback::getCategory, param.getCategory())
+                        .eq(StringUtils.hasText(param.getSubmitterAccountType()),
+                                SysFeedback::getSubmitterAccountType, param.getSubmitterAccountType())
                         .orderByDesc(SysFeedback::getCreatedAt));
         enrichMany(page.getRecords());
         return page;

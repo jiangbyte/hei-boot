@@ -1,5 +1,7 @@
 package github.jiangbyte.io.biz.modules.cg_test_catalog.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -30,6 +32,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端 CgTestCatalog API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class AdminCgTestCatalogController {
     private final CgTestCatalogService cgTestCatalogService;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/biz/cg-test-catalog/create")
     @SaCheckPermission(value = "biz:cgtestcatalog:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "create")
@@ -47,6 +51,7 @@ public class AdminCgTestCatalogController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/biz/cg-test-catalog/update")
     @SaCheckPermission(value = "biz:cgtestcatalog:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "update")
@@ -56,6 +61,7 @@ public class AdminCgTestCatalogController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/biz/cg-test-catalog/delete")
     @SaCheckPermission(value = "biz:cgtestcatalog:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestcatalog", action = "delete")
@@ -65,6 +71,7 @@ public class AdminCgTestCatalogController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/biz/cg-test-catalog/detail")
     @SaCheckPermission(value = "biz:cgtestcatalog:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestCatalog> detail(@Valid @ModelAttribute IdParam param) {
@@ -72,6 +79,7 @@ public class AdminCgTestCatalogController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/biz/cg-test-catalog/page")
     @SaCheckPermission(value = "biz:cgtestcatalog:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestCatalog>> page(@Valid @ModelAttribute CgTestCatalogPageParam param) {
@@ -79,6 +87,7 @@ public class AdminCgTestCatalogController {
     }
 
     /** 树形查询。 */
+    @Operation(summary = "树形查询。")
     @GetMapping("/v1/admin/biz/cg-test-catalog/tree")
     @SaCheckPermission(value = "biz:cgtestcatalog:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {

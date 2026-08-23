@@ -18,4 +18,11 @@
         <module>workspace</module>
         <module>biz</module>
     </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+        </dependency>
+    </dependencies>
 </project>

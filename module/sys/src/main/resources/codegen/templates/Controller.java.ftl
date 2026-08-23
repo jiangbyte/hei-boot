@@ -1,5 +1,7 @@
 package ${basePackage}.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -38,6 +40,7 @@ import java.util.List;
  *
  * Author: ${author}
  */
+@Tag(name = "管理端 ${businessName} API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -46,6 +49,7 @@ public class Admin${entityName}Controller {
     private final ${entityName}Service ${varName}Service;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin${apiPrefix}/create")
     @SaCheckPermission(value = "${permissionPrefix}:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "create")
@@ -55,6 +59,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin${apiPrefix}/update")
     @SaCheckPermission(value = "${permissionPrefix}:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "update")
@@ -64,6 +69,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin${apiPrefix}/delete")
     @SaCheckPermission(value = "${permissionPrefix}:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "delete")
@@ -73,6 +79,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin${apiPrefix}/detail")
     @SaCheckPermission(value = "${permissionPrefix}:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<${entityName}> detail(@Valid @ModelAttribute IdParam param) {
@@ -80,6 +87,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin${apiPrefix}/page")
     @SaCheckPermission(value = "${permissionPrefix}:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<${entityName}>> page(@Valid @ModelAttribute ${entityName}PageParam param) {
@@ -88,6 +96,7 @@ public class Admin${entityName}Controller {
 <#if hasTree>
 
     /** 树形查询。 */
+    @Operation(summary = "树形查询。")
     @GetMapping("/v1/admin${apiPrefix}/tree")
     @SaCheckPermission(value = "${permissionPrefix}:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {
@@ -97,6 +106,7 @@ public class Admin${entityName}Controller {
 <#if hasSub && subEntityName??>
 
     /** 创建子项。 */
+    @Operation(summary = "创建子项。")
     @PostMapping("/v1/admin${apiPrefix}/children/create")
     @SaCheckPermission(value = "${permissionPrefix}:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "create")
@@ -106,6 +116,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 更新子项。 */
+    @Operation(summary = "更新子项。")
     @PostMapping("/v1/admin${apiPrefix}/children/update")
     @SaCheckPermission(value = "${permissionPrefix}:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "update")
@@ -115,6 +126,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 删除子项。 */
+    @Operation(summary = "删除子项。")
     @PostMapping("/v1/admin${apiPrefix}/children/delete")
     @SaCheckPermission(value = "${permissionPrefix}:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "${auditResourceType}", action = "delete")
@@ -124,6 +136,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 查询子项详情。 */
+    @Operation(summary = "查询子项详情。")
     @GetMapping("/v1/admin${apiPrefix}/children/detail")
     @SaCheckPermission(value = "${permissionPrefix}:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<${subEntityName}> childDetail(@Valid @ModelAttribute IdParam param) {
@@ -131,6 +144,7 @@ public class Admin${entityName}Controller {
     }
 
     /** 分页查询子项。 */
+    @Operation(summary = "分页查询子项。")
     @GetMapping("/v1/admin${apiPrefix}/children/page")
     @SaCheckPermission(value = "${permissionPrefix}:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<${subEntityName}>> childPage(@Valid @ModelAttribute ${subEntityName}PageParam param) {

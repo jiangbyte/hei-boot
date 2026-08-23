@@ -1,5 +1,7 @@
 package github.jiangbyte.io.auth.modules.oauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import github.jiangbyte.io.auth.modules.login.result.LoginResult;
 import github.jiangbyte.io.auth.modules.oauth.param.WechatMpLoginParam;
 import github.jiangbyte.io.auth.modules.oauth.result.OauthAuthorizeResult;
@@ -28,6 +30,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "门户三方登录 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class PortalOauthController {
 
     private final AuthOauthService authOauthService;
 
+    @Operation(summary = "OAuth 授权。")
     @GetMapping("/v1/portal/oauth/{provider}/authorize")
     @RateLimit(key = "portal:oauth-authorize", permits = 30, windowSeconds = 60)
     public ApiResponse<OauthAuthorizeResult> authorize(
@@ -44,6 +48,7 @@ public class PortalOauthController {
         return ApiResponse.ok(authOauthService.authorize(AccountType.PORTAL, provider, intent, redirect));
     }
 
+    @Operation(summary = "callback。")
     @GetMapping("/v1/portal/oauth/{provider}/callback")
     @RateLimit(key = "portal:oauth-callback", permits = 30, windowSeconds = 60)
     public void callback(
@@ -55,6 +60,7 @@ public class PortalOauthController {
         response.sendRedirect(location);
     }
 
+    @Operation(summary = "OAuth 换票。")
     @PostMapping("/v1/portal/oauth/exchange")
     @RateLimit(key = "portal:oauth-exchange", permits = 30, windowSeconds = 60)
     public ApiResponse<LoginResult> exchange(
@@ -62,6 +68,7 @@ public class PortalOauthController {
         return ApiResponse.ok(authOauthService.exchange(request.getCode()));
     }
 
+    @Operation(summary = "登录。")
     @PostMapping("/v1/portal/oauth/wechat-mp/login")
     @RateLimit(key = "portal:oauth-wechat-mp", permits = 30, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "oauth_wechat_mp_login")
@@ -69,17 +76,20 @@ public class PortalOauthController {
         return ApiResponse.ok(authOauthService.loginWechatMp(AccountType.PORTAL, request.getCode()));
     }
 
+    @Operation(summary = "bindings。")
     @GetMapping("/v1/portal/oauth/bindings")
     public ApiResponse<List<OauthBindingResult>> bindings() {
         return ApiResponse.ok(authOauthService.listCurrentBindings());
     }
 
+    @Operation(summary = "OAuth 授权。")
     @PostMapping("/v1/portal/oauth/{provider}/bind/authorize")
     @OperationAudit(resourceType = "auth", action = "oauth_bind_authorize")
     public ApiResponse<OauthAuthorizeResult> bindAuthorize(@PathVariable("provider") String provider) {
         return ApiResponse.ok(authOauthService.bindAuthorize(AccountType.PORTAL, provider));
     }
 
+    @Operation(summary = "解绑。")
     @PostMapping("/v1/portal/oauth/{provider}/unbind")
     @OperationAudit(resourceType = "auth", action = "oauth_unbind")
     public ApiResponse<Void> unbind(@PathVariable("provider") String provider) {

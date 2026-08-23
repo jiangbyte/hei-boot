@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.relation.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import github.jiangbyte.io.common.satoken.StpKit;
 
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端权限注册表 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class AdminPermissionController {
     private final PermissionRegistryService permissionRegistryService;
 
     /** 列出系统已注册权限。 */
+    @Operation(summary = "列出系统已注册权限。")
     @GetMapping("/v1/admin/permission-registry")
     @SaCheckPermission(value = "iam:resource:grant", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysRegisteredPermissionResult>> registered() {

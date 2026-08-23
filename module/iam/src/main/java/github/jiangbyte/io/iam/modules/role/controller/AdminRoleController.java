@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.role.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.satoken.StpKit;
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端角色 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class AdminRoleController {
     private final RoleService roleService;
 
     /** 创建角色。 */
+    @Operation(summary = "创建角色。")
     @PostMapping("/v1/admin/sys/roles/create")
     @SaCheckPermission(value = "iam:role:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "create")
@@ -50,6 +54,7 @@ public class AdminRoleController {
     }
 
     /** 更新角色。 */
+    @Operation(summary = "更新角色。")
     @PostMapping("/v1/admin/sys/roles/update")
     @SaCheckPermission(value = "iam:role:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "update")
@@ -59,6 +64,7 @@ public class AdminRoleController {
     }
 
     /** 批量删除角色。 */
+    @Operation(summary = "批量删除角色。")
     @PostMapping("/v1/admin/sys/roles/delete")
     @SaCheckPermission(value = "iam:role:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "delete")
@@ -68,6 +74,7 @@ public class AdminRoleController {
     }
 
     /** 查询角色详情。 */
+    @Operation(summary = "查询角色详情。")
     @GetMapping("/v1/admin/sys/roles/detail")
     @SaCheckPermission(value = "iam:role:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysRole> detail(@Valid @ModelAttribute IdParam param) {
@@ -75,6 +82,7 @@ public class AdminRoleController {
     }
 
     /** 分页查询角色。 */
+    @Operation(summary = "分页查询角色。")
     @GetMapping("/v1/admin/sys/roles/page")
     @SaCheckPermission(value = "iam:role:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysRole>> page(@Valid @ModelAttribute SysRolePageParam param) {
@@ -82,6 +90,7 @@ public class AdminRoleController {
     }
 
     /** 查询角色已拥有管理端资源。 */
+    @Operation(summary = "查询角色已拥有管理端资源。")
     @GetMapping("/v1/admin/sys/roles/own-resource")
     @SaCheckPermission(value = "iam:role:ownresource", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysResourceOwnResult> ownResource(
@@ -91,6 +100,7 @@ public class AdminRoleController {
     }
 
     /** 全量替换角色管理端资源授权。 */
+    @Operation(summary = "全量替换角色管理端资源授权。")
     @PostMapping("/v1/admin/sys/roles/grant-resource")
     @SaCheckPermission(value = "iam:role:grantresource", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "grant_resource")
@@ -100,6 +110,7 @@ public class AdminRoleController {
     }
 
     /** 查询角色已拥有客户端资源。 */
+    @Operation(summary = "查询角色已拥有客户端资源。")
     @GetMapping("/v1/admin/sys/roles/own-client-resource")
     @SaCheckPermission(value = "iam:role:ownclientresource", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysResourceOwnResult> ownClientResource(
@@ -109,6 +120,7 @@ public class AdminRoleController {
     }
 
     /** 全量替换角色客户端资源授权。 */
+    @Operation(summary = "全量替换角色客户端资源授权。")
     @PostMapping("/v1/admin/sys/roles/grant-client-resource")
     @SaCheckPermission(value = "iam:role:grantclientresource", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "grant_client_resource")
@@ -118,6 +130,7 @@ public class AdminRoleController {
     }
 
     /** 查询角色成员。 */
+    @Operation(summary = "查询角色成员。")
     @GetMapping("/v1/admin/sys/roles/own-user")
     @SaCheckPermission(value = "iam:role:ownuser", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysOwnUserResult> ownUser(@Valid @ModelAttribute IdParam param) {
@@ -125,6 +138,7 @@ public class AdminRoleController {
     }
 
     /** 全量替换角色成员。 */
+    @Operation(summary = "全量替换角色成员。")
     @PostMapping("/v1/admin/sys/roles/grant-user")
     @SaCheckPermission(value = "iam:role:grantuser", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_role", action = "grant_user")

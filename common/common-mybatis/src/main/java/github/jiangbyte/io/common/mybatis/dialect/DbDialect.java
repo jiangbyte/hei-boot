@@ -46,9 +46,6 @@ public interface DbDialect {
     /** 按日聚合 GROUP BY 表达式（与 {@link #dailyBucketSelect} 一致）。 */
     String dailyBucketGroupBy(String timestampColumn);
 
-    /** 删除过期任务日志。 */
-    String deleteExpiredJobLogSql();
-
     /** Codegen：列出当前 schema 下用户表。 */
     String codegenListTablesSql();
 

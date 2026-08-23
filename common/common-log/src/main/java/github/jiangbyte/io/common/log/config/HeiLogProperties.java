@@ -60,5 +60,14 @@ public class HeiLogProperties {
 
         /** Outbox CLAIMED 超时后重新认领（毫秒） */
         private long outboxClaimStaleMs = 120000;
+
+        /** 登录/登出审计保留天数；小于等于 0 表示跳过清理。 */
+        private int loginRetentionDays = 180;
+
+        /** 操作审计保留天数（不含 login/logout）；小于等于 0 表示跳过清理。 */
+        private int operationRetentionDays = 365;
+
+        /** 审计日志清理单次删除上限。 */
+        private int cleanupBatchSize = 1000;
     }
 }

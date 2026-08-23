@@ -64,35 +64,69 @@ hei-boot/
 ├── common/                 # 公共能力（web / security / mybatis / redis / oss / job / log …）
 ├── module-api/             # 模块对外 API 契约
 ├── module/                 # 业务实现（auth / iam / sys / profile / workspace / biz）
-└── scripts/                # 数据库脚本与工具
+└── scripts/                # db.sql、OpenAPI 注解工具、e2e
 ```
+
+`scripts/` 保留：
+
+| 文件 | 用途 |
+|------|------|
+| `db.sql` | MySQL 全量建表与种子 |
+| `generate_column_labels.py` | 从 db.sql 生成字段注释 catalog |
+| `apply_openapi.py` | 批量补齐模型 `@Schema` 与 Controller `@Tag`/`@Operation` |
+| `import-mysql-wsl.sh` / `migrate-dev-wsl.sh` | WSL Docker 开发库导入 |
+| `seed_auth_demo.py` | 认证/授权演示账户、角色、部门、数据范围种子 |
+| `seed_content_demo.py` | 内容运营演示种子（展示图、通知消息、反馈） |
+| `validate_permission_keys.py` | 校验权限 key 三段式合规（可用于 CI） |
+| `audit_button_permissions.py` | 审计按钮资源与 DB/前端权限绑定覆盖 |
+| `permission_code_map.py` | 上述校验/审计脚本的资源 code 映射 |
+| `run_dialect_e2e.py` + `e2e/` | 本地 MySQL e2e |
+| `screenshot_docs.py` / `read_captcha.py` | Knife4j 文档截图辅助 |
 
 ## 快速开始
 
 ### 环境要求
 
 - JDK **21**、Maven **3.9+**
-- PostgreSQL **或** MySQL 8+、Redis
+- MySQL 8+、Redis
 
 ### 1. 初始化数据库
 
-**PostgreSQL：**
+**维护原则：** 在 `scripts/db.sql`（MySQL 8）直接维护表结构、种子数据与表/列 `COMMENT`；改库后可选执行：
 
 ```bash
-createdb -U postgres -h 127.0.0.1 hei_boot
-psql -U postgres -h 127.0.0.1 -d hei_boot -f scripts/db.postgresql.sql
+python scripts/generate_column_labels.py   # 从 db.sql 重新生成 db_column_labels.py
 ```
 
-**MySQL 8+：**
+**MySQL 8+（本地运行默认）：**
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE hei_boot DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql -u root -p hei_boot < scripts/db.mysql.sql
+mysql -u root -p hei_boot < scripts/db.sql
 ```
 
-方言由 JDBC URL 自动识别。开发配置见 [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml)（`DB_WRITE_*` / Redis / 对象存储）。
+WSL Docker 开发库一键同步（`dev-mysql`）：
 
-> 本地 / 演示环境以 SQL 脚本全量初始化；Flyway 默认关闭。
+```bash
+bash scripts/migrate-dev-wsl.sh
+```
+
+或仅导入 MySQL（`dev-mysql`）：
+
+```bash
+bash scripts/import-mysql-wsl.sh
+```
+
+开发配置见 [`app/admin/src/main/resources/application-dev.yml`](app/admin/src/main/resources/application-dev.yml)（`DB_WRITE_*` / Redis / 对象存储）。本地 `dev`/`local` profile 下读写库均指向同一 MySQL（`hei_boot`），只需配置 `DB_WRITE_*`；生产环境可通过 `DB_READ_*` 单独指定只读从库。
+
+审计日志默认保留策略（可通过 `hei.log.audit.*` 或内置任务 `审计日志清理` 参数覆盖，设为 `0` 表示不清理）：
+
+| 类型 | 默认保留 | 配置项 |
+| --- | --- | --- |
+| 登录/登出 | 180 天 | `hei.log.audit.login-retention-days` |
+| 操作审计 | 365 天 | `hei.log.audit.operation-retention-days` |
+
+> 本地 / 演示环境以 SQL 脚本全量初始化；Flyway 默认关闭。`scripts/db.sql` 已包含全部表/列中文注释。
 
 ### 2. 启动后端
 
@@ -103,7 +137,10 @@ mvn -pl app/admin -am spring-boot:run
 | 项 | 地址 |
 | --- | --- |
 | API | http://127.0.0.1:8000 |
-| 接口文档 | http://127.0.0.1:8000/doc.html |
+| 接口文档（Knife4j） | http://127.0.0.1:8000/doc.html |
+| OpenAPI JSON | http://127.0.0.1:8000/v3/api-docs |
+
+> 文档栈：**Spring Boot 4** + **Knife4j 5**（`knife4j-openapi3-boot4-spring-boot-starter`）+ springdoc 生成 OpenAPI。批量补齐模型 `@Schema` 与 Controller `@Tag`/`@Operation`：`python scripts/apply_openapi.py`。
 
 ### 3. 启动前端（可选）
 
@@ -123,12 +160,23 @@ pnpm install && pnpm dev
 
 ## 默认账号
 
-| 端 | 前端仓库 | 地址 | 账号 | 密码 |
-| --- | --- | --- | --- | --- |
-| Admin | [hei-admin](https://github.com/jiangbyte/hei-admin) | http://127.0.0.1:5173 | `superadmin` | `123456` |
-| Portal | [hei-portal](https://github.com/jiangbyte/hei-portal) | http://127.0.0.1:5174 | `user` | `123456` |
+| 端 | 前端仓库 | 地址 | 账号 | 密码 | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| Admin | [hei-admin](https://github.com/jiangbyte/hei-admin) | http://127.0.0.1:5173 | `superadmin` | `123456` | 超级管理员（`*:*:*`） |
+| Admin | 同上 | 同上 | `admin_iam` | `123456` | IAM 管理员，账号列表 CUSTOM 数据范围 |
+| Admin | 同上 | 同上 | `admin_all` | `123456` | 活动模块，数据范围 ALL |
+| Admin | 同上 | 同上 | `admin_dept` | `123456` | 目录模块，数据范围 DEPT（研发部） |
+| Admin | 同上 | 同上 | `admin_self` | `123456` | 订单模块，数据范围 SELF |
+| Admin | 同上 | 同上 | `admin_child` | `123456` | 知识分类，数据范围 DEPT_AND_CHILD |
+| Admin | 同上 | 同上 | `admin_readonly` | `123456` | 账号管理只读（列表+详情） |
+| Admin | 同上 | 同上 | `admin_group` | `123456` | 经用户组继承 BIZ_DEPT 角色 |
+| Admin | 同上 | 同上 | `admin_be` | `123456` | 后端组主管，目录 DEPT |
+| Admin | 同上 | 同上 | `admin_qa` | `123456` | 测试组主管，知识分类 DEPT_AND_CHILD |
+| Portal | [hei-portal](https://github.com/jiangbyte/hei-portal) | http://127.0.0.1:5174 | `user` | `123456` | 门户默认用户 |
+| Portal | 同上 | 同上 | `portal_bob` / `portal_alice` | `123456` | 演示门户账户（含 Profile） |
 
-> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。
+> 仅供本地演示。部署后请修改默认密码，并更换配置加密密钥、对象存储凭证等敏感项。  
+> 重新生成演示种子：`python scripts/seed_auth_demo.py`（组织权限）与 `python scripts/seed_content_demo.py`（内容运营），然后执行 `bash scripts/migrate-dev-wsl.sh`。
 
 ## 姊妹项目
 

@@ -1,5 +1,7 @@
 package github.jiangbyte.io.auth.modules.session.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import github.jiangbyte.io.common.satoken.StpKit;
 
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端在线会话 API")
 @RestController
 @RequestMapping("/api")
 public class AdminSessionController {
@@ -54,6 +57,7 @@ public class AdminSessionController {
     private static final int ANALYSIS_SCAN_CAP = 5000;
 
     /** 汇总在线账号/Token 数量及近一小时新增等分析指标（轻量：不读 LoginUser）。 */
+    @Operation(summary = "汇总在线账号/Token 数量及近一小时新增等分析指标（轻量：不读 LoginUser）。")
     @GetMapping("/v1/admin/auth/sessions/analysis")
     @SaCheckPermission(value = "auth:session:analysis", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SessionAnalysisResult> analysis() {
@@ -73,6 +77,7 @@ public class AdminSessionController {
      * 分页查询在线会话。无过滤时按 Sa-Token 分页检索并仅 hydrate 当前页；
      * 有过滤时有限向前扫描（硬顶 {@link #SCAN_HARD_CAP}），total 为扫描范围内匹配数（可能近似）。
      */
+    @Operation(summary = "分页查询在线会话。")
     @GetMapping("/v1/admin/auth/sessions/page")
     @SaCheckPermission(value = "auth:session:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SessionAccountResult>> page(@Valid @ModelAttribute SessionPageParam query) {
@@ -144,6 +149,7 @@ public class AdminSessionController {
     }
 
     /** 列出指定账号下的全部 Token 会话。 */
+    @Operation(summary = "列出指定账号下的全部 Token 会话。")
     @GetMapping("/v1/admin/auth/sessions/tokens")
     @SaCheckPermission(value = "auth:session:tokenlist", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SessionTokenResult>> tokens(
@@ -153,6 +159,7 @@ public class AdminSessionController {
     }
 
     /** 按账号批量强制下线（踢出全部 Token）。 */
+    @Operation(summary = "按账号批量强制下线（踢出全部 Token）。")
     @PostMapping("/v1/admin/auth/sessions/exit")
     @SaCheckPermission(value = "auth:session:exit", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "auth_session", action = "exit")
@@ -174,6 +181,7 @@ public class AdminSessionController {
     }
 
     /** 按 Token 值批量强制下线（同时尝试管理端与门户 StpLogic）。 */
+    @Operation(summary = "按 Token 值批量强制下线（同时尝试管理端与门户 StpLogic）。")
     @PostMapping("/v1/admin/auth/sessions/token/exit")
     @SaCheckPermission(value = "auth:session:tokenexit", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "auth_session", action = "token_exit")

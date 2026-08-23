@@ -84,21 +84,6 @@ public final class MysqlDialect implements DbDialect {
     }
 
     @Override
-    public String deleteExpiredJobLogSql() {
-        return """
-                DELETE FROM sys_job_log
-                WHERE id IN (
-                  SELECT id FROM (
-                    SELECT id FROM sys_job_log
-                    WHERE started_at < #{cutoff}
-                    ORDER BY started_at
-                    LIMIT #{limit}
-                  ) AS _hei_expired
-                )
-                """;
-    }
-
-    @Override
     public String codegenListTablesSql() {
         return """
                 SELECT t.table_name AS table_name,

@@ -1,5 +1,7 @@
 package github.jiangbyte.io.auth.modules.login.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import github.jiangbyte.io.auth.modules.login.service.AuthService;
 import github.jiangbyte.io.auth.modules.login.param.CancelAccountParam;
 import github.jiangbyte.io.auth.modules.login.result.AuthOptionsResult;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端认证 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -38,12 +41,14 @@ public class AdminAuthController {
     private final AuthService authService;
 
     /** 获取管理端登录页公开配置。 */
+    @Operation(summary = "获取管理端登录页公开配置。")
     @GetMapping("/v1/admin/public/auth-options")
     public ApiResponse<AuthOptionsResult> authOptions() {
         return ApiResponse.ok(authService.authOptions(AccountType.ADMIN));
     }
 
     /** 获取图形验证码。 */
+    @Operation(summary = "获取图形验证码。")
     @GetMapping("/v1/admin/captcha")
     @RateLimit(key = "admin:captcha", permits = 30, windowSeconds = 60)
     public ApiResponse<CaptchaResult> captcha(@RequestParam(value = "format", defaultValue = "svg") String format) {
@@ -51,6 +56,7 @@ public class AdminAuthController {
     }
 
     /** 获取密码传输 RSA 公钥。 */
+    @Operation(summary = "获取密码传输 RSA 公钥。")
     @GetMapping("/v1/admin/password-key")
     @RateLimit(key = "admin:password-key", permits = 30, windowSeconds = 60)
     public ApiResponse<PasswordKeyResult> passwordKey() {
@@ -58,6 +64,7 @@ public class AdminAuthController {
     }
 
     /** 发送管理端登录 OTP。 */
+    @Operation(summary = "发送管理端登录 OTP。")
     @PostMapping("/v1/admin/send-login-code")
     @RateLimit(key = "admin:send-login-code", permits = 10, windowSeconds = 60)
     public ApiResponse<Void> sendLoginCode(@Valid @RequestBody SendLoginCodeParam request) {
@@ -66,6 +73,7 @@ public class AdminAuthController {
     }
 
     /** 管理端登录。 */
+    @Operation(summary = "管理端登录。")
     @PostMapping("/v1/admin/login")
     @RateLimit(key = "admin:login", permits = 20, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "login")
@@ -75,12 +83,14 @@ public class AdminAuthController {
     }
 
     /** 刷新管理端会话 Token。 */
+    @Operation(summary = "刷新管理端会话 Token。")
     @PostMapping("/v1/admin/auth/refresh")
     public ApiResponse<LoginResult> refresh() {
         return ApiResponse.ok(authService.refreshSession());
     }
 
     /** 管理端登出。 */
+    @Operation(summary = "管理端登出。")
     @PostMapping("/v1/admin/logout")
     @OperationAudit(resourceType = "auth", action = "logout")
     public ApiResponse<Void> logout() {
@@ -89,6 +99,7 @@ public class AdminAuthController {
     }
 
     /** 管理端忘记密码（发重置邮件）。 */
+    @Operation(summary = "管理端忘记密码（发重置邮件）。")
     @PostMapping("/v1/admin/forgot-password")
     @RateLimit(key = "admin:forgot-password", permits = 5, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "forgot_password")
@@ -98,6 +109,7 @@ public class AdminAuthController {
     }
 
     /** 管理端忘记密码（向绑定手机发送 OTP）。 */
+    @Operation(summary = "管理端忘记密码（向绑定手机发送 OTP）。")
     @PostMapping("/v1/admin/forgot-password/phone")
     @RateLimit(key = "admin:forgot-password-phone", permits = 5, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "forgot_password_phone")
@@ -107,6 +119,7 @@ public class AdminAuthController {
     }
 
     /** 管理端通过令牌重置密码。 */
+    @Operation(summary = "管理端通过令牌重置密码。")
     @PostMapping("/v1/admin/reset-password")
     @RateLimit(key = "admin:reset-password", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "reset_password")
@@ -116,6 +129,7 @@ public class AdminAuthController {
     }
 
     /** 管理端通过手机 OTP 重置密码。 */
+    @Operation(summary = "管理端通过手机 OTP 重置密码。")
     @PostMapping("/v1/admin/reset-password/phone")
     @RateLimit(key = "admin:reset-password-phone", permits = 10, windowSeconds = 60)
     @OperationAudit(resourceType = "auth", action = "reset_password_phone")
@@ -125,6 +139,7 @@ public class AdminAuthController {
     }
 
     /** 注销当前管理端账号。 */
+    @Operation(summary = "注销当前管理端账号。")
     @PostMapping("/v1/admin/cancel")
     @OperationAudit(resourceType = "auth", action = "cancel")
     public ApiResponse<Void> cancel(@RequestBody(required = false) CancelAccountParam request) {

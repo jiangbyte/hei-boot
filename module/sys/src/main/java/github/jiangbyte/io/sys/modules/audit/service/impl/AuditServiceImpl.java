@@ -1,5 +1,6 @@
 package github.jiangbyte.io.sys.modules.audit.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 /**
  * 操作审计服务实现：日志查询与持久化。
@@ -33,6 +35,9 @@ import java.time.ZoneOffset;
 @Service
 @RequiredArgsConstructor
 public class AuditServiceImpl extends ServiceImpl<SysOperationAuditLogMapper, SysOperationAuditLog> implements AuditService {
+
+    private static final int DEFAULT_BATCH_SIZE = 1000;
+    private static final int MAX_ROUNDS = 100;
 
     private final AuditOperatorSupport auditOperatorSupport;
 
@@ -156,6 +161,52 @@ public class AuditServiceImpl extends ServiceImpl<SysOperationAuditLogMapper, Sy
             // Unique index on request_id (scripts/db.sql) / concurrent insert races
             log.debug("Ignore duplicate audit insert, requestId={}", event.getRequestId());
         }
+    }
+
+    @Override
+    public int cleanupExpiredLoginLogs(int retentionDays, int batchSize) {
+        return cleanupExpired(retentionDays, batchSize, true);
+    }
+
+    @Override
+    public int cleanupExpiredOperationLogs(int retentionDays, int batchSize) {
+        return cleanupExpired(retentionDays, batchSize, false);
+    }
+
+    private int cleanupExpired(int retentionDays, int batchSize, boolean loginLogs) {
+        if (retentionDays <= 0) {
+            return 0;
+        }
+        int limit = batchSize > 0 ? batchSize : DEFAULT_BATCH_SIZE;
+        OffsetDateTime cutoff = OffsetDateTime.now().minusDays(retentionDays);
+        LambdaQueryWrapper<SysOperationAuditLog> wrapper = Wrappers.<SysOperationAuditLog>lambdaQuery()
+                .lt(SysOperationAuditLog::getCreatedAt, cutoff)
+                .orderByAsc(SysOperationAuditLog::getCreatedAt);
+        if (loginLogs) {
+            wrapper.in(SysOperationAuditLog::getAction, "login", "logout");
+        } else {
+            wrapper.and(w -> w.isNull(SysOperationAuditLog::getAction)
+                    .or().notIn(SysOperationAuditLog::getAction, "login", "logout"));
+        }
+        return deleteExpiredRounds(wrapper, limit);
+    }
+
+    private int deleteExpiredRounds(LambdaQueryWrapper<SysOperationAuditLog> wrapper, int limit) {
+        int total = 0;
+        for (int round = 0; round < MAX_ROUNDS; round++) {
+            Page<SysOperationAuditLog> batch = this.page(new Page<>(1, limit, false), wrapper);
+            List<SysOperationAuditLog> records = batch.getRecords();
+            if (records.isEmpty()) {
+                break;
+            }
+            List<String> ids = records.stream().map(SysOperationAuditLog::getId).toList();
+            this.removeByIds(ids);
+            total += ids.size();
+            if (ids.size() < limit) {
+                break;
+            }
+        }
+        return total;
     }
 
     /**

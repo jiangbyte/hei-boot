@@ -1,5 +1,7 @@
 package github.jiangbyte.io.auth.modules.login.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.sys.config.ConfigApi;
 import github.jiangbyte.io.sys.config.SiteFooterConfig;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * Author: Charlie
  */
+@Tag(name = "站点页脚公开接口")
 @RestController
 @RequestMapping("/api/v1/public")
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class PublicSiteFooterController {
 
     private final ConfigApi configApi;
 
+    @Operation(summary = "site footer。")
     @GetMapping("/site-footer")
     public ApiResponse<SiteFooterResult> siteFooter() {
         return ApiResponse.ok(SiteFooterConfig.resolve(configApi));

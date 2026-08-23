@@ -1,6 +1,6 @@
 """ Author: Charlie
 
-双库 e2e 编排（对齐 hei-gin / hei-fastapi）：导入种子 → 启 Spring Boot → 扫路由报告。
+MySQL e2e 编排：导入种子 → 启 Spring Boot → 扫路由报告。
 
 用法::
 
@@ -30,7 +30,7 @@ JAVA_HOME = os.environ.get("JAVA_HOME", r"E:\envs\jdk-21")
 MAVEN_HOME = os.environ.get("MAVEN_HOME", r"E:\tools\apache-maven")
 
 
-def _env(dialect: str) -> dict[str, str]:
+def _env() -> dict[str, str]:
     env = os.environ.copy()
     env["JAVA_HOME"] = JAVA_HOME
     path_parts = [
@@ -48,27 +48,17 @@ def _env(dialect: str) -> dict[str, str]:
     env["REDIS_PORT"] = "6379"
     env["REDIS_PASSWORD"] = PASS
     env["REDIS_DATABASE"] = "0"
-    if dialect == "mysql":
-        env["DB_WRITE_DRIVER"] = "com.mysql.cj.jdbc.Driver"
-        env["DB_WRITE_URL"] = (
-            f"jdbc:mysql://{HOST}:3306/{DB}?useUnicode=true&characterEncoding=utf8"
-            f"&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
-        )
-        env["DB_WRITE_USERNAME"] = "root"
-        env["DB_WRITE_PASSWORD"] = PASS
-        env["DB_READ_DRIVER"] = env["DB_WRITE_DRIVER"]
-        env["DB_READ_URL"] = env["DB_WRITE_URL"]
-        env["DB_READ_USERNAME"] = "root"
-        env["DB_READ_PASSWORD"] = PASS
-    else:
-        env["DB_WRITE_DRIVER"] = "org.postgresql.Driver"
-        env["DB_WRITE_URL"] = f"jdbc:postgresql://{HOST}:5432/{DB}"
-        env["DB_WRITE_USERNAME"] = "postgres"
-        env["DB_WRITE_PASSWORD"] = PASS
-        env["DB_READ_DRIVER"] = env["DB_WRITE_DRIVER"]
-        env["DB_READ_URL"] = env["DB_WRITE_URL"]
-        env["DB_READ_USERNAME"] = "postgres"
-        env["DB_READ_PASSWORD"] = PASS
+    env["DB_WRITE_DRIVER"] = "com.mysql.cj.jdbc.Driver"
+    env["DB_WRITE_URL"] = (
+        f"jdbc:mysql://{HOST}:3306/{DB}?useUnicode=true&characterEncoding=utf8"
+        f"&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+    )
+    env["DB_WRITE_USERNAME"] = "root"
+    env["DB_WRITE_PASSWORD"] = PASS
+    env["DB_READ_DRIVER"] = env["DB_WRITE_DRIVER"]
+    env["DB_READ_URL"] = env["DB_WRITE_URL"]
+    env["DB_READ_USERNAME"] = "root"
+    env["DB_READ_PASSWORD"] = PASS
     return env
 
 
@@ -142,64 +132,6 @@ def prepare_mysql() -> None:
     print("mysql: seeded", DB, flush=True)
 
 
-def prepare_postgres() -> None:
-    subprocess.run(
-        ["wsl", "docker", "start", "dev-postgres", "dev-redis"],
-        check=False,
-        cwd=ROOT,
-    )
-    for _ in range(40):
-        ping = subprocess.run(
-            ["wsl", "docker", "exec", "dev-postgres", "pg_isready", "-U", "postgres"],
-            cwd=ROOT,
-            capture_output=True,
-        )
-        if ping.returncode == 0:
-            break
-        time.sleep(2)
-    else:
-        raise RuntimeError("dev-postgres not ready")
-    _wait_tcp(HOST, 5432, containers=("dev-postgres", "dev-redis"))
-    _wait_redis()
-    time.sleep(1)
-    subprocess.run(
-        [
-            "wsl",
-            "docker",
-            "exec",
-            "-i",
-            "dev-postgres",
-            "psql",
-            "-U",
-            "postgres",
-            "-c",
-            f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{DB}' AND pid <> pg_backend_pid();",
-        ],
-        check=False,
-        cwd=ROOT,
-    )
-    subprocess.run(
-        ["wsl", "docker", "exec", "-i", "dev-postgres", "psql", "-U", "postgres", "-c", f'DROP DATABASE IF EXISTS "{DB}";'],
-        check=False,
-        cwd=ROOT,
-    )
-    subprocess.run(
-        ["wsl", "docker", "exec", "-i", "dev-postgres", "psql", "-U", "postgres", "-c", f'CREATE DATABASE "{DB}";'],
-        check=True,
-        cwd=ROOT,
-    )
-    sql = (ROOT / "scripts" / "db.postgresql.sql").read_bytes()
-    proc = subprocess.run(
-        ["wsl", "docker", "exec", "-i", "dev-postgres", "psql", "-U", "postgres", "-d", DB, "-v", "ON_ERROR_STOP=1"],
-        input=sql,
-        cwd=ROOT,
-        check=False,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError("postgres seed import failed")
-    print("postgres: seeded", DB)
-
-
 def _wait(base: str, proc: subprocess.Popen | None = None, attempts: int = 120) -> None:
     for i in range(attempts):
         if proc is not None and proc.poll() is not None:
@@ -229,17 +161,14 @@ def _kill_port(port: int) -> None:
         subprocess.run(["taskkill", "/F", "/PID", pid], check=False, capture_output=True)
 
 
-def run_e2e(dialect: str) -> dict:
-    if dialect == "mysql":
-        prepare_mysql()
-    else:
-        prepare_postgres()
+def run_e2e() -> dict:
+    prepare_mysql()
 
     _kill_port(PORT)
-    env = _env(dialect)
+    env = _env()
     base = f"http://127.0.0.1:{PORT}"
-    out = ROOT / "scripts" / "e2e" / f"report-{dialect}.json"
-    log_path = ROOT / "scripts" / "e2e" / f"boot-{dialect}.log"
+    out = ROOT / "scripts" / "e2e" / "report-mysql.json"
+    log_path = ROOT / "scripts" / "e2e" / "boot-mysql.log"
     log_fp = open(log_path, "w", encoding="utf-8")
     jar = ROOT / "app" / "admin" / "target" / "admin.jar"
     skip_build = os.environ.get("HEI_E2E_SKIP_BUILD", "").lower() in {"1", "true", "yes"}
@@ -247,7 +176,7 @@ def run_e2e(dialect: str) -> dict:
         print(f"skip maven package, use existing {jar}", flush=True)
     else:
         mvn = f'"{MAVEN_HOME}\\bin\\mvn.cmd"'
-        mvn_log = ROOT / "scripts" / "e2e" / f"mvn-{dialect}.log"
+        mvn_log = ROOT / "scripts" / "e2e" / "mvn-mysql.log"
         with open(mvn_log, "w", encoding="utf-8") as mvn_fp:
             build = subprocess.run(
                 f"{mvn} -pl app/admin -am package -DskipTests",
@@ -262,19 +191,13 @@ def run_e2e(dialect: str) -> dict:
             raise RuntimeError(f"maven package failed, see {mvn_log}")
     if not jar.exists():
         raise RuntimeError(f"missing jar: {jar}")
-    keep_names = ("dev-mysql", "dev-redis") if dialect == "mysql" else ("dev-postgres", "dev-redis")
+    keep_names = ("dev-mysql", "dev-redis")
     stop_keep = threading.Event()
     keeper = threading.Thread(target=_keepalive_containers, args=(keep_names, stop_keep), daemon=True)
     keeper.start()
-    # captcha/login need Redis; DB ports must stay published on Windows
-    if dialect == "mysql":
-        _ensure_containers("dev-mysql", "dev-redis")
-        _wait_tcp(HOST, 3306, containers=("dev-mysql", "dev-redis"))
-        _wait_redis()
-    else:
-        _ensure_containers("dev-postgres", "dev-redis")
-        _wait_tcp(HOST, 5432, containers=("dev-postgres", "dev-redis"))
-        _wait_redis()
+    _ensure_containers("dev-mysql", "dev-redis")
+    _wait_tcp(HOST, 3306, containers=("dev-mysql", "dev-redis"))
+    _wait_redis()
     proc = subprocess.Popen(
         f'"{JAVA_HOME}\\bin\\java.exe" -jar "{jar}"',
         cwd=ROOT,
@@ -305,7 +228,7 @@ def run_e2e(dialect: str) -> dict:
         if out.exists():
             summary = json.loads(out.read_text(encoding="utf-8"))
         return {
-            "dialect": dialect,
+            "dialect": "mysql",
             "e2e_exit": e2e.returncode,
             "report": str(out),
             "log": str(log_path),
@@ -334,24 +257,17 @@ def run_e2e(dialect: str) -> dict:
 
 def main() -> int:
     started = time.time()
-    # ensure deps
     subprocess.run(
         [sys.executable, "-m", "pip", "install", "-q", "bcrypt", "cryptography", "redis", "jsonschema", "referencing"],
         check=False,
     )
-    results = []
-    # Reuse jar across dialects unless HEI_E2E_SKIP_BUILD explicitly disables skip after first build
-    for dialect in ("mysql", "postgresql"):
-        print(f"\n===== {dialect} =====", flush=True)
-        results.append(run_e2e(dialect))
-        # after first successful package, skip rebuild for the second dialect
-        os.environ["HEI_E2E_SKIP_BUILD"] = "1"
-    report = {"elapsed_seconds": round(time.time() - started, 1), "rounds": results}
+    print("\n===== mysql =====", flush=True)
+    result = run_e2e()
+    report = {"elapsed_seconds": round(time.time() - started, 1), "rounds": [result]}
     path = ROOT / "scripts" / "e2e" / "report-summary.json"
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    ok = all(r.get("e2e_exit") == 0 for r in results)
-    return 0 if ok else 1
+    return 0 if result.get("e2e_exit") == 0 else 1
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.feedback.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
 import github.jiangbyte.io.common.log.annotation.OperationAudit;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * Author: Charlie
  */
+@Tag(name = "门户端反馈 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class PortalFeedbackController {
     private final FeedbackService feedbackService;
 
     /** 门户用户提交反馈。 */
+    @Operation(summary = "门户用户提交反馈。")
     @PostMapping("/v1/portal/sys/feedbacks/submit")
     @OperationAudit(resourceType = "sys_feedback", action = "submit")
     public ApiResponse<Void> submit(@Valid @RequestBody SysFeedbackAddParam param) {
@@ -38,12 +42,14 @@ public class PortalFeedbackController {
     }
 
     /** 分页查询当前门户用户提交的反馈。 */
+    @Operation(summary = "分页查询当前门户用户提交的反馈。")
     @GetMapping("/v1/portal/sys/feedbacks/my-page")
     public ApiResponse<Page<SysFeedback>> myPage(@Valid @ModelAttribute SysFeedbackPageParam param) {
         return ApiResponse.ok(feedbackService.myPage(param));
     }
 
     /** 查询当前门户用户本人的反馈详情。 */
+    @Operation(summary = "查询当前门户用户本人的反馈详情。")
     @GetMapping("/v1/portal/sys/feedbacks/my-detail")
     public ApiResponse<SysFeedback> myDetail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(feedbackService.myDetail(param.getId()));

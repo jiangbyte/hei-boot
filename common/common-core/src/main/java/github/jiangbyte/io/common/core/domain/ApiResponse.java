@@ -1,5 +1,6 @@
 package github.jiangbyte.io.common.core.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,15 +13,19 @@ import java.io.Serializable;
  *
  * Author: Charlie
  */
+@Schema(description = "统一 API 响应包装：业务码、提示文案与可选载荷。")
 @Data
 @NoArgsConstructor
 public class ApiResponse<T> implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+    @Schema(description = "编码")
 
     private int code;
+    @Schema(description = "提示信息")
     private String message;
+    @Schema(description = "响应数据")
     private T data;
 
     private ApiResponse(int code, String message, T data) {

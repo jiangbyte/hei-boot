@@ -47,6 +47,10 @@ class CodegenTemplateEngineTest {
         assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"create\")"));
         assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"update\")"));
         assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@OperationAudit(resourceType = \"biz_activity\", action = \"delete\")"));
+        assertTrue(contentContaining(files, "CgTestActivityAddParam.java").contains("@Schema(description = \"创建"));
+        assertTrue(contentContaining(files, "CgTestActivity.java").contains("@Schema(description = "));
+        assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@Tag(name = "));
+        assertTrue(contentContaining(files, "AdminCgTestActivityController.java").contains("@Operation(summary = "));
         // 规范对齐：分页走 getBaseMapper().selectPage
         assertTrue(contentContaining(files, "CgTestActivityServiceImpl.java").contains("getBaseMapper().selectPage"));
         // 前端 api 使用 API_PREFIX 常量（保持 any 约定）

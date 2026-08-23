@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.client.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -29,6 +31,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端客户端模块 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -37,6 +40,7 @@ public class AdminClientModuleController {
     private final ClientModuleService clientModuleService;
 
     /** 创建客户端模块。 */
+    @Operation(summary = "创建客户端模块。")
     @PostMapping("/v1/admin/sys/client-modules/create")
     @SaCheckPermission(value = "iam:clientmodule:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientmodule", action = "create")
@@ -46,6 +50,7 @@ public class AdminClientModuleController {
     }
 
     /** 更新客户端模块。 */
+    @Operation(summary = "更新客户端模块。")
     @PostMapping("/v1/admin/sys/client-modules/update")
     @SaCheckPermission(value = "iam:clientmodule:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientmodule", action = "update")
@@ -55,6 +60,7 @@ public class AdminClientModuleController {
     }
 
     /** 批量删除客户端模块。 */
+    @Operation(summary = "批量删除客户端模块。")
     @PostMapping("/v1/admin/sys/client-modules/delete")
     @SaCheckPermission(value = "iam:clientmodule:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientmodule", action = "delete")
@@ -64,6 +70,7 @@ public class AdminClientModuleController {
     }
 
     /** 查询客户端模块详情。 */
+    @Operation(summary = "查询客户端模块详情。")
     @GetMapping("/v1/admin/sys/client-modules/detail")
     @SaCheckPermission(value = "iam:clientmodule:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysClientModule> detail(@Valid @ModelAttribute IdParam param) {
@@ -71,6 +78,7 @@ public class AdminClientModuleController {
     }
 
     /** 分页查询客户端模块。 */
+    @Operation(summary = "分页查询客户端模块。")
     @GetMapping("/v1/admin/sys/client-modules/page")
     @SaCheckPermission(value = "iam:clientmodule:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysClientModule>> page(@Valid @ModelAttribute SysClientModulePageParam param) {
@@ -78,6 +86,7 @@ public class AdminClientModuleController {
     }
 
     /** 模块选择器列表。 */
+    @Operation(summary = "模块选择器列表。")
     @GetMapping("/v1/admin/sys/client-modules/selector")
     @SaCheckPermission(value = "iam:clientmodule:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysClientModule>> selector(@RequestParam(required = false) String accountType) {

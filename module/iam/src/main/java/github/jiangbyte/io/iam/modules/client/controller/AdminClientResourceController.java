@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.client.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -31,6 +33,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端客户端资源 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -39,6 +42,7 @@ public class AdminClientResourceController {
     private final ClientResourceService clientResourceService;
 
     /** 创建客户端资源。 */
+    @Operation(summary = "创建客户端资源。")
     @PostMapping("/v1/admin/sys/client-resources/create")
     @SaCheckPermission(value = "iam:clientresource:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientresource", action = "create")
@@ -48,6 +52,7 @@ public class AdminClientResourceController {
     }
 
     /** 更新客户端资源。 */
+    @Operation(summary = "更新客户端资源。")
     @PostMapping("/v1/admin/sys/client-resources/update")
     @SaCheckPermission(value = "iam:clientresource:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientresource", action = "update")
@@ -57,6 +62,7 @@ public class AdminClientResourceController {
     }
 
     /** 批量删除客户端资源。 */
+    @Operation(summary = "批量删除客户端资源。")
     @PostMapping("/v1/admin/sys/client-resources/delete")
     @SaCheckPermission(value = "iam:clientresource:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientresource", action = "delete")
@@ -66,6 +72,7 @@ public class AdminClientResourceController {
     }
 
     /** 查询客户端资源详情。 */
+    @Operation(summary = "查询客户端资源详情。")
     @GetMapping("/v1/admin/sys/client-resources/detail")
     @SaCheckPermission(value = "iam:clientresource:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysClientResource> detail(@Valid @ModelAttribute IdParam param) {
@@ -73,6 +80,7 @@ public class AdminClientResourceController {
     }
 
     /** 分页查询客户端资源。 */
+    @Operation(summary = "分页查询客户端资源。")
     @GetMapping("/v1/admin/sys/client-resources/page")
     @SaCheckPermission(value = "iam:clientresource:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysClientResource>> page(@Valid @ModelAttribute SysClientResourcePageParam param) {
@@ -80,6 +88,7 @@ public class AdminClientResourceController {
     }
 
     /** 客户端资源树。 */
+    @Operation(summary = "客户端资源树。")
     @GetMapping("/v1/admin/sys/client-resources/tree")
     @SaCheckPermission(value = "iam:clientresource:list", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@ModelAttribute SysClientResourceTreeParam param) {
@@ -87,6 +96,7 @@ public class AdminClientResourceController {
     }
 
     /** 绑定客户端资源权限。 */
+    @Operation(summary = "绑定客户端资源权限。")
     @PostMapping("/v1/admin/client-resource-permissions")
     @SaCheckPermission(value = "iam:clientresource:grant", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_clientresource", action = "grant")

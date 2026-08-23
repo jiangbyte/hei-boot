@@ -161,6 +161,12 @@ hei:
       outbox-relay-batch-size: ${HEI_LOG_AUDIT_OUTBOX_RELAY_BATCH_SIZE:50}
       outbox-max-attempts: ${HEI_LOG_AUDIT_OUTBOX_MAX_ATTEMPTS:10}
       outbox-claim-stale-ms: ${HEI_LOG_AUDIT_OUTBOX_CLAIM_STALE_MS:120000}
+      # 登录/登出审计保留天数；小于等于 0 表示跳过清理
+      login-retention-days: ${HEI_LOG_AUDIT_LOGIN_RETENTION_DAYS:180}
+      # 操作审计保留天数（不含 login/logout）；小于等于 0 表示跳过清理
+      operation-retention-days: ${HEI_LOG_AUDIT_OPERATION_RETENTION_DAYS:365}
+      # 审计日志清理单次删除上限
+      cleanup-batch-size: ${HEI_LOG_AUDIT_CLEANUP_BATCH_SIZE:1000}
   observability:
     tracing-enabled: ${HEI_OBSERVABILITY_TRACING_ENABLED:false}
     # OTLP 指标推送（OtlpMeterRegistry）。默认关闭——本地无 collector；可用 Prometheus 抓取。
@@ -240,15 +246,13 @@ management:
           endpoint: ${hei.observability.otlp-endpoint}
           transport: http
 
+# OpenAPI 由 springdoc 生成 JSON，UI 统一走 Knife4j（/doc.html），不使用原生 swagger-ui。
 springdoc:
   api-docs:
     enabled: true
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
+    enabled: false
   group-configs:
     - group: default
       paths-to-match: /api/**

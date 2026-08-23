@@ -1,5 +1,7 @@
 package github.jiangbyte.io.biz.modules.cg_test_order.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -33,6 +35,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端 CgTestOrder API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class AdminCgTestOrderController {
     private final CgTestOrderService cgTestOrderService;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/biz/cg-test-order/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
@@ -50,6 +54,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/biz/cg-test-order/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
@@ -59,6 +64,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/biz/cg-test-order/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
@@ -68,6 +74,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/biz/cg-test-order/detail")
     @SaCheckPermission(value = "biz:cgtestorder:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestOrder> detail(@Valid @ModelAttribute IdParam param) {
@@ -75,6 +82,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/biz/cg-test-order/page")
     @SaCheckPermission(value = "biz:cgtestorder:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestOrder>> page(@Valid @ModelAttribute CgTestOrderPageParam param) {
@@ -82,6 +90,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 创建子项。 */
+    @Operation(summary = "创建子项。")
     @PostMapping("/v1/admin/biz/cg-test-order/children/create")
     @SaCheckPermission(value = "biz:cgtestorder:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "create")
@@ -91,6 +100,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 更新子项。 */
+    @Operation(summary = "更新子项。")
     @PostMapping("/v1/admin/biz/cg-test-order/children/update")
     @SaCheckPermission(value = "biz:cgtestorder:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "update")
@@ -100,6 +110,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 删除子项。 */
+    @Operation(summary = "删除子项。")
     @PostMapping("/v1/admin/biz/cg-test-order/children/delete")
     @SaCheckPermission(value = "biz:cgtestorder:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestorder", action = "delete")
@@ -109,6 +120,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 查询子项详情。 */
+    @Operation(summary = "查询子项详情。")
     @GetMapping("/v1/admin/biz/cg-test-order/children/detail")
     @SaCheckPermission(value = "biz:cgtestorder:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestOrderItem> childDetail(@Valid @ModelAttribute IdParam param) {
@@ -116,6 +128,7 @@ public class AdminCgTestOrderController {
     }
 
     /** 分页查询子项。 */
+    @Operation(summary = "分页查询子项。")
     @GetMapping("/v1/admin/biz/cg-test-order/children/page")
     @SaCheckPermission(value = "biz:cgtestorder:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestOrderItem>> childPage(@Valid @ModelAttribute CgTestOrderItemPageParam param) {

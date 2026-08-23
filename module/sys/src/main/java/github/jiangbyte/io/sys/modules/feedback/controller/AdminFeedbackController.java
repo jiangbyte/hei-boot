@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.feedback.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端反馈 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class AdminFeedbackController {
     private final FeedbackService feedbackService;
 
     /** 当前管理用户提交反馈。 */
+    @Operation(summary = "当前管理用户提交反馈。")
     @PostMapping("/v1/admin/sys/feedbacks/submit")
     @OperationAudit(resourceType = "sys_feedback", action = "submit")
     public ApiResponse<Void> submit(@Valid @RequestBody SysFeedbackAddParam param) {
@@ -42,18 +46,21 @@ public class AdminFeedbackController {
     }
 
     /** 分页查询当前用户提交的反馈。 */
+    @Operation(summary = "分页查询当前用户提交的反馈。")
     @GetMapping("/v1/admin/sys/feedbacks/my-page")
     public ApiResponse<Page<SysFeedback>> myPage(@Valid @ModelAttribute SysFeedbackPageParam param) {
         return ApiResponse.ok(feedbackService.myPage(param));
     }
 
     /** 查询当前用户本人的反馈详情。 */
+    @Operation(summary = "查询当前用户本人的反馈详情。")
     @GetMapping("/v1/admin/sys/feedbacks/my-detail")
     public ApiResponse<SysFeedback> myDetail(@Valid @ModelAttribute IdParam param) {
         return ApiResponse.ok(feedbackService.myDetail(param.getId()));
     }
 
     /** 管理端分页查询全部反馈。 */
+    @Operation(summary = "管理端分页查询全部反馈。")
     @GetMapping("/v1/admin/sys/feedbacks/page")
     @SaCheckPermission(value = "sys:feedback:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysFeedback>> page(@Valid @ModelAttribute SysFeedbackPageParam param) {
@@ -61,6 +68,7 @@ public class AdminFeedbackController {
     }
 
     /** 管理端查询反馈详情。 */
+    @Operation(summary = "管理端查询反馈详情。")
     @GetMapping("/v1/admin/sys/feedbacks/detail")
     @SaCheckPermission(value = "sys:feedback:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysFeedback> detail(@Valid @ModelAttribute IdParam param) {
@@ -68,6 +76,7 @@ public class AdminFeedbackController {
     }
 
     /** 管理端更新反馈状态或回复。 */
+    @Operation(summary = "管理端更新反馈状态或回复。")
     @PostMapping("/v1/admin/sys/feedbacks/update")
     @SaCheckPermission(value = "sys:feedback:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_feedback", action = "update")
@@ -77,6 +86,7 @@ public class AdminFeedbackController {
     }
 
     /** 管理端批量删除反馈。 */
+    @Operation(summary = "管理端批量删除反馈。")
     @PostMapping("/v1/admin/sys/feedbacks/delete")
     @SaCheckPermission(value = "sys:feedback:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_feedback", action = "delete")

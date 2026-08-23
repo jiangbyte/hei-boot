@@ -86,19 +86,6 @@ public final class PostgreSqlDialect implements DbDialect {
     }
 
     @Override
-    public String deleteExpiredJobLogSql() {
-        return """
-                DELETE FROM sys_job_log
-                WHERE id IN (
-                  SELECT id FROM sys_job_log
-                  WHERE started_at < #{cutoff}
-                  ORDER BY started_at
-                  LIMIT #{limit}
-                )
-                """;
-    }
-
-    @Override
     public String codegenListTablesSql() {
         return """
                 SELECT c.relname AS table_name,

@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.codegen.controller.admin;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.satoken.StpKit;
@@ -38,6 +40,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端代码生成 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -47,6 +50,7 @@ public class AdminCodegenController {
     private final CodegenService codegenService;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/sys/codegen/create")
     @SaCheckPermission(value = "sys:codegen:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_codegen", action = "create")
@@ -56,6 +60,7 @@ public class AdminCodegenController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/codegen/update")
     @SaCheckPermission(value = "sys:codegen:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_codegen", action = "update")
@@ -65,6 +70,7 @@ public class AdminCodegenController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/codegen/delete")
     @SaCheckPermission(value = "sys:codegen:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_codegen", action = "delete")
@@ -74,6 +80,7 @@ public class AdminCodegenController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/codegen/detail")
     @SaCheckPermission(value = "sys:codegen:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysCodegenPlan> detail(@RequestParam String id) {
@@ -81,6 +88,7 @@ public class AdminCodegenController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/codegen/page")
     @SaCheckPermission(value = "sys:codegen:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysCodegenPlan>> page(@Valid @ModelAttribute SysCodegenPlanPageParam param) {
@@ -88,6 +96,7 @@ public class AdminCodegenController {
     }
 
     /** 查询数据库表。 */
+    @Operation(summary = "查询数据库表。")
     @GetMapping("/v1/admin/sys/codegen/tables")
     @SaCheckPermission(value = "sys:codegen:tables", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysCodegenDatabaseTableResult>> tables() {
@@ -95,6 +104,7 @@ public class AdminCodegenController {
     }
 
     /** 查询表列元数据。 */
+    @Operation(summary = "查询表列元数据。")
     @GetMapping("/v1/admin/sys/codegen/table-columns")
     @SaCheckPermission(value = "sys:codegen:tables", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysCodegenDatabaseColumnResult>> tableColumns(@RequestParam("table_name") String tableName) {
@@ -102,6 +112,7 @@ public class AdminCodegenController {
     }
 
     /** 查询字段配置。 */
+    @Operation(summary = "查询字段配置。")
     @GetMapping("/v1/admin/sys/codegen/fields")
     @SaCheckPermission(value = "sys:codegen:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysCodegenField>> fields(
@@ -111,6 +122,7 @@ public class AdminCodegenController {
     }
 
     /** 批量更新字段配置。 */
+    @Operation(summary = "批量更新字段配置。")
     @PostMapping("/v1/admin/sys/codegen/fields/update-batch")
     @SaCheckPermission(value = "sys:codegen:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_codegen", action = "update")
@@ -120,6 +132,7 @@ public class AdminCodegenController {
     }
 
     /** 查询可选父级资源树。 */
+    @Operation(summary = "查询可选父级资源树。")
     @GetMapping("/v1/admin/sys/codegen/parent-resources")
     @SaCheckPermission(value = "sys:codegen:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> parentResources(
@@ -128,6 +141,7 @@ public class AdminCodegenController {
     }
 
     /** 预览生成代码。 */
+    @Operation(summary = "预览生成代码。")
     @GetMapping("/v1/admin/sys/codegen/preview")
     @SaCheckPermission(value = "sys:codegen:preview", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysCodegenPreviewResult> preview(@RequestParam String id) {
@@ -135,6 +149,7 @@ public class AdminCodegenController {
     }
 
     /** 下载生成代码。 */
+    @Operation(summary = "下载生成代码。")
     @GetMapping("/v1/admin/sys/codegen/download")
     @SaCheckPermission(value = "sys:codegen:download", type = StpKit.TYPE_ADMIN)
     public ResponseEntity<byte[]> download(@RequestParam String id) {

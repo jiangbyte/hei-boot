@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.account.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.satoken.StpKit;
@@ -38,6 +40,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端账号 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -46,6 +49,7 @@ public class AdminAccountController {
     private final AccountService accountService;
 
     /** 创建账号。 */
+    @Operation(summary = "创建账号。")
     @PostMapping("/v1/admin/sys/accounts/create")
     @SaCheckPermission(value = "iam:account:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "create")
@@ -55,6 +59,7 @@ public class AdminAccountController {
     }
 
     /** 更新账号。 */
+    @Operation(summary = "更新账号。")
     @PostMapping("/v1/admin/sys/accounts/update")
     @SaCheckPermission(value = "iam:account:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "update")
@@ -64,6 +69,7 @@ public class AdminAccountController {
     }
 
     /** 批量删除账号。 */
+    @Operation(summary = "批量删除账号。")
     @PostMapping("/v1/admin/sys/accounts/delete")
     @SaCheckPermission(value = "iam:account:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "delete")
@@ -73,6 +79,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号详情。 */
+    @Operation(summary = "查询账号详情。")
     @GetMapping("/v1/admin/sys/accounts/detail")
     @SaCheckPermission(value = "iam:account:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysAccountResult> detail(@Valid @ModelAttribute IdParam param) {
@@ -80,6 +87,7 @@ public class AdminAccountController {
     }
 
     /** 分页查询账号。 */
+    @Operation(summary = "分页查询账号。")
     @GetMapping("/v1/admin/sys/accounts/page")
     @SaCheckPermission(value = "iam:account:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysAccountResult>> page(@Valid @ModelAttribute SysAccountPageParam param) {
@@ -87,6 +95,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号已拥有角色。 */
+    @Operation(summary = "查询账号已拥有角色。")
     @GetMapping("/v1/admin/sys/accounts/own-role")
     @SaCheckPermission(value = "iam:account:ownrole", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysAccountOwnRoleResult> ownRole(@Valid @ModelAttribute IdParam param) {
@@ -94,6 +103,7 @@ public class AdminAccountController {
     }
 
     /** 全量替换账号角色授权。 */
+    @Operation(summary = "全量替换账号角色授权。")
     @PostMapping("/v1/admin/sys/accounts/grant-role")
     @SaCheckPermission(value = "iam:account:grantrole", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "grant_role")
@@ -103,6 +113,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号已拥有用户组。 */
+    @Operation(summary = "查询账号已拥有用户组。")
     @GetMapping("/v1/admin/sys/accounts/own-group")
     @SaCheckPermission(value = "iam:account:owngroup", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysAccountOwnGroupResult> ownGroup(@Valid @ModelAttribute IdParam param) {
@@ -110,6 +121,7 @@ public class AdminAccountController {
     }
 
     /** 全量替换账号用户组授权。 */
+    @Operation(summary = "全量替换账号用户组授权。")
     @PostMapping("/v1/admin/sys/accounts/grant-group")
     @SaCheckPermission(value = "iam:account:grantgroup", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "grant_group")
@@ -119,6 +131,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号已拥有部门。 */
+    @Operation(summary = "查询账号已拥有部门。")
     @GetMapping("/v1/admin/sys/accounts/own-dept")
     @SaCheckPermission(value = "iam:account:owndept", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysAccountOwnDeptResult> ownDept(@Valid @ModelAttribute IdParam param) {
@@ -126,6 +139,7 @@ public class AdminAccountController {
     }
 
     /** 全量替换账号部门授权。 */
+    @Operation(summary = "全量替换账号部门授权。")
     @PostMapping("/v1/admin/sys/accounts/grant-dept")
     @SaCheckPermission(value = "iam:account:grantdept", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "grant_dept")
@@ -135,6 +149,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号已拥有管理端资源。 */
+    @Operation(summary = "查询账号已拥有管理端资源。")
     @GetMapping("/v1/admin/sys/accounts/own-resource")
     @SaCheckPermission(value = "iam:account:ownresource", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysResourceOwnResult> ownResource(@Valid @ModelAttribute IdParam param) {
@@ -142,6 +157,7 @@ public class AdminAccountController {
     }
 
     /** 全量替换账号管理端资源授权。 */
+    @Operation(summary = "全量替换账号管理端资源授权。")
     @PostMapping("/v1/admin/sys/accounts/grant-resource")
     @SaCheckPermission(value = "iam:account:grantresource", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "grant_resource")
@@ -151,6 +167,7 @@ public class AdminAccountController {
     }
 
     /** 查询账号已拥有客户端资源。 */
+    @Operation(summary = "查询账号已拥有客户端资源。")
     @GetMapping("/v1/admin/sys/accounts/own-client-resource")
     @SaCheckPermission(value = "iam:account:ownclientresource", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysResourceOwnResult> ownClientResource(@Valid @ModelAttribute IdParam param) {
@@ -158,6 +175,7 @@ public class AdminAccountController {
     }
 
     /** 全量替换账号客户端资源授权。 */
+    @Operation(summary = "全量替换账号客户端资源授权。")
     @PostMapping("/v1/admin/sys/accounts/grant-client-resource")
     @SaCheckPermission(value = "iam:account:grantclientresource", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_account", action = "grant_client_resource")

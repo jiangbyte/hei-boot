@@ -1,5 +1,6 @@
 package github.jiangbyte.io.common.core.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -16,22 +17,28 @@ import java.time.OffsetDateTime;
  *
  * Author: Charlie
  */
+@Schema(description = "默认业务实体基类（单继承）。")
 @Data
 public abstract class BaseEntity implements TransPojo {
 
     @TableId(type = IdType.ASSIGN_ID)
+    @Schema(description = "主键ID")
     private String id;
 
     @TableField(fill = FieldFill.INSERT)
+    @Schema(description = "创建时间")
     private OffsetDateTime createdAt;
 
     @TableField(fill = FieldFill.INSERT)
+    @Schema(description = "创建人（账户ID）")
     private String createdBy;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
+    @Schema(description = "更新时间")
     private OffsetDateTime updatedAt;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
+    @Schema(description = "更新人（账户ID）")
     private String updatedBy;
 
 }

@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.position.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.satoken.StpKit;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端岗位 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class AdminPositionController {
     private final PositionService positionService;
 
     /** 创建岗位。 */
+    @Operation(summary = "创建岗位。")
     @PostMapping("/v1/admin/sys/positions/create")
     @SaCheckPermission(value = "iam:position:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_position", action = "create")
@@ -44,6 +48,7 @@ public class AdminPositionController {
     }
 
     /** 更新岗位。 */
+    @Operation(summary = "更新岗位。")
     @PostMapping("/v1/admin/sys/positions/update")
     @SaCheckPermission(value = "iam:position:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_position", action = "update")
@@ -53,6 +58,7 @@ public class AdminPositionController {
     }
 
     /** 批量删除岗位。 */
+    @Operation(summary = "批量删除岗位。")
     @PostMapping("/v1/admin/sys/positions/delete")
     @SaCheckPermission(value = "iam:position:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_position", action = "delete")
@@ -62,6 +68,7 @@ public class AdminPositionController {
     }
 
     /** 查询岗位详情。 */
+    @Operation(summary = "查询岗位详情。")
     @GetMapping("/v1/admin/sys/positions/detail")
     @SaCheckPermission(value = "iam:position:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysPosition> detail(@Valid @ModelAttribute IdParam param) {
@@ -69,6 +76,7 @@ public class AdminPositionController {
     }
 
     /** 分页查询岗位。 */
+    @Operation(summary = "分页查询岗位。")
     @GetMapping("/v1/admin/sys/positions/page")
     @SaCheckPermission(value = "iam:position:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysPosition>> page(@Valid @ModelAttribute SysPositionPageParam param) {

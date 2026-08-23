@@ -1,5 +1,7 @@
 package github.jiangbyte.io.iam.modules.dept.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.satoken.StpKit;
@@ -31,6 +33,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端部门 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -39,6 +42,7 @@ public class AdminDeptController {
     private final DeptService deptService;
 
     /** 创建部门。 */
+    @Operation(summary = "创建部门。")
     @PostMapping("/v1/admin/sys/depts/create")
     @SaCheckPermission(value = "iam:dept:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_dept", action = "create")
@@ -48,6 +52,7 @@ public class AdminDeptController {
     }
 
     /** 更新部门。 */
+    @Operation(summary = "更新部门。")
     @PostMapping("/v1/admin/sys/depts/update")
     @SaCheckPermission(value = "iam:dept:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_dept", action = "update")
@@ -57,6 +62,7 @@ public class AdminDeptController {
     }
 
     /** 批量删除部门。 */
+    @Operation(summary = "批量删除部门。")
     @PostMapping("/v1/admin/sys/depts/delete")
     @SaCheckPermission(value = "iam:dept:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "iam_dept", action = "delete")
@@ -66,6 +72,7 @@ public class AdminDeptController {
     }
 
     /** 查询部门详情。 */
+    @Operation(summary = "查询部门详情。")
     @GetMapping("/v1/admin/sys/depts/detail")
     @SaCheckPermission(value = "iam:dept:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysDept> detail(@Valid @ModelAttribute IdParam param) {
@@ -73,6 +80,7 @@ public class AdminDeptController {
     }
 
     /** 分页查询部门。 */
+    @Operation(summary = "分页查询部门。")
     @GetMapping("/v1/admin/sys/depts/page")
     @SaCheckPermission(value = "iam:dept:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysDept>> page(@Valid @ModelAttribute SysDeptPageParam param) {
@@ -80,6 +88,7 @@ public class AdminDeptController {
     }
 
     /** 部门组织树。 */
+    @Operation(summary = "部门组织树。")
     @GetMapping("/v1/admin/sys/depts/tree")
     @SaCheckPermission(value = "iam:dept:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree() {

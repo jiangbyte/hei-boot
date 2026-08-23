@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.dict.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -30,6 +32,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端数据字典 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class AdminDictController {
     private final DictService dictService;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/sys/dicts/create")
     @SaCheckPermission(value = "sys:dict:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_dict", action = "create")
@@ -47,6 +51,7 @@ public class AdminDictController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/dicts/update")
     @SaCheckPermission(value = "sys:dict:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_dict", action = "update")
@@ -56,6 +61,7 @@ public class AdminDictController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/dicts/delete")
     @SaCheckPermission(value = "sys:dict:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_dict", action = "delete")
@@ -65,6 +71,7 @@ public class AdminDictController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/dicts/detail")
     @SaCheckPermission(value = "sys:dict:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysDict> detail(@Valid @ModelAttribute IdParam param) {
@@ -72,6 +79,7 @@ public class AdminDictController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/dicts/page")
     @SaCheckPermission(value = "sys:dict:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysDict>> page(@Valid @ModelAttribute SysDictPageParam param) {
@@ -79,6 +87,7 @@ public class AdminDictController {
     }
 
     /** 树形查询。 */
+    @Operation(summary = "树形查询。")
     @GetMapping("/v1/admin/sys/dicts/tree")
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String category) {
         return ApiResponse.ok(dictService.tree(category));

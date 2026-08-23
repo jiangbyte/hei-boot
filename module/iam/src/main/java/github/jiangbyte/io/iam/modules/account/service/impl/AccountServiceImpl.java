@@ -17,6 +17,7 @@ import github.jiangbyte.io.common.mybatis.datasource.DataSourceSticky;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
+import github.jiangbyte.io.common.security.account.AccountLoginSupport;
 import github.jiangbyte.io.iam.modules.account.convert.SysAccountConvert;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccount;
 import github.jiangbyte.io.iam.modules.account.entity.SysAccountIdentity;
@@ -338,6 +339,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Override
     @Transactional
     public void create(SysAccountAddParam param) {
+        String accountLogin = AccountLoginSupport.requireLogin(param.getAccount());
         // 校验状态、登录身份与账号标识唯一
         if ("CANCELLED".equalsIgnoreCase(param.getAccountStatus())) {
             throw new BizException("注销状态不允许通过管理端设置");
@@ -352,13 +354,14 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         }
         SysAccountIdentity existingAccount = identityMapper.selectOne(Wrappers.<SysAccountIdentity>lambdaQuery()
                 .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
-                .eq(SysAccountIdentity::getIdentifier, param.getAccount())
+                .eq(SysAccountIdentity::getIdentifier, accountLogin)
                 .last("limit 1"));
         if (existingAccount != null) {
             throw new BizException("Account identifier already exists");
         }
         // 解析密码、规范化类型后落库账号
         String rawPassword = resolveCreatePassword(param.getPassword(), param.getPasswordKeyId());
+        param.setAccount(accountLogin);
         SysAccount account = accountConvert.toEntity(param);
         account.setPasswordHash(passwordHelper.encode(rawPassword));
         if (!StringUtils.hasText(param.getAccountType())) {
@@ -388,6 +391,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
     @Transactional
     public void update(SysAccountEditParam param) {
         DataSourceSticky.mark();
+        String accountLogin = AccountLoginSupport.requireLogin(param.getAccount());
         // 加载账号并校验状态、登录身份与账号标识唯一
         SysAccount account = getBaseMapper().selectById(param.getId());
         if (account == null) {
@@ -410,7 +414,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         }
         SysAccountIdentity existingAccount = identityMapper.selectOne(Wrappers.<SysAccountIdentity>lambdaQuery()
                 .eq(SysAccountIdentity::getIdentityType, "ACCOUNT")
-                .eq(SysAccountIdentity::getIdentifier, param.getAccount())
+                .eq(SysAccountIdentity::getIdentifier, accountLogin)
                 .last("limit 1"));
         if (existingAccount != null && !account.getId().equals(existingAccount.getAccountId())) {
             throw new BizException("Account identifier already exists");
@@ -418,6 +422,7 @@ public class AccountServiceImpl extends ServiceImpl<SysAccountMapper, SysAccount
         String previousStatus = account.getAccountStatus();
         AuditSnapshots.before(account);
         // 合并字段、可选改密后落库
+        param.setAccount(accountLogin);
         accountConvert.update(param, account);
         if (!StringUtils.hasText(param.getAccountType())) {
             throw new BizException("Unsupported account type: " + param.getAccountType());

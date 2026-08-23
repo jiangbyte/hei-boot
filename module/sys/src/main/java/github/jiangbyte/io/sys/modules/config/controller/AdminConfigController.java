@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.config.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -35,6 +37,7 @@ import java.util.Map;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端系统配置 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -44,6 +47,7 @@ public class AdminConfigController {
     private final AuditAlertTestSender auditAlertTestSender;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/sys/config/create")
     @SaCheckPermission(value = "sys:config:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_config", action = "create")
@@ -53,6 +57,7 @@ public class AdminConfigController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/config/update")
     @SaCheckPermission(value = "sys:config:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_config", action = "update")
@@ -62,6 +67,7 @@ public class AdminConfigController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/config/delete")
     @SaCheckPermission(value = "sys:config:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_config", action = "delete")
@@ -71,6 +77,7 @@ public class AdminConfigController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/config/detail")
     @SaCheckPermission(value = "sys:config:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysConfigResult> detail(@Valid @ModelAttribute IdParam param) {
@@ -78,6 +85,7 @@ public class AdminConfigController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/config/page")
     @SaCheckPermission(value = "sys:config:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysConfigResult>> page(@Valid @ModelAttribute SysConfigPageParam param) {
@@ -85,6 +93,7 @@ public class AdminConfigController {
     }
 
     /** 列表查询。 */
+    @Operation(summary = "列表查询。")
     @GetMapping("/v1/admin/sys/config/list")
     @SaCheckPermission(value = "sys:config:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysConfigResult>> list(@RequestParam(required = false) String category) {
@@ -92,6 +101,7 @@ public class AdminConfigController {
     }
 
     /** 批量保存。 */
+    @Operation(summary = "批量保存。")
     @PostMapping("/v1/admin/sys/config/batch-save")
     @SaCheckPermission(value = "sys:config:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_config", action = "update")
@@ -101,6 +111,7 @@ public class AdminConfigController {
     }
 
     /** 测试审计告警 Webhook。 */
+    @Operation(summary = "测试审计告警 Webhook。")
     @PostMapping("/v1/admin/sys/config/audit-alert/test-webhook")
     @OperationAudit(resourceType = "sys_config", action = "test_webhook")
     public ApiResponse<Map<String, String>> testAuditAlertWebhook(
@@ -114,6 +125,7 @@ public class AdminConfigController {
     }
 
     /** 测试审计告警推送。 */
+    @Operation(summary = "测试审计告警推送。")
     @PostMapping("/v1/admin/sys/config/audit-alert/test-push")
     @OperationAudit(resourceType = "sys_config", action = "test_push")
     public ApiResponse<Map<String, String>> testAuditAlertPush() {

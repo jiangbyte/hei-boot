@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.file.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -36,6 +38,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端文件 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -44,6 +47,7 @@ public class AdminFileController {
     private final FileService fileService;
 
     /** 上传文件。 */
+    @Operation(summary = "上传文件。")
     @PostMapping("/v1/admin/sys/file/upload")
     @SaCheckPermission(value = "sys:file:upload", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysFile> upload(
@@ -53,6 +57,7 @@ public class AdminFileController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/file/delete")
     @SaCheckPermission(value = "sys:file:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_file", action = "delete")
@@ -62,6 +67,7 @@ public class AdminFileController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/file/update")
     @SaCheckPermission(value = "sys:file:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_file", action = "update")
@@ -71,6 +77,7 @@ public class AdminFileController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/file/detail")
     @SaCheckPermission(value = "sys:file:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysFile> detail(@Valid @ModelAttribute IdParam param) {
@@ -78,6 +85,7 @@ public class AdminFileController {
     }
 
     /** 按 ID 列表查询。 */
+    @Operation(summary = "按 ID 列表查询。")
     @PostMapping("/v1/admin/sys/file/list_by_ids")
     @SaCheckPermission(value = "sys:file:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<SysFile>> listByIds(@Valid @RequestBody IdsParam param) {
@@ -85,6 +93,7 @@ public class AdminFileController {
     }
 
     /** 下载生成代码。 */
+    @Operation(summary = "下载生成代码。")
     @GetMapping("/v1/admin/sys/file/download")
     @SaCheckPermission(value = "sys:file:url", type = StpKit.TYPE_ADMIN)
     public ResponseEntity<Resource> download(@Valid @ModelAttribute IdParam param) {
@@ -97,6 +106,7 @@ public class AdminFileController {
     }
 
     /** 获取文件访问 URL。 */
+    @Operation(summary = "获取文件访问 URL。")
     @PostMapping("/v1/admin/sys/file/url")
     @SaCheckPermission(value = "sys:file:url", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysFileUrlResult> url(@Valid @RequestBody SysFileObjectNameParam param) {
@@ -104,6 +114,7 @@ public class AdminFileController {
     }
 
     /** 获取预签名 URL。 */
+    @Operation(summary = "获取预签名 URL。")
     @PostMapping("/v1/admin/sys/file/presigned_url")
     @SaCheckPermission(value = "sys:file:presignedurl", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysFileUrlResult> presignedUrl(@Valid @RequestBody SysFileObjectNameParam param) {
@@ -111,6 +122,7 @@ public class AdminFileController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/file/page")
     @SaCheckPermission(value = "sys:file:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysFile>> page(@Valid @ModelAttribute SysFilePageParam param) {

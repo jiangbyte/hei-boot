@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.job.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端任务 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class AdminJobController {
     private final JobService jobService;
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/jobs/page")
     @SaCheckPermission(value = "sys:job:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysJob>> page(@Valid @ModelAttribute SysJobPageParam param) {
@@ -42,6 +46,7 @@ public class AdminJobController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/jobs/detail")
     @SaCheckPermission(value = "sys:job:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysJob> detail(@Valid @ModelAttribute IdParam param) {
@@ -49,6 +54,7 @@ public class AdminJobController {
     }
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/sys/jobs/create")
     @SaCheckPermission(value = "sys:job:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_job", action = "create")
@@ -58,6 +64,7 @@ public class AdminJobController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/jobs/update")
     @SaCheckPermission(value = "sys:job:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_job", action = "update")
@@ -67,6 +74,7 @@ public class AdminJobController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/jobs/delete")
     @SaCheckPermission(value = "sys:job:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_job", action = "delete")
@@ -76,6 +84,7 @@ public class AdminJobController {
     }
 
     /** 启停。 */
+    @Operation(summary = "启停。")
     @PostMapping("/v1/admin/sys/jobs/enabled")
     @SaCheckPermission(value = "sys:job:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_job", action = "enabled")
@@ -85,6 +94,7 @@ public class AdminJobController {
     }
 
     /** 立即执行。 */
+    @Operation(summary = "立即执行。")
     @PostMapping("/v1/admin/sys/jobs/run")
     @SaCheckPermission(value = "sys:job:run", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_job", action = "run")

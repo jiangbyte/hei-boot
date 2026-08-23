@@ -188,6 +188,13 @@
             </dependency>
 
             <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-bom</artifactId>
+                <version>${springdoc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.baizhukui</groupId>
                 <artifactId>knife4j-openapi3-boot4-spring-boot-starter</artifactId>
                 <version>${knife4j.version}</version>
@@ -201,6 +208,11 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>2.2.30</version>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>

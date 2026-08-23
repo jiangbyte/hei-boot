@@ -16,6 +16,7 @@ import github.jiangbyte.io.auth.modules.login.param.ResetPasswordParam;
 import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.auth.modules.login.convert.AuthConvert;
 import github.jiangbyte.io.auth.modules.login.support.AuthCryptoService;
+import github.jiangbyte.io.common.security.account.AccountLoginSupport;
 import github.jiangbyte.io.auth.modules.login.support.LoginProtectionService;
 import github.jiangbyte.io.auth.modules.login.result.OauthProviderOptionResult;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
@@ -792,19 +793,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private static String requireAccountName(String account) {
-        if (!StringUtils.hasText(account)) {
-            throw new BizException("请输入用户名");
-        }
-        String value = account.trim();
-        if (value.length() < 3 || value.length() > 64) {
-            throw new BizException("用户名需 3-64 个字符");
-        }
-        return value;
+        return AccountLoginSupport.requireLogin(account);
     }
 
     private String allocateAccountFromEmail(String email) {
         String local = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
-        String base = sanitizeAccountBase(local);
+        String base = AccountLoginSupport.sanitizeBase(local);
         return allocateUniqueAccount(base);
     }
 
@@ -812,20 +806,6 @@ public class AuthServiceImpl implements AuthService {
         String digits = phone.replaceAll("\\D", "");
         String base = "u" + (digits.length() > 8 ? digits.substring(digits.length() - 8) : digits);
         return allocateUniqueAccount(base);
-    }
-
-    private static String sanitizeAccountBase(String raw) {
-        String cleaned = raw == null ? "" : raw.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase(Locale.ROOT);
-        if (!StringUtils.hasText(cleaned)) {
-            cleaned = "user";
-        }
-        if (cleaned.length() < 3) {
-            cleaned = cleaned + "000".substring(0, 3 - cleaned.length());
-        }
-        if (cleaned.length() > 48) {
-            cleaned = cleaned.substring(0, 48);
-        }
-        return cleaned;
     }
 
     private String allocateUniqueAccount(String base) {

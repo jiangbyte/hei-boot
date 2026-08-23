@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.banner.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -29,6 +31,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端 Banner API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -37,6 +40,7 @@ public class AdminBannerController {
     private final BannerService bannerService;
 
     /** 列表查询。 */
+    @Operation(summary = "列表查询。")
     @GetMapping("/v1/admin/sys/banners/list")
     public ApiResponse<List<SysBanner>> list(
             @RequestParam String position,
@@ -46,6 +50,7 @@ public class AdminBannerController {
     }
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/sys/banners/create")
     @SaCheckPermission(value = "sys:banner:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_banner", action = "create")
@@ -55,6 +60,7 @@ public class AdminBannerController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/sys/banners/update")
     @SaCheckPermission(value = "sys:banner:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_banner", action = "update")
@@ -64,6 +70,7 @@ public class AdminBannerController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/sys/banners/delete")
     @SaCheckPermission(value = "sys:banner:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "sys_banner", action = "delete")
@@ -73,6 +80,7 @@ public class AdminBannerController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/sys/banners/detail")
     @SaCheckPermission(value = "sys:banner:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<SysBanner> detail(@Valid @ModelAttribute IdParam param) {
@@ -80,6 +88,7 @@ public class AdminBannerController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/sys/banners/page")
     @SaCheckPermission(value = "sys:banner:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<SysBanner>> page(@Valid @ModelAttribute SysBannerPageParam param) {

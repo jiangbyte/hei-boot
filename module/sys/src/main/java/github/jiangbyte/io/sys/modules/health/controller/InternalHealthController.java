@@ -1,5 +1,7 @@
 package github.jiangbyte.io.sys.modules.health.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
 import org.redisson.api.RedissonClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
  *
  * Author: Charlie
  */
+@Hidden
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor

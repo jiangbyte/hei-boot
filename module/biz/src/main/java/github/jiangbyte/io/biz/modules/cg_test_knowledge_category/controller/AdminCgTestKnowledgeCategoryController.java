@@ -1,5 +1,7 @@
 package github.jiangbyte.io.biz.modules.cg_test_knowledge_category.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import github.jiangbyte.io.common.core.domain.ApiResponse;
@@ -34,6 +36,7 @@ import java.util.List;
  *
  * Author: Charlie
  */
+@Tag(name = "管理端 CgTestKnowledgeCategory API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -42,6 +45,7 @@ public class AdminCgTestKnowledgeCategoryController {
     private final CgTestKnowledgeCategoryService cgTestKnowledgeCategoryService;
 
     /** 创建。 */
+    @Operation(summary = "创建。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
@@ -51,6 +55,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 更新。 */
+    @Operation(summary = "更新。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
@@ -60,6 +65,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 批量删除。 */
+    @Operation(summary = "批量删除。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
@@ -69,6 +75,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 查询详情。 */
+    @Operation(summary = "查询详情。")
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/detail")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestKnowledgeCategory> detail(@Valid @ModelAttribute IdParam param) {
@@ -76,6 +83,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 分页查询。 */
+    @Operation(summary = "分页查询。")
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/page")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestKnowledgeCategory>> page(@Valid @ModelAttribute CgTestKnowledgeCategoryPageParam param) {
@@ -83,6 +91,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 树形查询。 */
+    @Operation(summary = "树形查询。")
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/tree")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:tree", type = StpKit.TYPE_ADMIN)
     public ApiResponse<List<Tree<String>>> tree(@RequestParam(required = false) String keyword) {
@@ -90,6 +99,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 创建子项。 */
+    @Operation(summary = "创建子项。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/create")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:create", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "create")
@@ -99,6 +109,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 更新子项。 */
+    @Operation(summary = "更新子项。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/update")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:update", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "update")
@@ -108,6 +119,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 删除子项。 */
+    @Operation(summary = "删除子项。")
     @PostMapping("/v1/admin/biz/cg-test-knowledge-category/children/delete")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:delete", type = StpKit.TYPE_ADMIN)
     @OperationAudit(resourceType = "biz_cgtestknowledgecategory", action = "delete")
@@ -117,6 +129,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 查询子项详情。 */
+    @Operation(summary = "查询子项详情。")
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/children/detail")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:detail", type = StpKit.TYPE_ADMIN)
     public ApiResponse<CgTestKnowledgeDoc> childDetail(@Valid @ModelAttribute IdParam param) {
@@ -124,6 +137,7 @@ public class AdminCgTestKnowledgeCategoryController {
     }
 
     /** 分页查询子项。 */
+    @Operation(summary = "分页查询子项。")
     @GetMapping("/v1/admin/biz/cg-test-knowledge-category/children/page")
     @SaCheckPermission(value = "biz:cgtestknowledgecategory:page", type = StpKit.TYPE_ADMIN)
     public ApiResponse<Page<CgTestKnowledgeDoc>> childPage(@Valid @ModelAttribute CgTestKnowledgeDocPageParam param) {
