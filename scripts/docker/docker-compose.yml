@@ -120,6 +120,10 @@ services:
       TZ: Asia/Shanghai
       BACKEND_HOST: hei-boot
       BACKEND_PORT: ${SERVER_PORT:-8000}
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-10m}
+      # nginx 模板变量；缺失时 envsubst 不替换，会导致 nginx 启动失败
+      CONTENT_SECURITY_POLICY: "${HEI_ADMIN_CONTENT_SECURITY_POLICY:-default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'}"
+      HSTS_HEADER: ${HEI_HSTS_HEADER:-}
     ports:
       - "${HEI_ADMIN_PORT:-5173}:81"
     restart: unless-stopped
@@ -137,6 +141,9 @@ services:
       TZ: Asia/Shanghai
       BACKEND_HOST: hei-boot
       BACKEND_PORT: ${SERVER_PORT:-8000}
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-10m}
+      CONTENT_SECURITY_POLICY: "${HEI_PORTAL_CONTENT_SECURITY_POLICY:-default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'}"
+      HSTS_HEADER: ${HEI_HSTS_HEADER:-}
     ports:
       - "${HEI_PORTAL_PORT:-5174}:80"
     restart: unless-stopped
