@@ -6,11 +6,10 @@
 ![MySQL](https://img.shields.io/badge/MySQL-Supported-4479A1?logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-Supported-DC382D?logo=redis&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue)
-![Version](https://img.shields.io/badge/version-1.0.0--beta-orange)
 
 **HEI Boot** 是一套面向中后台场景的 Spring Boot 工程化脚手架：单个应用同时提供 **Admin** 与 **Portal** 双端 API，统一认证、权限、运维与消息能力，并与 [hei-gin](https://github.com/jiangbyte/hei-gin)、[hei-fastapi](https://github.com/jiangbyte/hei-fastapi) 等姊妹后端保持契约一致。
 
-> 当前版本：`1.0.0-beta` · 协议：[Apache License 2.0](LICENSE)
+> 协议：[Apache License 2.0](LICENSE)
 
 ## 目录
 

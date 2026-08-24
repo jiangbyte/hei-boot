@@ -24,8 +24,8 @@ public class HeiLoggingProperties {
     /** service 字段（为空时默认 spring.application.name）。 */
     private String service = "";
 
-    /** service_version 字段。 */
-    private String serviceVersion = "1.0.0-beta";
+    /** service_version 字段（见 {@code hei.logging.service-version}）。 */
+    private String serviceVersion = "";
 
     /** 日志 MDC/字段脱敏键名（小写匹配，含连字符/下划线变体）。 */
     private List<String> redactKeys = new ArrayList<>(List.of(
