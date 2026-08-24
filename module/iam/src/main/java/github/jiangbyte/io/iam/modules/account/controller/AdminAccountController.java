@@ -16,6 +16,7 @@ import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantDeptParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantGroupParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantResourceParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountGrantRoleParam;
+import github.jiangbyte.io.iam.modules.account.param.SysAccountPageParam;
 import github.jiangbyte.io.iam.modules.account.param.SysAccountUpdateLoginIdentityParam;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountListResult;
 import github.jiangbyte.io.iam.modules.account.result.SysAccountOwnDeptResult;

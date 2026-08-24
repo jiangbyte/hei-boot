@@ -33,11 +33,7 @@ public interface SysAccountConvert {
     @BeanMapping(
             ignoreUnmappedSourceProperties = {
                     "account", "password", "passwordKeyId",
-                    "name", "nickname", "avatar", "signature", "phone", "email", "remark",
-                    "emailLoginEnabled", "phoneLoginEnabled",
-                    "emailIdentity", "phoneIdentity",
-                    "emailIdentityVerified", "phoneIdentityVerified",
-                    "emailIdentityBindStatus", "phoneIdentityBindStatus"
+                    "nickname", "avatar", "signature", "phone", "email", "remark"
             },
             unmappedTargetPolicy = ReportingPolicy.IGNORE)
     SysAccount toEntity(SysAccountAddParam param);
@@ -46,11 +42,7 @@ public interface SysAccountConvert {
     @BeanMapping(
             ignoreUnmappedSourceProperties = {
                     "account", "password", "passwordKeyId",
-                    "name", "nickname", "avatar", "signature", "phone", "email", "remark",
-                    "emailLoginEnabled", "phoneLoginEnabled",
-                    "emailIdentity", "phoneIdentity",
-                    "emailIdentityVerified", "phoneIdentityVerified",
-                    "emailIdentityBindStatus", "phoneIdentityBindStatus"
+                    "nickname", "avatar", "signature", "phone", "email", "remark"
             },
             unmappedTargetPolicy = ReportingPolicy.IGNORE)
     void update(SysAccountEditParam param, @MappingTarget SysAccount entity);
