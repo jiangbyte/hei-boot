@@ -17,6 +17,7 @@ import github.jiangbyte.io.auth.modules.login.param.SendLoginCodeParam;
 import github.jiangbyte.io.auth.modules.login.convert.AuthConvert;
 import github.jiangbyte.io.auth.modules.login.support.AuthCryptoService;
 import github.jiangbyte.io.common.security.account.AccountLoginSupport;
+import github.jiangbyte.io.common.security.web.CsrfDoubleSubmitFilter;
 import github.jiangbyte.io.auth.modules.login.support.LoginProtectionService;
 import github.jiangbyte.io.auth.modules.login.result.OauthProviderOptionResult;
 import github.jiangbyte.io.auth.modules.oauth.support.OauthClientFacade;
@@ -43,6 +44,7 @@ import github.jiangbyte.io.sys.config.SiteFooterResult;
 import github.jiangbyte.io.profile.admin.ProfileUserAdminApi;
 import github.jiangbyte.io.profile.portal.ProfileUserPortalApi;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -481,6 +483,7 @@ public class AuthServiceImpl implements AuthService {
             AuditSnapshots.resourceId(user.getAccountId());
         });
         LoginHelper.currentUser().ifPresent(user -> LoginHelper.logout(user.getAccountType()));
+        clearCsrfCookie();
     }
 
     @Override
@@ -742,6 +745,7 @@ public class AuthServiceImpl implements AuthService {
         }
         DataSourceSticky.mark();
         LoginHelper.login(loginUser, resolveTokenTtlSeconds());
+        issueCsrfCookie(loginUser.isRememberMe());
 
         accountApi.updateLoginMeta(
                 account.getId(),
@@ -1036,6 +1040,27 @@ public class AuthServiceImpl implements AuthService {
         ServletRequestAttributes attributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         return attributes == null ? null : attributes.getRequest();
+    }
+
+    private void issueCsrfCookie(boolean rememberMe) {
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null || attributes.getResponse() == null) {
+            return;
+        }
+        HttpServletResponse response = attributes.getResponse();
+        long ttl = resolveTokenTtlSeconds();
+        int maxAge = rememberMe && ttl > 0 ? (int) Math.min(ttl, Integer.MAX_VALUE) : -1;
+        CsrfDoubleSubmitFilter.issueCsrfCookie(response, false, "Lax", maxAge);
+    }
+
+    private void clearCsrfCookie() {
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null || attributes.getResponse() == null) {
+            return;
+        }
+        CsrfDoubleSubmitFilter.clearCsrfCookie(attributes.getResponse());
     }
 
     private static String currentClientIp() {

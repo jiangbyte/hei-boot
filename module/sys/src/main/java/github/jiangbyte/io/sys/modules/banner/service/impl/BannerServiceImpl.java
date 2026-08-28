@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.core.security.SafeLinkValidator;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
@@ -46,6 +47,11 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
     @Override
     @Transactional
     public void create(SysBannerAddParam param) {
+        try {
+            SafeLinkValidator.validateBannerLink(param.getLinkType(), param.getUrl());
+        } catch (IllegalArgumentException ex) {
+            throw new BizException(ex.getMessage());
+        }
         // 入参转实体
         SysBanner banner = bannerConvert.toEntity(param);
         if (StringUtils.hasText(banner.getImage())) {
@@ -59,6 +65,11 @@ public class BannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner> i
     @Override
     @Transactional
     public void update(SysBannerEditParam param) {
+        try {
+            SafeLinkValidator.validateBannerLink(param.getLinkType(), param.getUrl());
+        } catch (IllegalArgumentException ex) {
+            throw new BizException(ex.getMessage());
+        }
         // 按主键加载
         SysBanner banner = this.getById(param.getId());
         if (banner == null) {

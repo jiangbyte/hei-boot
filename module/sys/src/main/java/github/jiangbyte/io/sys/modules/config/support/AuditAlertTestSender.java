@@ -1,6 +1,7 @@
 package github.jiangbyte.io.sys.modules.config.support;
 
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.core.security.SafeUrlValidator;
 import github.jiangbyte.io.common.notify.push.PushSenderFacade;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -37,11 +38,17 @@ public class AuditAlertTestSender {
     private final PushSenderFacade pushSenderFacade;
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
     public void testWebhook(String webhookUrl, String webhookSecret) {
         if (!StringUtils.hasText(webhookUrl)) {
             throw new BizException("Webhook URL 为空");
+        }
+        try {
+            SafeUrlValidator.validate(webhookUrl.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new BizException("Webhook URL 不安全: " + ex.getMessage());
         }
         Map<String, Object> payload = new HashMap<>();
         payload.put("msg_type", "text");

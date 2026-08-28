@@ -21,25 +21,29 @@ public final class MysqlDialect implements DbDialect {
 
     @Override
     public String jsonArrayContainsApply(String column) {
+        String col = SqlSafe.requireIdent(column);
         // JSON 字符串数组包含：JSON_CONTAINS(col, '"value"', '$')
-        return "JSON_CONTAINS(COALESCE(" + column + ", JSON_ARRAY()), JSON_QUOTE({0}), '$')";
+        return "JSON_CONTAINS(COALESCE(" + col + ", JSON_ARRAY()), JSON_QUOTE({0}), '$')";
     }
 
     @Override
     public String jsonArrayEmptyOrContainsApply(String column) {
-        return "(JSON_LENGTH(COALESCE(" + column + ", JSON_ARRAY())) = 0 OR JSON_CONTAINS(COALESCE("
-                + column + ", JSON_ARRAY()), JSON_QUOTE({0}), '$'))";
+        String col = SqlSafe.requireIdent(column);
+        return "(JSON_LENGTH(COALESCE(" + col + ", JSON_ARRAY())) = 0 OR JSON_CONTAINS(COALESCE("
+                + col + ", JSON_ARRAY()), JSON_QUOTE({0}), '$'))";
     }
 
     @Override
     public String jsonArrayEmptyOrContainsNamed(String column, String namedParam) {
-        return "(JSON_LENGTH(COALESCE(" + column + ", JSON_ARRAY())) = 0 OR JSON_CONTAINS(COALESCE("
-                + column + ", JSON_ARRAY()), JSON_QUOTE(#{" + namedParam + "}), '$'))";
+        String col = SqlSafe.requireIdent(column);
+        return "(JSON_LENGTH(COALESCE(" + col + ", JSON_ARRAY())) = 0 OR JSON_CONTAINS(COALESCE("
+                + col + ", JSON_ARRAY()), JSON_QUOTE(#{" + namedParam + "}), '$'))";
     }
 
     @Override
     public String jsonArrayContainsNamed(String column, String namedParam) {
-        return "JSON_CONTAINS(COALESCE(" + column + ", JSON_ARRAY()), JSON_QUOTE(#{" + namedParam + "}), '$')";
+        String col = SqlSafe.requireIdent(column);
+        return "JSON_CONTAINS(COALESCE(" + col + ", JSON_ARRAY()), JSON_QUOTE(#{" + namedParam + "}), '$')";
     }
 
     @Override

@@ -2,6 +2,7 @@ package github.jiangbyte.io.common.notify.push;
 
 import tools.jackson.databind.ObjectMapper;
 import github.jiangbyte.io.common.core.exception.BizException;
+import github.jiangbyte.io.common.core.security.SafeUrlValidator;
 import github.jiangbyte.io.common.notify.NotifyConfigSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class PushSenderFacade {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
     private final NotifyConfigSource config;
@@ -95,6 +97,7 @@ public class PushSenderFacade {
 
     private void postJson(String url, Map<String, Object> payload, String label) {
         try {
+            SafeUrlValidator.validate(url);
             String body = MAPPER.writeValueAsString(payload);
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                     .timeout(Duration.ofSeconds(10))
@@ -107,6 +110,8 @@ public class PushSenderFacade {
             }
         } catch (BizException ex) {
             throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new BizException(label + "推送失败: " + ex.getMessage());
         } catch (Exception ex) {
             log.error("{} push failed", label, ex);
             throw new BizException(label + "推送失败");

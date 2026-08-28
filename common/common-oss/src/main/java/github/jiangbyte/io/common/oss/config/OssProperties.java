@@ -53,7 +53,6 @@ public class OssProperties {
             list.add(".jpeg");
             list.add(".gif");
             list.add(".webp");
-            list.add(".svg");
             list.add(".pdf");
             list.add(".txt");
             list.add(".md");
@@ -76,7 +75,6 @@ public class OssProperties {
             list.add("image/jpeg");
             list.add("image/gif");
             list.add("image/webp");
-            list.add("image/svg+xml");
             list.add("application/pdf");
             list.add("text/plain");
             list.add("text/markdown");

@@ -6,6 +6,7 @@ import cn.dev33.satoken.stp.StpInterface;
 import github.jiangbyte.io.common.satoken.StpKit;
 import github.jiangbyte.io.common.security.satoken.SessionPermissionProvider;
 import github.jiangbyte.io.common.security.web.AccountMdcInterceptor;
+import github.jiangbyte.io.common.security.web.CsrfDoubleSubmitFilter;
 import github.jiangbyte.io.common.security.web.SessionCookiePathFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,9 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sa-Token 统一安全配置：鉴权白名单、安全响应头、Cookie Path 改写。
+ * Sa-Token 统一安全配置：鉴权白名单、安全响应头、Cookie Path 改写、CSRF 双提交。
  * <p>
- * Cookie CSRF 由 {@code sa-token.cookie.sameSite/httpOnly/secure} 承担，不自研 CSRF Filter。
+ * Cookie 会话启用时，非安全方法校验 {@code HEI_CSRF} / {@code X-HEI-CSRF}。
  *
  * Author: Charlie
  */
@@ -69,6 +70,16 @@ public class SaTokenSecurityConfig implements WebMvcConfigurer {
         reg.setFilter(new SessionCookiePathFilter(cookieAuthEnabled, cookieName));
         reg.addUrlPatterns("/**");
         reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 12);
+        return reg;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CsrfDoubleSubmitFilter> csrfDoubleSubmitFilter() {
+        String cookieName = environment.getProperty("sa-token.token-name", TOKEN_COOKIE);
+        FilterRegistrationBean<CsrfDoubleSubmitFilter> reg = new FilterRegistrationBean<>();
+        reg.setFilter(new CsrfDoubleSubmitFilter(cookieAuthEnabled, cookieName));
+        reg.addUrlPatterns("/**");
+        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 13);
         return reg;
     }
 

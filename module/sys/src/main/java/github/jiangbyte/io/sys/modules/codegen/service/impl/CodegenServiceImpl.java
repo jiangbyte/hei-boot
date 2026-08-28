@@ -9,6 +9,7 @@ import github.jiangbyte.io.common.core.param.IdsParam;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
+import github.jiangbyte.io.common.mybatis.dialect.SqlSafe;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenField;
 import github.jiangbyte.io.sys.modules.codegen.entity.SysCodegenPlan;
 import github.jiangbyte.io.iam.resource.ResourceMenuApi;
@@ -156,6 +157,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
 
     @Override
     public List<SysCodegenDatabaseColumnResult> tableColumns(String tableName) {
+        SqlSafe.requireIdent(tableName);
         return loadColumns(tableName).stream().map(this::toColumnResult).toList();
     }
 
@@ -395,6 +397,7 @@ public class CodegenServiceImpl extends ServiceImpl<SysCodegenPlanMapper, SysCod
     }
 
     private List<Map<String, Object>> loadColumns(String tableName) {
+        SqlSafe.requireIdent(tableName);
         List<Map<String, Object>> columns = schemaMapper.listColumns(tableName);
         if (columns == null || columns.isEmpty()) {
             // 不存在则抛出业务异常

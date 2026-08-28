@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import github.jiangbyte.io.common.core.enums.AccountType;
 import github.jiangbyte.io.common.core.exception.BizException;
 import github.jiangbyte.io.common.core.param.IdsParam;
+import github.jiangbyte.io.common.core.security.HtmlSanitizer;
 import github.jiangbyte.io.common.core.util.BatchPartition;
 import github.jiangbyte.io.common.log.audit.AuditSnapshots;
 import github.jiangbyte.io.common.mybatis.datasource.ReadDataSource;
 import github.jiangbyte.io.common.mybatis.dialect.DbDialect;
+import github.jiangbyte.io.common.mybatis.util.LikeQueries;
 import github.jiangbyte.io.common.satoken.model.LoginUser;
 import github.jiangbyte.io.common.satoken.utils.LoginHelper;
 import github.jiangbyte.io.sys.modules.notice.convert.SysNoticeConvert;
@@ -142,7 +144,7 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
     public Page<SysNotice> page(SysNoticePageParam param) {
         // 按标题/状态/类型构建条件并分页
         LambdaQueryWrapper<SysNotice> qw = Wrappers.<SysNotice>lambdaQuery()
-                .like(StringUtils.hasText(param.getTitle()), SysNotice::getTitle, param.getTitle())
+                .like(StringUtils.hasText(param.getTitle()), SysNotice::getTitle, LikeQueries.keyword(param.getTitle()))
                 .eq(StringUtils.hasText(param.getStatus()), SysNotice::getStatus, param.getStatus())
                 .eq(StringUtils.hasText(param.getKind()), SysNotice::getKind,
                         StringUtils.hasText(param.getKind()) ? param.getKind().toUpperCase(Locale.ROOT) : null)
@@ -464,6 +466,7 @@ public class NoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> i
             param.setPinnedUntil(null);
             param.setExpireAt(null);
         }
+        param.setContent(HtmlSanitizer.sanitize(param.getContentType(), param.getContent()));
     }
 
     private void applyKindDefaults(SysNotice entity, String kind) {

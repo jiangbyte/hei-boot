@@ -21,27 +21,31 @@ public final class PostgreSqlDialect implements DbDialect {
 
     @Override
     public String jsonArrayContainsApply(String column) {
-        return "EXISTS (SELECT 1 FROM json_array_elements_text(COALESCE(" + column
+        String col = SqlSafe.requireIdent(column);
+        return "EXISTS (SELECT 1 FROM json_array_elements_text(COALESCE(" + col
                 + ", '[]'::json)) AS _hei_json_elem WHERE _hei_json_elem = {0})";
     }
 
     @Override
     public String jsonArrayEmptyOrContainsApply(String column) {
-        return "(json_array_length(COALESCE(" + column + ", '[]'::json)) = 0 OR EXISTS ("
-                + "SELECT 1 FROM json_array_elements_text(COALESCE(" + column
+        String col = SqlSafe.requireIdent(column);
+        return "(json_array_length(COALESCE(" + col + ", '[]'::json)) = 0 OR EXISTS ("
+                + "SELECT 1 FROM json_array_elements_text(COALESCE(" + col
                 + ", '[]'::json)) AS _hei_json_elem WHERE _hei_json_elem = {0}))";
     }
 
     @Override
     public String jsonArrayEmptyOrContainsNamed(String column, String namedParam) {
-        return "(json_array_length(COALESCE(" + column + ", '[]'::json)) = 0 OR EXISTS ("
-                + "SELECT 1 FROM json_array_elements_text(COALESCE(" + column
+        String col = SqlSafe.requireIdent(column);
+        return "(json_array_length(COALESCE(" + col + ", '[]'::json)) = 0 OR EXISTS ("
+                + "SELECT 1 FROM json_array_elements_text(COALESCE(" + col
                 + ", '[]'::json)) AS _hei_json_elem WHERE _hei_json_elem = #{" + namedParam + "}))";
     }
 
     @Override
     public String jsonArrayContainsNamed(String column, String namedParam) {
-        return "EXISTS (SELECT 1 FROM json_array_elements_text(COALESCE(" + column
+        String col = SqlSafe.requireIdent(column);
+        return "EXISTS (SELECT 1 FROM json_array_elements_text(COALESCE(" + col
                 + ", '[]'::json)) AS _hei_json_elem WHERE _hei_json_elem = #{" + namedParam + "})";
     }
 
