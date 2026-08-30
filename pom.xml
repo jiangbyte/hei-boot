@@ -48,8 +48,8 @@
 
     <modules>
         <module>common</module>
-        <module>module-api</module>
-        <module>module</module>
+        <module>modules-api</module>
+        <module>modules</module>
         <module>app</module>
     </modules>
 
